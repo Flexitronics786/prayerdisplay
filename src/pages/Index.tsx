@@ -5,6 +5,7 @@ import PrayerTimesTable from "@/components/PrayerTimesTable";
 import HadithDisplay from "@/components/HadithDisplay";
 import { fetchHadith, fetchPrayerTimes } from "@/services/dataService";
 import { Hadith, PrayerTime } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
@@ -12,10 +13,10 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        const times = fetchPrayerTimes();
-        const dailyHadith = fetchHadith();
+        const times = await fetchPrayerTimes();
+        const dailyHadith = await fetchHadith();
         
         setPrayerTimes(times);
         setHadith(dailyHadith);
@@ -28,9 +29,25 @@ const Index = () => {
 
     loadData();
 
+    // Listen for changes to the prayer_times table
+    const prayerTimesSubscription = supabase
+      .channel('prayer_times_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'prayer_times' 
+      }, () => {
+        loadData();
+      })
+      .subscribe();
+
     // Refresh prayer times status every minute
     const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(prayerTimesSubscription);
+    };
   }, []);
 
   if (isLoading) {

@@ -1,6 +1,7 @@
 
-import { Hadith, PrayerTime, User } from "@/types";
+import { Hadith, PrayerTime, User, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
@@ -24,14 +25,40 @@ const defaultHadith: Hadith = {
   lastUpdated: new Date().toISOString()
 };
 
-export const fetchPrayerTimes = (): PrayerTime[] => {
+export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
   try {
+    // Try to get today's prayer times from Supabase
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .select('*')
+      .eq('date', today)
+      .single();
+
+    if (error || !data) {
+      console.log('Falling back to localStorage', error);
+      // Fall back to localStorage if no data found for today
+      const saved = localStorage.getItem(PRAYER_TIMES_KEY);
+      const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
+      return markActivePrayer(prayerTimes);
+    }
+
+    // Map Supabase data to PrayerTime format
+    const prayerTimesFromDb: PrayerTime[] = [
+      { id: '1', name: 'Fajr', time: data.fajr_jamat.slice(0, 5) },
+      { id: '2', name: 'Sunrise', time: data.sunrise.slice(0, 5) },
+      { id: '3', name: 'Zuhr', time: data.zuhr_jamat.slice(0, 5) },
+      { id: '4', name: 'Asr', time: data.asr_jamat.slice(0, 5) },
+      { id: '5', name: 'Maghrib', time: data.maghrib_iftar.slice(0, 5) },
+      { id: '6', name: 'Isha', time: data.isha_first_jamat.slice(0, 5) }
+    ];
+
+    return markActivePrayer(prayerTimesFromDb);
+  } catch (error) {
+    console.error('Error fetching prayer times:', error);
     const saved = localStorage.getItem(PRAYER_TIMES_KEY);
     const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
     return markActivePrayer(prayerTimes);
-  } catch (error) {
-    console.error('Error fetching prayer times:', error);
-    return markActivePrayer(defaultPrayerTimes);
   }
 };
 
@@ -43,7 +70,7 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
   }
 };
 
-export const fetchHadith = (): Hadith => {
+export const fetchHadith = async (): Promise<Hadith> => {
   try {
     const saved = localStorage.getItem(HADITH_KEY);
     return saved ? JSON.parse(saved) : defaultHadith;
@@ -59,6 +86,82 @@ export const updateHadith = (hadith: Hadith): void => {
     localStorage.setItem(HADITH_KEY, JSON.stringify(hadith));
   } catch (error) {
     console.error('Error updating hadith:', error);
+  }
+};
+
+// Functions for the detailed prayer times table
+export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .select('*')
+      .order('date', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as DetailedPrayerTime[];
+  } catch (error) {
+    console.error('Error fetching all prayer times:', error);
+    return [];
+  }
+};
+
+export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): Promise<DetailedPrayerTime | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .insert([entry])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as DetailedPrayerTime;
+  } catch (error) {
+    console.error('Error adding prayer time entry:', error);
+    return null;
+  }
+};
+
+export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedPrayerTime>): Promise<DetailedPrayerTime | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .update(entry)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return data as DetailedPrayerTime;
+  } catch (error) {
+    console.error('Error updating prayer time entry:', error);
+    return null;
+  }
+};
+
+export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('prayer_times')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting prayer time entry:', error);
+    return false;
   }
 };
 
