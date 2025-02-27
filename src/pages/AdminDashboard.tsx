@@ -14,7 +14,7 @@ const AdminDashboard = () => {
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("legacy");
+  const [activeTab, setActiveTab] = useState("prayer-table");
 
   useEffect(() => {
     // Check if user is authenticated
@@ -27,10 +27,10 @@ const AdminDashboard = () => {
     // Load data
     const loadData = async () => {
       try {
-        const currentHadith = fetchHadith();
         const currentPrayerTimes = await fetchPrayerTimes();
+        const currentHadith = await fetchHadith(); // Await the Promise here
         
-        setHadith(currentHadith);
+        setHadith(currentHadith); // Now it's the resolved value, not a Promise
         setPrayerTimes(currentPrayerTimes);
       } catch (error) {
         console.error("Error loading admin data:", error);
