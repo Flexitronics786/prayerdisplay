@@ -110,16 +110,30 @@ export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
 
 export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): Promise<DetailedPrayerTime | null> => {
   try {
+    console.log("Adding prayer time entry:", entry);
+    
+    // Make sure all required fields are present and have string values
+    const sanitizedEntry = Object.fromEntries(
+      Object.entries(entry).map(([key, value]) => [key, value === undefined ? "" : value])
+    );
+    
     const { data, error } = await supabase
       .from('prayer_times')
-      .insert([entry])
+      .insert([sanitizedEntry])
       .select()
       .single();
 
     if (error) {
+      console.error("Supabase error adding prayer time:", error);
       throw error;
     }
 
+    if (!data) {
+      console.error("No data returned after adding prayer time");
+      throw new Error("No data returned after insert");
+    }
+
+    console.log("Successfully added prayer time entry, received data:", data);
     return data as DetailedPrayerTime;
   } catch (error) {
     console.error('Error adding prayer time entry:', error);
@@ -137,6 +151,7 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
       .single();
 
     if (error) {
+      console.error("Supabase error updating prayer time:", error);
       throw error;
     }
 
@@ -155,6 +170,7 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
       .eq('id', id);
 
     if (error) {
+      console.error("Supabase error deleting prayer time:", error);
       throw error;
     }
 

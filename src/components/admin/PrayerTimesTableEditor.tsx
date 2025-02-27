@@ -17,10 +17,16 @@ const PrayerTimesTableEditor = () => {
   const [prayerTimes, setPrayerTimes] = useState<DetailedPrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  const today = new Date();
+  const todayFormatted = today.toISOString().split('T')[0];
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  
   const [newEntry, setNewEntry] = useState<Partial<DetailedPrayerTime>>({
-    date: new Date().toISOString().split('T')[0],
-    day: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+    date: todayFormatted,
+    day: dayName,
     sehri_end: '',
     fajr_jamat: '',
     sunrise: '',
@@ -51,13 +57,32 @@ const PrayerTimesTableEditor = () => {
     loadPrayerTimes();
   }, []);
 
+  const getDayNameFromDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
+  };
+
   const handleChange = (field: keyof DetailedPrayerTime, value: string, id?: string) => {
     if (id) {
-      setPrayerTimes(prayerTimes.map(entry => 
-        entry.id === id ? { ...entry, [field]: value } : entry
-      ));
+      setPrayerTimes(prayerTimes.map(entry => {
+        if (entry.id === id) {
+          if (field === 'date') {
+            return { ...entry, [field]: value, day: getDayNameFromDate(value) };
+          }
+          return { ...entry, [field]: value };
+        }
+        return entry;
+      }));
     } else {
-      setNewEntry({ ...newEntry, [field]: value });
+      if (field === 'date') {
+        setNewEntry({ 
+          ...newEntry, 
+          [field]: value, 
+          day: getDayNameFromDate(value) 
+        });
+      } else {
+        setNewEntry({ ...newEntry, [field]: value });
+      }
     }
   };
 
@@ -75,15 +100,19 @@ const PrayerTimesTableEditor = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
+      console.log("Submitting prayer time entry:", newEntry);
       const added = await addPrayerTimeEntry(newEntry as Omit<DetailedPrayerTime, 'id' | 'created_at'>);
+      
       if (added) {
+        console.log("Successfully added prayer time entry:", added);
         setPrayerTimes([...prayerTimes, added]);
+        
         const currentDate = newEntry.date;
-        const currentDay = newEntry.day;
         setNewEntry({
           date: currentDate,
-          day: currentDay,
+          day: getDayNameFromDate(currentDate || todayFormatted),
           sehri_end: '',
           fajr_jamat: '',
           sunrise: '',
@@ -96,12 +125,18 @@ const PrayerTimesTableEditor = () => {
           isha_first_jamat: '',
           isha_second_jamat: ''
         });
+        
         setIsAdding(false);
         toast.success("Prayer time entry added successfully");
+      } else {
+        console.error("Failed to add prayer time entry - no data returned");
+        toast.error("Failed to add prayer time entry");
       }
     } catch (error) {
       console.error("Error adding prayer time:", error);
       toast.error("Failed to add prayer time entry");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,6 +144,7 @@ const PrayerTimesTableEditor = () => {
     const entryToUpdate = prayerTimes.find(entry => entry.id === id);
     if (!entryToUpdate) return;
 
+    setIsSubmitting(true);
     try {
       const updated = await updatePrayerTimeEntry(id, entryToUpdate);
       if (updated) {
@@ -118,10 +154,13 @@ const PrayerTimesTableEditor = () => {
     } catch (error) {
       console.error("Error updating prayer time:", error);
       toast.error("Failed to update prayer time entry");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    setIsSubmitting(true);
     try {
       const success = await deletePrayerTimeEntry(id);
       if (success) {
@@ -131,6 +170,8 @@ const PrayerTimesTableEditor = () => {
     } catch (error) {
       console.error("Error deleting prayer time:", error);
       toast.error("Failed to delete prayer time entry");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,6 +186,7 @@ const PrayerTimesTableEditor = () => {
         <Button
           onClick={() => setIsAdding(!isAdding)}
           className="bg-mosque-accent hover:bg-mosque-accent/80 text-white"
+          disabled={isSubmitting}
         >
           {isAdding ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
           {isAdding ? "Cancel" : "Add New Entry"}
@@ -187,9 +229,8 @@ const PrayerTimesTableEditor = () => {
                     <TableCell>
                       <Input
                         value={newEntry.day}
-                        onChange={(e) => handleChange('day', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                        placeholder="e.g., Monday"
+                        readOnly
+                        className="bg-white/5 border-white/20 text-white cursor-not-allowed"
                       />
                     </TableCell>
                     <TableCell>
@@ -286,13 +327,18 @@ const PrayerTimesTableEditor = () => {
                           size="sm" 
                           onClick={handleAdd}
                           className="bg-green-600 hover:bg-green-700"
+                          disabled={isSubmitting}
                         >
-                          <Check className="h-4 w-4" />
+                          {isSubmitting ? 
+                            <span className="animate-spin mr-1">⏳</span> : 
+                            <Check className="h-4 w-4" />
+                          }
                         </Button>
                         <Button 
                           size="sm" 
                           onClick={() => setIsAdding(false)}
                           variant="destructive"
+                          disabled={isSubmitting}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -319,8 +365,8 @@ const PrayerTimesTableEditor = () => {
                       {editingId === entry.id ? (
                         <Input
                           value={entry.day}
-                          onChange={(e) => handleChange('day', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
+                          readOnly
+                          className="bg-white/5 border-white/20 text-white cursor-not-allowed"
                         />
                       ) : (
                         entry.day
@@ -466,13 +512,18 @@ const PrayerTimesTableEditor = () => {
                               size="sm" 
                               onClick={() => handleUpdate(entry.id)}
                               className="bg-green-600 hover:bg-green-700"
+                              disabled={isSubmitting}
                             >
-                              <Check className="h-4 w-4" />
+                              {isSubmitting ? 
+                                <span className="animate-spin mr-1">⏳</span> : 
+                                <Check className="h-4 w-4" />
+                              }
                             </Button>
                             <Button 
                               size="sm" 
                               onClick={() => setEditingId(null)}
                               variant="destructive"
+                              disabled={isSubmitting}
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -483,6 +534,7 @@ const PrayerTimesTableEditor = () => {
                               size="sm" 
                               onClick={() => setEditingId(entry.id)}
                               className="bg-mosque-accent hover:bg-mosque-accent/80"
+                              disabled={isSubmitting}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -490,6 +542,7 @@ const PrayerTimesTableEditor = () => {
                               size="sm" 
                               onClick={() => handleDelete(entry.id)}
                               variant="destructive"
+                              disabled={isSubmitting}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -509,6 +562,7 @@ const PrayerTimesTableEditor = () => {
         <p>• All times should be in 24-hour format (HH:MM)</p>
         <p>• Date should be in YYYY-MM-DD format</p>
         <p>• The date in the table will be used for prayer times on the display</p>
+        <p>• Day will be automatically determined from the date</p>
       </div>
     </div>
   );
