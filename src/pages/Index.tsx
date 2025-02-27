@@ -6,6 +6,7 @@ import HadithDisplay from "@/components/HadithDisplay";
 import { fetchHadith, fetchPrayerTimes } from "@/services/dataService";
 import { Hadith, PrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
@@ -73,6 +74,15 @@ const Index = () => {
           <PrayerTimesTable prayerTimes={prayerTimes} />
           {hadith && <HadithDisplay hadith={hadith} />}
         </div>
+        
+        <footer className="mt-10 text-center">
+          <Link 
+            to="/admin" 
+            className="text-mosque-light/30 text-xs hover:text-mosque-light/50 transition-colors"
+          >
+            Admin Access
+          </Link>
+        </footer>
       </div>
     </div>
   );
