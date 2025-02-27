@@ -1,0 +1,11 @@
+
+<svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g opacity="0.5">
+    <path d="M250 0L500 250L250 500L0 250L250 0Z" fill="#D6BCFA" fill-opacity="0.1"/>
+    <path d="M250 50L450 250L250 450L50 250L250 50Z" stroke="#D6BCFA" stroke-opacity="0.2" stroke-width="1"/>
+    <path d="M250 100L400 250L250 400L100 250L250 100Z" stroke="#D6BCFA" stroke-opacity="0.3" stroke-width="1"/>
+    <path d="M250 150L350 250L250 350L150 250L250 150Z" stroke="#D6BCFA" stroke-opacity="0.4" stroke-width="1"/>
+    <circle cx="250" cy="250" r="50" stroke="#D6BCFA" stroke-opacity="0.5" stroke-width="1"/>
+    <circle cx="250" cy="250" r="25" fill="#D6BCFA" fill-opacity="0.1"/>
+  </g>
+</svg>
