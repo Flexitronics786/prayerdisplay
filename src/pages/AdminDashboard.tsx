@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser, fetchHadith, fetchPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import HadithEditor from "@/components/admin/HadithEditor";
-import PrayerTimesEditor from "@/components/admin/PrayerTimesEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { Hadith, PrayerTime } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,10 +45,6 @@ const AdminDashboard = () => {
     setHadith(updatedHadith);
   };
 
-  const handlePrayerTimesUpdate = (updatedTimes: PrayerTime[]) => {
-    setPrayerTimes(updatedTimes);
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -73,10 +68,10 @@ const AdminDashboard = () => {
               Prayer Times Table
             </TabsTrigger>
             <TabsTrigger 
-              value="legacy" 
+              value="hadith" 
               className="data-[state=active]:bg-mosque-accent data-[state=active]:text-white"
             >
-              Legacy Editors
+              Edit Hadith
             </TabsTrigger>
           </TabsList>
           
@@ -84,14 +79,10 @@ const AdminDashboard = () => {
             <PrayerTimesTableEditor />
           </TabsContent>
           
-          <TabsContent value="legacy" className="mt-0">
+          <TabsContent value="hadith" className="mt-0">
             <div className="grid md:grid-cols-1 gap-6">
               {hadith && (
                 <HadithEditor currentHadith={hadith} onUpdate={handleHadithUpdate} />
-              )}
-              
-              {prayerTimes.length > 0 && (
-                <PrayerTimesEditor prayerTimes={prayerTimes} onUpdate={handlePrayerTimesUpdate} />
               )}
             </div>
           </TabsContent>
