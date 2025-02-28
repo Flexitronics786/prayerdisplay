@@ -15,7 +15,6 @@ import { Pencil, Trash2, Plus, Check, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import GoogleSheetsImporter from "./GoogleSheetsImporter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { convertTo12Hour, convertTo24Hour } from "@/utils/dateUtils";
 
 const PrayerTimesTableEditor = () => {
   const [prayerTimes, setPrayerTimes] = useState<DetailedPrayerTime[]>([]);
@@ -81,27 +80,13 @@ const PrayerTimesTableEditor = () => {
   };
 
   const handleChange = (field: keyof DetailedPrayerTime, value: string, id?: string) => {
-    // For time fields, convert from 12h to 24h format
-    const timeFields: (keyof DetailedPrayerTime)[] = [
-      'sehri_end', 'fajr_jamat', 'sunrise', 'zuhr_start', 'zuhr_jamat',
-      'asr_start', 'asr_jamat', 'maghrib_iftar', 'isha_start',
-      'isha_first_jamat', 'isha_second_jamat'
-    ];
-    
-    let processedValue = value;
-    
-    if (timeFields.includes(field) && value && value.includes(' ')) {
-      // If it's a time field and in 12h format, convert to 24h
-      processedValue = convertTo24Hour(value);
-    }
-    
     if (id) {
       setPrayerTimes(prayerTimes.map(entry => {
         if (entry.id === id) {
           if (field === 'date') {
-            return { ...entry, [field]: processedValue, day: getDayNameFromDate(processedValue) };
+            return { ...entry, [field]: value, day: getDayNameFromDate(value) };
           }
-          return { ...entry, [field]: processedValue };
+          return { ...entry, [field]: value };
         }
         return entry;
       }));
@@ -109,11 +94,11 @@ const PrayerTimesTableEditor = () => {
       if (field === 'date') {
         setNewEntry({ 
           ...newEntry, 
-          [field]: processedValue, 
-          day: getDayNameFromDate(processedValue) 
+          [field]: value, 
+          day: getDayNameFromDate(value) 
         });
       } else {
-        setNewEntry({ ...newEntry, [field]: processedValue });
+        setNewEntry({ ...newEntry, [field]: value });
       }
     }
   };
@@ -211,12 +196,6 @@ const PrayerTimesTableEditor = () => {
     loadPrayerTimes();
   };
 
-  // Format time display for 12-hour time
-  const formatTimeDisplay = (time24h: string): string => {
-    if (!time24h) return '';
-    return convertTo12Hour(time24h);
-  };
-
   if (isLoading) {
     return <div className="text-center p-4 text-amber-800">Loading prayer times...</div>;
   }
@@ -295,99 +274,88 @@ const PrayerTimesTableEditor = () => {
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="6:00 AM"
-                        value={newEntry.sehri_end ? formatTimeDisplay(newEntry.sehri_end) : ''}
+                        type="time"
+                        value={newEntry.sehri_end || ''}
                         onChange={(e) => handleChange('sehri_end', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="6:30 AM"
-                        value={newEntry.fajr_jamat ? formatTimeDisplay(newEntry.fajr_jamat) : ''}
+                        type="time"
+                        value={newEntry.fajr_jamat || ''}
                         onChange={(e) => handleChange('fajr_jamat', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="7:15 AM"
-                        value={newEntry.sunrise ? formatTimeDisplay(newEntry.sunrise) : ''}
+                        type="time"
+                        value={newEntry.sunrise || ''}
                         onChange={(e) => handleChange('sunrise', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="12:00 PM"
-                        value={newEntry.zuhr_start ? formatTimeDisplay(newEntry.zuhr_start) : ''}
+                        type="time"
+                        value={newEntry.zuhr_start || ''}
                         onChange={(e) => handleChange('zuhr_start', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="1:30 PM"
-                        value={newEntry.zuhr_jamat ? formatTimeDisplay(newEntry.zuhr_jamat) : ''}
+                        type="time"
+                        value={newEntry.zuhr_jamat || ''}
                         onChange={(e) => handleChange('zuhr_jamat', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="4:00 PM"
-                        value={newEntry.asr_start ? formatTimeDisplay(newEntry.asr_start) : ''}
+                        type="time"
+                        value={newEntry.asr_start || ''}
                         onChange={(e) => handleChange('asr_start', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="4:30 PM"
-                        value={newEntry.asr_jamat ? formatTimeDisplay(newEntry.asr_jamat) : ''}
+                        type="time"
+                        value={newEntry.asr_jamat || ''}
                         onChange={(e) => handleChange('asr_jamat', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="7:00 PM"
-                        value={newEntry.maghrib_iftar ? formatTimeDisplay(newEntry.maghrib_iftar) : ''}
+                        type="time"
+                        value={newEntry.maghrib_iftar || ''}
                         onChange={(e) => handleChange('maghrib_iftar', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="8:30 PM"
-                        value={newEntry.isha_start ? formatTimeDisplay(newEntry.isha_start) : ''}
+                        type="time"
+                        value={newEntry.isha_start || ''}
                         onChange={(e) => handleChange('isha_start', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="9:00 PM"
-                        value={newEntry.isha_first_jamat ? formatTimeDisplay(newEntry.isha_first_jamat) : ''}
+                        type="time"
+                        value={newEntry.isha_first_jamat || ''}
                         onChange={(e) => handleChange('isha_first_jamat', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="text"
-                        placeholder="10:00 PM"
-                        value={newEntry.isha_second_jamat ? formatTimeDisplay(newEntry.isha_second_jamat) : ''}
+                        type="time"
+                        value={newEntry.isha_second_jamat || ''}
                         onChange={(e) => handleChange('isha_second_jamat', e.target.value)}
                         className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                       />
@@ -454,144 +422,133 @@ const PrayerTimesTableEditor = () => {
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="6:00 AM"
-                          value={formatTimeDisplay(entry.sehri_end)}
+                          type="time"
+                          value={entry.sehri_end}
                           onChange={(e) => handleChange('sehri_end', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.sehri_end)}</span>
+                        <span className="text-amber-900">{entry.sehri_end}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="6:30 AM"
-                          value={formatTimeDisplay(entry.fajr_jamat)}
+                          type="time"
+                          value={entry.fajr_jamat}
                           onChange={(e) => handleChange('fajr_jamat', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.fajr_jamat)}</span>
+                        <span className="text-amber-900">{entry.fajr_jamat}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="7:15 AM"
-                          value={formatTimeDisplay(entry.sunrise)}
+                          type="time"
+                          value={entry.sunrise}
                           onChange={(e) => handleChange('sunrise', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.sunrise)}</span>
+                        <span className="text-amber-900">{entry.sunrise}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="12:00 PM"
-                          value={formatTimeDisplay(entry.zuhr_start)}
+                          type="time"
+                          value={entry.zuhr_start}
                           onChange={(e) => handleChange('zuhr_start', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.zuhr_start)}</span>
+                        <span className="text-amber-900">{entry.zuhr_start}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="1:30 PM"
-                          value={formatTimeDisplay(entry.zuhr_jamat)}
+                          type="time"
+                          value={entry.zuhr_jamat}
                           onChange={(e) => handleChange('zuhr_jamat', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.zuhr_jamat)}</span>
+                        <span className="text-amber-900">{entry.zuhr_jamat}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="4:00 PM"
-                          value={formatTimeDisplay(entry.asr_start)}
+                          type="time"
+                          value={entry.asr_start}
                           onChange={(e) => handleChange('asr_start', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.asr_start)}</span>
+                        <span className="text-amber-900">{entry.asr_start}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="4:30 PM"
-                          value={formatTimeDisplay(entry.asr_jamat)}
+                          type="time"
+                          value={entry.asr_jamat}
                           onChange={(e) => handleChange('asr_jamat', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.asr_jamat)}</span>
+                        <span className="text-amber-900">{entry.asr_jamat}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="7:00 PM"
-                          value={formatTimeDisplay(entry.maghrib_iftar)}
+                          type="time"
+                          value={entry.maghrib_iftar}
                           onChange={(e) => handleChange('maghrib_iftar', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.maghrib_iftar)}</span>
+                        <span className="text-amber-900">{entry.maghrib_iftar}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="8:30 PM"
-                          value={formatTimeDisplay(entry.isha_start)}
+                          type="time"
+                          value={entry.isha_start}
                           onChange={(e) => handleChange('isha_start', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.isha_start)}</span>
+                        <span className="text-amber-900">{entry.isha_start}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="9:00 PM"
-                          value={formatTimeDisplay(entry.isha_first_jamat)}
+                          type="time"
+                          value={entry.isha_first_jamat}
                           onChange={(e) => handleChange('isha_first_jamat', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.isha_first_jamat)}</span>
+                        <span className="text-amber-900">{entry.isha_first_jamat}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {editingId === entry.id ? (
                         <Input
-                          type="text"
-                          placeholder="10:00 PM"
-                          value={formatTimeDisplay(entry.isha_second_jamat)}
+                          type="time"
+                          value={entry.isha_second_jamat}
                           onChange={(e) => handleChange('isha_second_jamat', e.target.value, entry.id)}
                           className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                         />
                       ) : (
-                        <span className="text-amber-900">{formatTimeDisplay(entry.isha_second_jamat)}</span>
+                        <span className="text-amber-900">{entry.isha_second_jamat}</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -653,7 +610,7 @@ const PrayerTimesTableEditor = () => {
       </Tabs>
       
       <div className="mt-4 text-amber-700 text-xs">
-        <p>• Times should be in 12-hour format (e.g., 7:30 AM, 5:45 PM)</p>
+        <p>• All times should be in 24-hour format (HH:MM)</p>
         <p>• Date should be in YYYY-MM-DD format</p>
         <p>• The date in the table will be used for prayer times on the display</p>
         <p>• Day will be automatically determined from the date</p>
