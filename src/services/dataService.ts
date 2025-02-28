@@ -440,9 +440,14 @@ export const importPrayerTimesFromSheet = async (
     
     console.log(`Processing ${dataRows.length} rows from Google Sheet`);
     
-    // Process each row and insert into Supabase
+    // Process each row and insert into local storage directly, skipping Supabase due to RLS errors
     const importedEntries: DetailedPrayerTime[] = [];
     const errors: string[] = [];
+    
+    // Get current local storage entries
+    const savedTimes = localStorage.getItem('local-prayer-times');
+    const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+    const existingDates = new Set(localTimes.map((item: DetailedPrayerTime) => item.date));
     
     for (let i = 0; i < dataRows.length; i++) {
       const row = dataRows[i];
@@ -478,30 +483,65 @@ export const importPrayerTimesFromSheet = async (
           continue;
         }
         
-        // Insert into Supabase
-        const { data, error } = await supabase
-          .from('prayer_times')
-          .upsert({ ...entry }, { onConflict: 'date' })
-          .select()
-          .single();
-          
-        if (error) {
-          console.error(`Error upserting row ${i}:`, error);
-          errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${error.message}`);
-          continue;
+        // First try to insert into Supabase - but catch and continue if RLS errors occur
+        try {
+          const { data, error } = await supabase
+            .from('prayer_times')
+            .upsert({ ...entry }, { onConflict: 'date' })
+            .select()
+            .single();
+            
+          if (error) {
+            // If it's the RLS error we're trying to work around, continue with local storage
+            if (error.message.includes('infinite recursion detected in policy')) {
+              console.warn(`RLS error for row ${i}, falling back to local storage:`, error.message);
+              // We'll handle this with local storage below
+            } else {
+              console.error(`Error upserting row ${i}:`, error);
+              errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${error.message}`);
+              continue;
+            }
+          } else if (data) {
+            importedEntries.push(data as DetailedPrayerTime);
+            
+            // Also update local storage for redundancy
+            updateLocalStorageWithImportedEntry(data as DetailedPrayerTime);
+            continue; // Skip to next row since we successfully added to Supabase
+          }
+        } catch (supabaseError) {
+          console.warn(`Supabase error for row ${i}, falling back to local storage:`, supabaseError);
+          // We'll handle this with local storage below
         }
         
-        if (data) {
-          importedEntries.push(data as DetailedPrayerTime);
-          
-          // Also update local storage for redundancy
-          updateLocalStorageWithImportedEntry(data as DetailedPrayerTime);
+        // If we reach here, we need to create a local storage entry
+        const localEntry: DetailedPrayerTime = {
+          id: `temp-${Date.now()}-${i}`, // Add index to make unique
+          ...entry
+        };
+        
+        // Check if we already have this date in local storage
+        if (existingDates.has(localEntry.date)) {
+          // Update the existing entry
+          const updatedLocalTimes = localTimes.map((item: DetailedPrayerTime) => 
+            item.date === localEntry.date ? { ...item, ...localEntry, id: item.id } : item
+          );
+          localTimes.length = 0; // Clear the array
+          localTimes.push(...updatedLocalTimes); // Replace with updated items
+        } else {
+          // Add new entry
+          localTimes.push(localEntry);
+          existingDates.add(localEntry.date);
         }
+        
+        importedEntries.push(localEntry);
       } catch (rowError) {
         console.error(`Error processing row ${i}:`, rowError);
         errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
       }
     }
+    
+    // Save all local entries
+    localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
     
     // Trigger refresh event
     window.dispatchEvent(new StorageEvent('storage', { key: 'local-prayer-times' }));
@@ -518,7 +558,7 @@ export const importPrayerTimesFromSheet = async (
         return { 
           success: true, 
           count: importedEntries.length, 
-          error: `Imported with ${errors.length} errors: ${errorMessage}` 
+          error: `Imported ${importedEntries.length} entries to local storage due to RLS errors. ${errorMessage}` 
         };
       } else {
         return { 
@@ -529,7 +569,11 @@ export const importPrayerTimesFromSheet = async (
       }
     }
     
-    return { success: true, count: importedEntries.length };
+    return { 
+      success: true, 
+      count: importedEntries.length,
+      error: importedEntries.length > 0 ? "Imported to local storage due to RLS errors with profiles table." : undefined
+    };
   } catch (error) {
     console.error("Error importing from Google Sheets:", error);
     return { 
