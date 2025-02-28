@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "@/services/authService";
 import { fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
-import DailyHadithEditor from "@/components/admin/DailyHadithEditor";
+import HadithCollectionEditor from "@/components/admin/HadithCollectionEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -120,10 +120,10 @@ const AdminDashboard = () => {
               Prayer Times Table
             </TabsTrigger>
             <TabsTrigger 
-              value="daily-hadith" 
+              value="hadith-collection" 
               className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
             >
-              Daily Hadiths
+              Hadith Collection
             </TabsTrigger>
           </TabsList>
           
@@ -142,8 +142,8 @@ const AdminDashboard = () => {
             <PrayerTimesTableEditor />
           </TabsContent>
           
-          <TabsContent value="daily-hadith" className="mt-0">
-            <DailyHadithEditor />
+          <TabsContent value="hadith-collection" className="mt-0">
+            <HadithCollectionEditor />
           </TabsContent>
         </Tabs>
       </div>

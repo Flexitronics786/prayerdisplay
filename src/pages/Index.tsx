@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -18,24 +19,24 @@ const Index = () => {
       console.log("Loading prayer times and hadith...");
       const times = await fetchPrayerTimes();
       
-      const today = new Date();
-      const dayOfMonth = today.getDate();
-      const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
-      
-      const { data: allHadiths, error: hadithsError } = await supabase
-        .from('daily_hadiths')
-        .select('*');
+      // Check hadith collection status
+      const { data: hadithCollection, error: hadithsError } = await supabase
+        .from('hadith_collection')
+        .select('*')
+        .eq('is_active', true);
       
       if (hadithsError) {
-        console.error("Error fetching all hadiths:", hadithsError);
+        console.error("Error fetching hadith collection:", hadithsError);
         setDebugInfo(`Error: ${hadithsError.message}`);
       } else {
-        console.log(`Found ${allHadiths?.length || 0} total hadiths in database:`, allHadiths);
-        setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths.`);
+        console.log(`Found ${hadithCollection?.length || 0} active hadiths in collection:`, hadithCollection);
+        setDebugInfo(`Collection has ${hadithCollection?.length || 0} active hadiths.`);
       }
       
       const dailyHadith = await fetchHadith();
-      console.log("Today is day", dayOfMonth, "in month", currentMonth);
+      const today = new Date();
+      const dayOfYear = getDayOfYear(today);
+      console.log(`Today is day ${dayOfYear} of the year`);
       console.log("Fetched hadith for today:", dailyHadith);
       
       setPrayerTimes(times);
@@ -47,6 +48,14 @@ const Index = () => {
       setIsLoading(false);
     }
   }, []);
+  
+  // Helper function to get the day of the year (1-366)
+  const getDayOfYear = (date: Date): number => {
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+  };
 
   useEffect(() => {
     loadData();
@@ -64,13 +73,13 @@ const Index = () => {
       .subscribe();
 
     const hadithsSubscription = supabase
-      .channel('daily_hadiths_changes')
+      .channel('hadith_collection_changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'daily_hadiths' 
+        table: 'hadith_collection' 
       }, () => {
-        console.log("Daily hadiths changed in database, reloading...");
+        console.log("Hadith collection changed in database, reloading...");
         loadData();
       })
       .subscribe();

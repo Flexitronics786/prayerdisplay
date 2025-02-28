@@ -1,32 +1,9 @@
-
 export interface PrayerTime {
   id: string;
   name: string;
   time: string;
   isActive?: boolean;
   isNext?: boolean;
-}
-
-export interface Hadith {
-  id: string;
-  text: string;
-  source: string;
-  lastUpdated?: string;
-}
-
-export interface DailyHadith {
-  id: string;
-  day_of_month: number;
-  text: string;
-  source: string;
-  month?: string; // YYYY-MM format
-  created_at?: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  isAdmin: boolean;
 }
 
 export interface DetailedPrayerTime {
@@ -45,4 +22,34 @@ export interface DetailedPrayerTime {
   isha_first_jamat: string;
   isha_second_jamat: string;
   created_at?: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  isAdmin: boolean;
+}
+
+export interface Hadith {
+  id: string;
+  text: string;
+  source: string;
+  lastUpdated?: string;
+}
+
+export interface DailyHadith {
+  id: string;
+  day_of_month: number;
+  text: string;
+  source: string;
+  month?: string; // YYYY-MM format
+  created_at?: string;
+}
+
+export interface HadithCollectionItem {
+  id: string;
+  text: string;
+  source: string;
+  created_at?: string;
+  is_active: boolean;
 }

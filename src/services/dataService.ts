@@ -1,6 +1,8 @@
+<lov-code>
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { HadithCollectionItem } from "@/types";
 
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
@@ -83,93 +85,55 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
   }
 };
 
-// Function to fetch the hadith for today from daily_hadiths table
+// Updated function to fetch hadith from the new collection
 export const fetchHadith = async (): Promise<Hadith> => {
   try {
-    // Get today's date
-    const today = new Date();
-    const dayOfMonth = today.getDate();
-    const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
-    
-    console.log(`Fetching hadith for day ${dayOfMonth} in month ${currentMonth}`);
-    
-    // First, check if there are any hadiths in the database
-    const { data: allHadiths, error: allHadithsError } = await supabase
-      .from('daily_hadiths')
-      .select('*');
+    // First, check if there are any hadiths in the new collection
+    const { data: activeHadiths, error: activeHadithsError } = await supabase
+      .from('hadith_collection')
+      .select('*')
+      .eq('is_active', true);
       
-    if (allHadithsError) {
-      console.error("Error checking for hadiths:", allHadithsError);
-      throw new Error(`Database error checking for hadiths: ${allHadithsError.message}`);
+    if (activeHadithsError) {
+      console.error("Error checking for hadiths:", activeHadithsError);
+      throw new Error(`Database error checking for hadiths: ${activeHadithsError.message}`);
     }
     
-    if (!allHadiths || allHadiths.length === 0) {
-      console.log("No hadiths found in the database at all, using default");
+    if (!activeHadiths || activeHadiths.length === 0) {
+      console.log("No hadiths found in the collection, using default");
       return getDefaultHadith();
     }
     
-    console.log(`Database has ${allHadiths.length} hadiths in total`);
+    console.log(`Collection has ${activeHadiths.length} active hadiths`);
     
-    // Try to fetch from Supabase for today's exact date first
-    console.log(`Looking for hadith with day=${dayOfMonth} and month=${currentMonth}`);
-    const { data: exactMatchData, error: exactMatchError } = await supabase
-      .from('daily_hadiths')
-      .select('*')
-      .eq('day_of_month', dayOfMonth)
-      .eq('month', currentMonth);
+    // Get today's date to determine which hadith to show (cycle through them)
+    const today = new Date();
+    const dayOfYear = getDayOfYear(today);
     
-    // If we found a daily hadith for today
-    if (!exactMatchError && exactMatchData && exactMatchData.length > 0) {
-      const todayHadith = exactMatchData[0];
-      console.log("Found exact match for today:", todayHadith);
-      return {
-        id: todayHadith.id,
-        text: todayHadith.text,
-        source: todayHadith.source,
-        lastUpdated: todayHadith.created_at
-      };
-    }
+    // Use the day of year to pick a hadith, cycling through the available ones
+    const index = dayOfYear % activeHadiths.length;
+    const selectedHadith = activeHadiths[index];
     
-    console.log("No exact match found. Looking for any hadith with same day of month");
+    console.log(`Selected hadith for today (day ${dayOfYear}, index ${index}):`, selectedHadith);
     
-    // If we didn't find one for today's date, try to find any hadith for today's day in any month
-    const { data: anyMonthData, error: anyMonthError } = await supabase
-      .from('daily_hadiths')
-      .select('*')
-      .eq('day_of_month', dayOfMonth);
-    
-    if (!anyMonthError && anyMonthData && anyMonthData.length > 0) {
-      // Pick a random hadith from any month but with the same day of month
-      const randomIndex = Math.floor(Math.random() * anyMonthData.length);
-      const randomHadith = anyMonthData[randomIndex];
-      
-      console.log("Found hadith with same day of month:", randomHadith);
-      return {
-        id: randomHadith.id,
-        text: randomHadith.text,
-        source: randomHadith.source,
-        lastUpdated: randomHadith.created_at
-      };
-    }
-    
-    console.log(`No hadith found for day ${dayOfMonth}, getting a random one from ${allHadiths.length} total hadiths`);
-    
-    // If we still don't have any hadith, use a random one from the database
-    // Pick a completely random hadith from the database
-    const randomIndex = Math.floor(Math.random() * allHadiths.length);
-    const randomHadith = allHadiths[randomIndex];
-    
-    console.log("Using random hadith:", randomHadith);
     return {
-      id: randomHadith.id,
-      text: randomHadith.text,
-      source: randomHadith.source,
-      lastUpdated: randomHadith.created_at
+      id: selectedHadith.id,
+      text: selectedHadith.text,
+      source: selectedHadith.source,
+      lastUpdated: selectedHadith.created_at
     };
   } catch (error) {
     console.error('Error fetching hadith:', error);
     return getDefaultHadith();
   }
+};
+
+// Helper function to get the day of the year (1-366)
+const getDayOfYear = (date: Date): number => {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date.getTime() - start.getTime();
+  const oneDay = 1000 * 60 * 60 * 24;
+  return Math.floor(diff / oneDay);
 };
 
 // Helper function to return the default hadith
@@ -180,6 +144,91 @@ const getDefaultHadith = (): Hadith => {
     source: "Sahih al-Bukhari",
     lastUpdated: new Date().toISOString()
   };
+};
+
+// New functions to manage the hadith collection
+
+// Fetch all hadiths from the collection
+export const fetchHadithCollection = async (): Promise<HadithCollectionItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('hadith_collection')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Error fetching hadith collection:", error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchHadithCollection:", error);
+    return [];
+  }
+};
+
+// Add a new hadith to the collection
+export const addHadithToCollection = async (hadith: Omit<HadithCollectionItem, 'id' | 'created_at'>): Promise<HadithCollectionItem | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('hadith_collection')
+      .insert(hadith)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error adding hadith to collection:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in addHadithToCollection:", error);
+    throw error;
+  }
+};
+
+// Update a hadith in the collection
+export const updateHadithInCollection = async (id: string, updates: Partial<HadithCollectionItem>): Promise<HadithCollectionItem | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('hadith_collection')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error("Error updating hadith in collection:", error);
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error in updateHadithInCollection:", error);
+    throw error;
+  }
+};
+
+// Delete a hadith from the collection
+export const deleteHadithFromCollection = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('hadith_collection')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error("Error deleting hadith from collection:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteHadithFromCollection:", error);
+    throw error;
+  }
 };
 
 // Functions for daily hadiths
@@ -806,215 +855,4 @@ export const importPrayerTimesFromSheet = async (
         importedEntries.push(localEntry);
       } catch (rowError) {
         console.error(`Error processing row ${i}:`, rowError);
-        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
-      }
-    }
-    
-    // Save all local entries
-    localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
-    
-    // Trigger refresh event
-    window.dispatchEvent(new StorageEvent('storage', { key: 'local-prayer-times' }));
-    
-    console.log(`Import complete: ${importedEntries.length} rows imported, ${errors.length} errors`);
-    
-    // Return summary
-    if (errors.length > 0) {
-      const errorMessage = errors.length <= 3 
-        ? errors.join('; ') 
-        : `${errors.slice(0, 3).join('; ')}... and ${errors.length - 3} more errors`;
-        
-      if (importedEntries.length > 0) {
-        return { 
-          success: true, 
-          count: importedEntries.length, 
-          error: `Imported ${importedEntries.length} entries to local storage due to RLS errors. ${errorMessage}` 
-        };
-      } else {
-        return { 
-          success: false, 
-          count: 0, 
-          error: `Import failed with errors: ${errorMessage}` 
-        };
-      }
-    }
-    
-    return { 
-      success: true, 
-      count: importedEntries.length,
-      error: importedEntries.length > 0 ? "Imported to local storage due to RLS errors with profiles table." : undefined
-    };
-  } catch (error) {
-    console.error("Error importing from Google Sheets:", error);
-    return { 
-      success: false, 
-      count: 0, 
-      error: error instanceof Error ? error.message : String(error) 
-    };
-  }
-};
-
-// Helper function to parse CSV text
-const parseCSV = (text: string): string[][] => {
-  const lines = text.split('\n');
-  return lines.map(line => {
-    // Handle quoted values (which may contain commas)
-    const result = [];
-    let inQuotes = false;
-    let currentValue = '';
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(currentValue.trim());
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
-    }
-    
-    // Add the last value
-    result.push(currentValue.trim());
-    
-    return result;
-  }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
-};
-
-// Helper function to format date values
-const formatDate = (dateStr: string): string => {
-  // Try to parse and standardize the date format
-  let formattedDate = dateStr.trim();
-  
-  try {
-    // Check if it's already in YYYY-MM-DD format
-    if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
-      return formattedDate;
-    }
-    
-    // Try to parse as a date
-    const dateObj = new Date(formattedDate);
-    if (!isNaN(dateObj.getTime())) {
-      // Format as YYYY-MM-DD
-      return dateObj.toISOString().split('T')[0];
-    }
-    
-    // If we get here, use the original string
-    return formattedDate;
-  } catch (error) {
-    console.warn("Error formatting date:", dateStr, error);
-    return formattedDate; // Return original if parsing fails
-  }
-};
-
-// Helper function to format time values
-const formatTime = (timeStr: string): string => {
-  // Standardize time format to HH:MM:SS
-  let formattedTime = timeStr.trim();
-  
-  try {
-    // If it's empty, return an empty string
-    if (!formattedTime) {
-      return '';
-    }
-    
-    // Check if it's already in HH:MM format
-    if (/^\d{1,2}:\d{2}$/.test(formattedTime)) {
-      // Ensure it has leading zeros for hours
-      const [hours, minutes] = formattedTime.split(':');
-      return `${hours.padStart(2, '0')}:${minutes}:00`;
-    }
-    
-    // Check if it's already in HH:MM:SS format
-    if (/^\d{1,2}:\d{2}:\d{2}$/.test(formattedTime)) {
-      // Ensure it has leading zeros for hours
-      const [hours, minutes, seconds] = formattedTime.split(':');
-      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
-    }
-    
-    // Try to parse as a time (e.g., "7:30 AM")
-    const match = formattedTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-    if (match) {
-      let [, hours, minutes, seconds = '00', period] = match;
-      
-      // Convert to 24-hour format if AM/PM is specified
-      if (period) {
-        let hourNum = parseInt(hours, 10);
-        if (period.toUpperCase() === 'PM' && hourNum < 12) {
-          hourNum += 12;
-        } else if (period.toUpperCase() === 'AM' && hourNum === 12) {
-          hourNum = 0;
-        }
-        hours = hourNum.toString();
-      }
-      
-      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
-    }
-    
-    // If we get here, try using the original string
-    console.warn("Using original time string (couldn't format):", formattedTime);
-    return formattedTime;
-  } catch (error) {
-    console.warn("Error formatting time:", timeStr, error);
-    return formattedTime; // Return original if parsing fails
-  }
-};
-
-// Helper function to validate required fields
-const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
-  const requiredFields: (keyof Omit<DetailedPrayerTime, 'id' | 'created_at'>)[] = [
-    'date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 
-    'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'
-  ];
-  
-  return requiredFields.filter(field => !entry[field]);
-};
-
-// Helper function to update local storage with imported entry
-const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
-  const savedTimes = localStorage.getItem('local-prayer-times');
-  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
-  
-  // Remove any existing entry for this date
-  const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => 
-    item.date !== entry.date
-  );
-  
-  // Add the new entry
-  filteredTimes.push(entry);
-  
-  // Store back in local storage
-  localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
-};
-
-// Helper function to mark active and next prayer times
-const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
-  const currentTime = getCurrentTime24h();
-  let activeIndex = -1;
-  let nextIndex = -1;
-  
-  // Find active prayer (current or most recent)
-  for (let i = prayerTimes.length - 1; i >= 0; i--) {
-    if (!isTimeBefore(currentTime, prayerTimes[i].time)) {
-      activeIndex = i;
-      break;
-    }
-  }
-  
-  // If no prayer has passed today yet, set active to last prayer from yesterday
-  if (activeIndex === -1) {
-    activeIndex = prayerTimes.length - 1;
-  }
-  
-  // Find next prayer
-  nextIndex = (activeIndex + 1) % prayerTimes.length;
-  
-  // Mark prayers with active and next flags
-  return prayerTimes.map((prayer, index) => ({
-    ...prayer,
-    isActive: index === activeIndex,
-    isNext: index === nextIndex
-  }));
-};
+        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(row
