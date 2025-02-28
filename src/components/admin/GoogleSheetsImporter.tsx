@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { importPrayerTimesFromSheet } from '@/services/dataService';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload } from 'lucide-react';
 
 interface GoogleSheetsImporterProps {
   onImportComplete?: () => void;
@@ -184,7 +184,7 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
           </ul>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-4">
         <Button 
           className="w-full bg-amber-600 hover:bg-amber-700 text-white"
           onClick={handleImport}
@@ -196,9 +196,15 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
               Importing...
             </>
           ) : (
-            "Import Prayer Times"
+            <>
+              <Upload className="mr-2 h-4 w-4" />
+              Import Prayer Times
+            </>
           )}
         </Button>
+        <div className="text-xs text-amber-700 italic">
+          Make sure your Google Sheet follows the required format before importing.
+        </div>
       </CardFooter>
     </Card>
   );
