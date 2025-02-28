@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const DailyHadithEditor = () => {
   const [hadiths, setHadiths] = useState<DailyHadith[]>([]);
@@ -85,26 +86,63 @@ const DailyHadithEditor = () => {
         return;
       }
       
-      // Create a copy of the hadith to avoid mutation issues
-      const hadithToSave = { 
-        ...hadith,
-        month: currentMonth // Ensure month is always set to current month
+      // Create a clean copy of the hadith for saving
+      const hadithToSave = {
+        day_of_month: Number(hadith.day_of_month),
+        text: hadith.text.trim(),
+        source: hadith.source.trim(),
+        month: currentMonth
       };
       
-      console.log("Saving hadith:", hadithToSave);
+      console.log("Preparing to save hadith:", hadithToSave);
       
-      // Check if id exists and is valid
-      if (!hadithToSave.id) {
-        hadithToSave.id = `temp-${Date.now()}`;
-        console.log("Generated new temporary ID for hadith:", hadithToSave.id);
+      let result;
+      
+      // Check if this is a new hadith or an existing one
+      if (hadith.id && hadith.id.startsWith('temp-')) {
+        // New hadith - insert directly with supabase
+        console.log("Inserting new hadith");
+        const { data, error } = await supabase
+          .from('daily_hadiths')
+          .insert(hadithToSave)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("Supabase error inserting hadith:", error);
+          throw new Error(`Database error: ${error.message}`);
+        }
+        
+        result = data;
+      } else {
+        // Existing hadith - update with supabase
+        console.log("Updating existing hadith with ID:", hadith.id);
+        const { data, error } = await supabase
+          .from('daily_hadiths')
+          .update(hadithToSave)
+          .eq('id', hadith.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("Supabase error updating hadith:", error);
+          throw new Error(`Database error: ${error.message}`);
+        }
+        
+        result = data;
       }
       
-      const savedHadith = await saveDailyHadith(hadithToSave);
+      console.log("Save result:", result);
       
       // Update the hadiths array with the saved hadith
-      setHadiths(prev => prev.map(h => h.id === hadith.id ? savedHadith : h));
-      
-      toast.success("Hadith saved successfully");
+      if (result) {
+        setHadiths(prev => 
+          prev.map(h => h.id === hadith.id ? result as DailyHadith : h)
+        );
+        toast.success("Hadith saved successfully");
+      } else {
+        throw new Error("No data returned from database");
+      }
     } catch (error) {
       console.error("Error saving hadith:", error);
       toast.error(`Failed to save hadith: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -124,12 +162,21 @@ const DailyHadithEditor = () => {
         }
         
         // Otherwise delete from database
-        await deleteDailyHadith(hadith.id);
+        const { error } = await supabase
+          .from('daily_hadiths')
+          .delete()
+          .eq('id', hadith.id);
+        
+        if (error) {
+          console.error("Supabase error deleting hadith:", error);
+          throw error;
+        }
+        
         setHadiths(prev => prev.filter(h => h.id !== hadith.id));
         toast.success("Hadith deleted successfully");
       } catch (error) {
         console.error("Error deleting hadith:", error);
-        toast.error("Failed to delete hadith");
+        toast.error(`Failed to delete hadith: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
