@@ -54,8 +54,8 @@ const DigitalClock = () => {
 
   return (
     <div className="text-center">
-      <div className="text-2xl font-bold text-amber-800 clock-text">{formatTime(time)}</div>
-      <div className="text-sm text-amber-700">{date}</div>
+      <div className="text-3xl font-bold text-amber-800 clock-text">{formatTime(time)}</div>
+      <div className="text-lg text-amber-700">{date}</div>
     </div>
   );
 };
