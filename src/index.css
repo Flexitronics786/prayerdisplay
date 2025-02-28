@@ -166,9 +166,17 @@
 }
 
 .maghrib-header {
-  @apply bg-red-700 text-white border-red-600;
+  @apply bg-green-700 text-white border-green-600;
 }
 
 .isha-header {
-  @apply bg-purple-700 text-white border-purple-600;
+  @apply bg-purple-500 text-white border-purple-400;
+}
+
+.jummah-header {
+  @apply bg-yellow-500 text-white border-yellow-400;
+}
+
+.sunrise-header {
+  @apply bg-amber-400 text-amber-900 border-amber-300;
 }
