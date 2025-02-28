@@ -186,16 +186,26 @@ export const fetchDailyHadithsForMonth = async (month: string): Promise<DailyHad
 // Save a daily hadith
 export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith> => {
   try {
-    const isNew = hadith.id.startsWith('temp-');
-    
-    // Set the month if it's not already set
-    if (!hadith.month) {
+    // Ensure the hadith has a month and it's in the correct format (YYYY-MM)
+    if (!hadith.month || !/^\d{4}-\d{2}$/.test(hadith.month)) {
       hadith.month = new Date().toISOString().substring(0, 7);
+      console.log("Fixed or added month to hadith:", hadith.month);
     }
+
+    // Validate essential fields
+    if (!hadith.text || !hadith.source || !hadith.day_of_month) {
+      console.error("Missing required hadith fields:", hadith);
+      throw new Error("Hadith is missing required fields");
+    }
+
+    // Check if this is a new hadith (temporary ID) or an existing one
+    const isNew = hadith.id.startsWith('temp-');
     
     let result;
     
     if (isNew) {
+      console.log("Creating new hadith:", { ...hadith, id: undefined });
+      
       // For new hadiths, we need to insert
       const { id, ...hadithWithoutId } = hadith; // Remove the temporary ID
       
@@ -210,8 +220,15 @@ export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith>
         throw error;
       }
       
+      if (!data) {
+        throw new Error("Failed to insert hadith - no data returned");
+      }
+      
       result = data;
+      console.log("Successfully created new hadith:", result);
     } else {
+      console.log("Updating existing hadith:", hadith);
+      
       // For existing hadiths, we update
       const { data, error } = await supabase
         .from('daily_hadiths')
@@ -230,7 +247,12 @@ export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith>
         throw error;
       }
       
+      if (!data) {
+        throw new Error("Failed to update hadith - no data returned");
+      }
+      
       result = data;
+      console.log("Successfully updated hadith:", result);
     }
     
     return result as DailyHadith;
