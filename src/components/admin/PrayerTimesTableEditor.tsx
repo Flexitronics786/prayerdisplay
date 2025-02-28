@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { DetailedPrayerTime } from "@/types";
 import { 
@@ -193,9 +194,9 @@ const PrayerTimesTableEditor = () => {
         </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <ScrollArea className="h-[600px] w-full rounded-md">
-          <div className="min-w-[1200px]">
+      <div className="overflow-x-auto relative">
+        <ScrollArea className="h-[600px] w-full">
+          <div className="min-w-max">
             <Table>
               <TableHeader className="sticky top-0 bg-mosque-dark z-10">
                 <TableRow>
