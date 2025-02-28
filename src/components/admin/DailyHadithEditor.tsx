@@ -16,6 +16,7 @@ const DailyHadithEditor = () => {
   const [hadiths, setHadiths] = useState<DailyHadith[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [savingHadithId, setSavingHadithId] = useState<string | null>(null);
   
   useEffect(() => {
     loadHadiths();
@@ -70,15 +71,37 @@ const DailyHadithEditor = () => {
   
   const handleSaveHadith = async (hadith: DailyHadith) => {
     try {
+      setSavingHadithId(hadith.id);
+      
+      // Validate hadith fields
+      if (!hadith.text.trim()) {
+        toast.error("Hadith text cannot be empty");
+        return;
+      }
+      
+      if (!hadith.source.trim()) {
+        toast.error("Hadith source cannot be empty");
+        return;
+      }
+      
+      console.log("Saving hadith:", hadith);
+      
+      // Ensure month is set
+      if (!hadith.month) {
+        hadith.month = currentMonth;
+      }
+      
       const savedHadith = await saveDailyHadith(hadith);
       
       // Update the hadiths array with the saved hadith
-      setHadiths(hadiths.map(h => h.id === hadith.id ? savedHadith : h));
+      setHadiths(prev => prev.map(h => h.id === hadith.id ? savedHadith : h));
       
       toast.success("Hadith saved successfully");
     } catch (error) {
       console.error("Error saving hadith:", error);
-      toast.error("Failed to save hadith");
+      toast.error(`Failed to save hadith: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSavingHadithId(null);
     }
   };
   
@@ -202,8 +225,9 @@ const DailyHadithEditor = () => {
                 <Button
                   onClick={() => handleSaveHadith(hadith)}
                   className="bg-amber-600 hover:bg-amber-700 text-white"
+                  disabled={savingHadithId === hadith.id}
                 >
-                  Save Hadith
+                  {savingHadithId === hadith.id ? 'Saving...' : 'Save Hadith'}
                 </Button>
               </div>
             </div>
