@@ -1,19 +1,38 @@
 
 import LoginForm from "@/components/admin/LoginForm";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/dataService";
+import { getCurrentUser } from "@/services/authService";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
-    const user = getCurrentUser();
-    if (user && user.isAdmin) {
-      navigate("/admin/dashboard");
-    }
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user && user.isAdmin) {
+          navigate("/admin/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+    
+    checkUser();
   }, [navigate]);
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="text-amber-800 text-xl animate-pulse">Checking authentication...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">

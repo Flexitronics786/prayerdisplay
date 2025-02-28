@@ -1,5 +1,5 @@
 
-import { logout } from "@/services/dataService";
+import { logout } from "@/services/authService";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -7,10 +7,14 @@ import { toast } from "sonner";
 const AdminNavbar = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    toast.success("Logged out successfully");
-    navigate("/admin");
+  const handleLogout = async () => {
+    const { error } = await logout();
+    if (error) {
+      toast.error(`Logout failed: ${error}`);
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/admin");
+    }
   };
 
   const handleViewDisplay = () => {

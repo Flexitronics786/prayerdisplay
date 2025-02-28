@@ -1,12 +1,14 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser, fetchHadith, fetchPrayerTimes } from "@/services/dataService";
+import { getCurrentUser } from "@/services/authService";
+import { fetchHadith, fetchPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import HadithEditor from "@/components/admin/HadithEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
-import { Hadith, PrayerTime } from "@/types";
+import { Hadith, PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -14,31 +16,38 @@ const AdminDashboard = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("prayer-table");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const user = getCurrentUser();
-    if (!user || !user.isAdmin) {
-      navigate("/admin");
-      return;
-    }
-
-    // Load data
-    const loadData = async () => {
+    const checkAuth = async () => {
+      setIsLoading(true);
+      // Check if user is authenticated
       try {
-        const currentPrayerTimes = await fetchPrayerTimes();
-        const currentHadith = await fetchHadith(); // Await the Promise here
+        const user = await getCurrentUser();
+        if (!user || !user.isAdmin) {
+          toast.error("You must be logged in as an admin to access this page");
+          navigate("/admin");
+          return;
+        }
         
-        setHadith(currentHadith); // Now it's the resolved value, not a Promise
+        setCurrentUser(user);
+        
+        // Load data
+        const currentPrayerTimes = await fetchPrayerTimes();
+        const currentHadith = await fetchHadith();
+        
         setPrayerTimes(currentPrayerTimes);
+        setHadith(currentHadith);
       } catch (error) {
         console.error("Error loading admin data:", error);
+        toast.error("Failed to load admin data");
+        navigate("/admin");
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadData();
+    checkAuth();
   }, [navigate]);
 
   const handleHadithUpdate = (updatedHadith: Hadith) => {
@@ -58,6 +67,12 @@ const AdminDashboard = () => {
       <div className="pattern-overlay"></div>
       <div className="max-w-7xl mx-auto">
         <AdminNavbar />
+        
+        {currentUser && (
+          <div className="mb-4 text-sm text-amber-700">
+            Logged in as: {currentUser.email}
+          </div>
+        )}
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6 bg-amber-100">
