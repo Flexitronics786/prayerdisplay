@@ -1,11 +1,10 @@
-import { Hadith, PrayerTime, DetailedPrayerTime, DailyHadith } from "@/types";
+
+import { PrayerTime, DetailedPrayerTime, DailyHadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
-const HADITH_KEY = 'mosque-hadith';
-const MONTHLY_HADITH_KEY = 'mosque-monthly-hadith';
 
 // Default prayer times (example)
 const defaultPrayerTimes: PrayerTime[] = [
@@ -15,15 +14,6 @@ const defaultPrayerTimes: PrayerTime[] = [
   { id: '4', name: 'Maghrib', time: '18:15' },
   { id: '5', name: 'Isha', time: '19:45' }
 ];
-
-// Default hadith
-const defaultHadith: Hadith = {
-  id: '1',
-  text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
-  source: "Sahih al-Bukhari",
-  lastUpdated: new Date().toISOString(),
-  month: new Date().toISOString().substring(0, 7) // Format: YYYY-MM
-};
 
 export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
   try {
@@ -87,8 +77,8 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
   }
 };
 
-// New function to fetch the hadith for today from daily_hadiths table
-export const fetchHadith = async (): Promise<Hadith> => {
+// Function to fetch the hadith for today from daily_hadiths table
+export const fetchHadith = async () => {
   try {
     // Get today's date
     const today = new Date();
@@ -133,50 +123,27 @@ export const fetchHadith = async (): Promise<Hadith> => {
       };
     }
     
-    // Fall back to checking local storage if we don't find anything in Supabase
-    const saved = localStorage.getItem(HADITH_KEY);
-    return saved ? JSON.parse(saved) : defaultHadith;
+    // Default hadith if none found
+    return {
+      id: 'default',
+      text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
+      source: "Sahih al-Bukhari",
+      lastUpdated: new Date().toISOString()
+    };
   } catch (error) {
     console.error('Error fetching hadith:', error);
     
-    // Fall back to local storage in case of error
-    const saved = localStorage.getItem(HADITH_KEY);
-    return saved ? JSON.parse(saved) : defaultHadith;
+    // Default hadith in case of error
+    return {
+      id: 'default',
+      text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
+      source: "Sahih al-Bukhari",
+      lastUpdated: new Date().toISOString()
+    };
   }
 };
 
-// Old function to update hadith - keep for backward compatibility
-export const updateHadith = (hadith: Hadith): void => {
-  try {
-    hadith.lastUpdated = new Date().toISOString();
-    
-    // If month is not specified, assign the current month
-    if (!hadith.month) {
-      hadith.month = new Date().toISOString().substring(0, 7);
-    }
-    
-    // Save to the regular hadith storage
-    localStorage.setItem(HADITH_KEY, JSON.stringify(hadith));
-    
-    // Also save to the monthly collection
-    const monthlyHadiths = localStorage.getItem(MONTHLY_HADITH_KEY);
-    let parsedHadiths: Hadith[] = monthlyHadiths ? JSON.parse(monthlyHadiths) : [];
-    
-    // Remove any existing hadith for this month
-    parsedHadiths = parsedHadiths.filter(h => h.month !== hadith.month);
-    
-    // Add the new hadith
-    parsedHadiths.push(hadith);
-    
-    // Save the updated collection
-    localStorage.setItem(MONTHLY_HADITH_KEY, JSON.stringify(parsedHadiths));
-    
-  } catch (error) {
-    console.error('Error updating hadith:', error);
-  }
-};
-
-// New functions for daily hadiths
+// Functions for daily hadiths
 
 // Fetch all daily hadiths for a specific month
 export const fetchDailyHadithsForMonth = async (month: string): Promise<DailyHadith[]> => {

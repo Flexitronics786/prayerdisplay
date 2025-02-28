@@ -7,14 +7,6 @@ export interface PrayerTime {
   isNext?: boolean;
 }
 
-export interface Hadith {
-  id: string;
-  text: string;
-  source: string;
-  lastUpdated?: string;
-  month?: string; // Add month property to track which month this hadith is for
-}
-
 export interface DailyHadith {
   id: string;
   day_of_month: number;

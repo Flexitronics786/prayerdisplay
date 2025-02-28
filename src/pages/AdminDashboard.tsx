@@ -2,12 +2,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/authService";
-import { fetchHadith, fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
+import { fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
-import HadithEditor from "@/components/admin/HadithEditor";
 import DailyHadithEditor from "@/components/admin/DailyHadithEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
-import { Hadith, PrayerTime, User } from "@/types";
+import { PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,6 @@ import { useQueryClient } from "@tanstack/react-query";
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [hadith, setHadith] = useState<Hadith | null>(null);
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeletingData, setIsDeletingData] = useState(false);
@@ -40,10 +38,7 @@ const AdminDashboard = () => {
         
         // Load data
         const currentPrayerTimes = await fetchPrayerTimes();
-        const currentHadith = await fetchHadith();
-        
         setPrayerTimes(currentPrayerTimes);
-        setHadith(currentHadith);
       } catch (error) {
         console.error("Error loading admin data:", error);
         toast.error("Failed to load admin data");
@@ -55,10 +50,6 @@ const AdminDashboard = () => {
 
     checkAuth();
   }, [navigate]);
-
-  const handleHadithUpdate = (updatedHadith: Hadith) => {
-    setHadith(updatedHadith);
-  };
 
   const handleDeleteAllData = async () => {
     if (window.confirm("Are you sure you want to delete ALL prayer times data? This action cannot be undone.")) {
@@ -106,7 +97,7 @@ const AdminDashboard = () => {
         )}
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6 bg-amber-100">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-amber-100">
             <TabsTrigger 
               value="prayer-table" 
               className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
@@ -118,12 +109,6 @@ const AdminDashboard = () => {
               className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
             >
               Daily Hadiths
-            </TabsTrigger>
-            <TabsTrigger 
-              value="hadith" 
-              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
-            >
-              Monthly Hadith
             </TabsTrigger>
           </TabsList>
           
@@ -144,14 +129,6 @@ const AdminDashboard = () => {
           
           <TabsContent value="daily-hadith" className="mt-0">
             <DailyHadithEditor />
-          </TabsContent>
-          
-          <TabsContent value="hadith" className="mt-0">
-            <div className="grid md:grid-cols-1 gap-6">
-              {hadith && (
-                <HadithEditor currentHadith={hadith} onUpdate={handleHadithUpdate} />
-              )}
-            </div>
           </TabsContent>
         </Tabs>
       </div>
