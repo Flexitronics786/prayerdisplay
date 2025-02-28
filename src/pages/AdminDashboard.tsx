@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/services/authService";
+import { getCurrentUser, logout } from "@/services/authService";
 import { fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import DailyHadithEditor from "@/components/admin/DailyHadithEditor";
@@ -51,6 +51,21 @@ const AdminDashboard = () => {
     checkAuth();
   }, [navigate]);
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await logout();
+      if (error) {
+        toast.error(error);
+        return;
+      }
+      toast.success("Logged out successfully");
+      navigate("/admin");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("An error occurred during logout");
+    }
+  };
+
   const handleDeleteAllData = async () => {
     if (window.confirm("Are you sure you want to delete ALL prayer times data? This action cannot be undone.")) {
       setIsDeletingData(true);
@@ -88,7 +103,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen p-6 relative overflow-hidden bg-amber-50">
       <div className="pattern-overlay"></div>
       <div className="max-w-7xl mx-auto">
-        <AdminNavbar />
+        <AdminNavbar onLogout={handleLogout} />
         
         {currentUser && (
           <div className="mb-4 text-sm text-amber-700">
