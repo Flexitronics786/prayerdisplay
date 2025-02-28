@@ -127,6 +127,15 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
         <p className="text-sm text-amber-900/80">{currentHadith.source}</p>
       </div>
+
+      {nextPrayer && (
+        <div className="mt-4 pt-3 border-t border-amber-200">
+          <div className="text-center p-2 bg-amber-100/60 rounded-lg">
+            <p className="text-amber-800 font-medium">{nextPrayer.name} starts in</p>
+            <p className="text-xl font-bold text-amber-900">{countdown}</p>
+          </div>
+        </div>
+      )}
     </>
   );
   
