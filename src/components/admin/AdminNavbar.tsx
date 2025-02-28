@@ -1,45 +1,37 @@
-
-import { logout } from "@/services/authService";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
-const AdminNavbar = () => {
+interface AdminNavbarProps {
+  onLogout: () => void;
+}
+
+const AdminNavbar = ({ onLogout }: AdminNavbarProps) => {
   const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    const { error } = await logout();
-    if (error) {
-      toast.error(`Logout failed: ${error}`);
-    } else {
-      toast.success("Logged out successfully");
-      navigate("/admin");
-    }
-  };
-
-  const handleViewDisplay = () => {
-    navigate("/");
-  };
-
+  
   return (
-    <nav className="bg-white mb-6 py-4 px-6 rounded-xl flex items-center justify-between shadow-md">
-      <div>
-        <h2 className="text-xl font-bold text-amber-800">Prayer Times Admin</h2>
-      </div>
-      <div className="flex space-x-4">
-        <Button 
-          variant="outline" 
-          className="border-amber-300 text-amber-700 hover:bg-amber-100 hover:text-amber-900"
-          onClick={handleViewDisplay}
-        >
-          View Display
-        </Button>
-        <Button 
-          variant="destructive"
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
+    <nav className="bg-amber-900 text-white p-4 shadow-md">
+      <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between">
+        <div className="flex items-center mb-2 sm:mb-0">
+          <Link to="/" className="text-xl font-bold hover:text-amber-200 transition-colors">
+            Masjid Dashboard
+          </Link>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          {/* Replace any other <a> tags with <Link> components */}
+          <Link to="/admin/dashboard" className="hover:text-amber-200 transition-colors">
+            Dashboard
+          </Link>
+          
+          {/* Keep any other navigation items with correct Link components */}
+          
+          <button 
+            onClick={onLogout}
+            className="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded text-white transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </nav>
   );

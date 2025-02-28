@@ -1,22 +1,21 @@
-
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import React from "react";
 
 const NotFound = () => {
-  const navigate = useNavigate();
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="pattern-overlay"></div>
-      <div className="text-center glass-card p-8 rounded-xl animate-fade-in">
-        <h1 className="text-4xl font-bold text-mosque-light mb-4">404</h1>
-        <p className="text-xl text-white mb-6">Page not found</p>
-        <Button 
-          className="bg-mosque-accent hover:bg-mosque-accent/80 text-white"
-          onClick={() => navigate("/")}
+    <div className="min-h-screen flex items-center justify-center bg-amber-50">
+      <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+        <h1 className="text-4xl font-bold text-amber-800 mb-4">404</h1>
+        <h2 className="text-2xl font-semibold text-amber-700 mb-2">Page Not Found</h2>
+        <p className="text-amber-600 mb-6">
+          The page you are looking for does not exist or has been moved.
+        </p>
+        <Link 
+          to="/"
+          className="inline-block bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-md transition-colors"
         >
-          Return to Home
-        </Button>
+          Go Home
+        </Link>
       </div>
     </div>
   );

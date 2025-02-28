@@ -46,13 +46,20 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     }
 
     // Map Supabase data to PrayerTime format
-    console.log("Using Supabase data for today's prayer times:", data[0]);
-    return markActivePrayer(mapToDisplayFormat(data[0]));
+    console.log("Fetched prayer times from database");
+    const formattedTimes = mapToDisplayFormat(data[0]);
+    return markActivePrayer(formattedTimes);
   } catch (error) {
     console.error('Error fetching prayer times:', error);
-    const saved = localStorage.getItem(PRAYER_TIMES_KEY);
-    const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
-    return markActivePrayer(prayerTimes);
+    
+    // Try to get data from local storage as fallback
+    const storedTimes = localStorage.getItem('local-prayer-times');
+    if (storedTimes) {
+      console.log("Using cached prayer times from local storage");
+      return JSON.parse(storedTimes);
+    }
+    
+    throw error;
   }
 };
 

@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
 import HadithDisplay from "@/components/HadithDisplay";
@@ -13,48 +12,45 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        console.log("Loading prayer times and hadith...");
-        const times = await fetchPrayerTimes();
-        
-        // Get today's date for debugging
-        const today = new Date();
-        const dayOfMonth = today.getDate();
-        const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
-        
-        // Debug log to check database content
-        const { data: allHadiths, error: hadithsError } = await supabase
-          .from('daily_hadiths')
-          .select('*');
-        
-        if (hadithsError) {
-          console.error("Error fetching all hadiths:", hadithsError);
-          setDebugInfo(`Error: ${hadithsError.message}`);
-        } else {
-          console.log(`Found ${allHadiths?.length || 0} total hadiths in database:`, allHadiths);
-          setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths.`);
-        }
-        
-        const dailyHadith = await fetchHadith();
-        console.log("Today is day", dayOfMonth, "in month", currentMonth);
-        console.log("Fetched hadith for today:", dailyHadith);
-        
-        setPrayerTimes(times);
-        setHadith(dailyHadith);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setDebugInfo(`Error: ${error instanceof Error ? error.message : String(error)}`);
-      } finally {
-        setIsLoading(false);
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      console.log("Loading prayer times and hadith...");
+      const times = await fetchPrayerTimes();
+      
+      const today = new Date();
+      const dayOfMonth = today.getDate();
+      const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
+      
+      const { data: allHadiths, error: hadithsError } = await supabase
+        .from('daily_hadiths')
+        .select('*');
+      
+      if (hadithsError) {
+        console.error("Error fetching all hadiths:", hadithsError);
+        setDebugInfo(`Error: ${hadithsError.message}`);
+      } else {
+        console.log(`Found ${allHadiths?.length || 0} total hadiths in database:`, allHadiths);
+        setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths.`);
       }
-    };
+      
+      const dailyHadith = await fetchHadith();
+      console.log("Today is day", dayOfMonth, "in month", currentMonth);
+      console.log("Fetched hadith for today:", dailyHadith);
+      
+      setPrayerTimes(times);
+      setHadith(dailyHadith);
+    } catch (error) {
+      console.error("Error loading data:", error);
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
+  useEffect(() => {
     loadData();
 
-    // Listen for changes to the prayer_times table
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', { 
@@ -67,7 +63,6 @@ const Index = () => {
       })
       .subscribe();
 
-    // Subscribe to changes in the daily_hadiths table
     const hadithsSubscription = supabase
       .channel('daily_hadiths_changes')
       .on('postgres_changes', { 
@@ -80,7 +75,6 @@ const Index = () => {
       })
       .subscribe();
 
-    // Also check for changes in local storage
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
         console.log("Prayer times changed in local storage, reloading...");
@@ -90,8 +84,9 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Refresh prayer times status every minute
-    const interval = setInterval(loadData, 60000);
+    const interval = setInterval(() => {
+      console.log("Checking prayer times status...");
+    }, 60000);
     
     return () => {
       clearInterval(interval);
@@ -99,7 +94,7 @@ const Index = () => {
       supabase.removeChannel(hadithsSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [loadData]);
 
   if (isLoading) {
     return (
@@ -115,7 +110,6 @@ const Index = () => {
       
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left side - Prayer Times */}
           <div className="lg:col-span-8">
             <header className="mb-4">
               <div className="gold-border p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
@@ -134,7 +128,6 @@ const Index = () => {
             <PrayerTimesTable prayerTimes={prayerTimes} compactView={true} />
           </div>
           
-          {/* Right side - Hadith */}
           <div className="lg:col-span-4">
             {hadith && <HadithDisplay hadith={hadith} />}
             {debugInfo && (
