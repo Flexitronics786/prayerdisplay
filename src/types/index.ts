@@ -21,13 +21,7 @@ export interface DetailedPrayerTime {
   isha_start: string;
   isha_first_jamat: string;
   isha_second_jamat: string;
-  created_at?: string;
-}
-
-export interface User {
-  id: string;
-  email: string;
-  isAdmin: boolean;
+  created_at?: string | null;
 }
 
 export interface Hadith {
@@ -38,18 +32,18 @@ export interface Hadith {
 }
 
 export interface DailyHadith {
-  id: string;
+  id?: string;
   day_of_month: number;
+  month: string;
   text: string;
   source: string;
-  month?: string; // YYYY-MM format
-  created_at?: string;
+  created_at?: string | null;
 }
 
 export interface HadithCollectionItem {
   id: string;
   text: string;
   source: string;
-  created_at?: string;
   is_active: boolean;
+  created_at: string | null;
 }

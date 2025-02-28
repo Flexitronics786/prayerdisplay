@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Hadith, PrayerTime } from "@/types";
 import { Smartphone } from "lucide-react";
+import { fetchHadithCollection } from "@/services/dataService";
+import { HadithCollectionItem } from "@/types";
 
 interface HadithDisplayProps {
   hadith: Hadith;
@@ -11,15 +13,72 @@ interface HadithDisplayProps {
 const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => {
   const [showPhoneReminder, setShowPhoneReminder] = useState(false);
   const [countdown, setCountdown] = useState<string>("");
+  const [allHadiths, setAllHadiths] = useState<HadithCollectionItem[]>([]);
+  const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
+  const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
   
-  // Toggle between hadith and reminder every 30 seconds
+  // Load all active hadiths from collection
   useEffect(() => {
+    const loadAllHadiths = async () => {
+      try {
+        const hadithCollection = await fetchHadithCollection();
+        const activeHadiths = hadithCollection.filter(h => h.is_active);
+        if (activeHadiths.length > 0) {
+          setAllHadiths(activeHadiths);
+          console.log(`Loaded ${activeHadiths.length} active hadiths for cycling`);
+        }
+      } catch (error) {
+        console.error("Error loading hadith collection:", error);
+      }
+    };
+    
+    loadAllHadiths();
+  }, []);
+  
+  // Convert hadith collection item to Hadith format
+  const convertToHadith = (item: HadithCollectionItem): Hadith => {
+    return {
+      id: item.id,
+      text: item.text,
+      source: item.source,
+      lastUpdated: item.created_at || new Date().toISOString()
+    };
+  };
+  
+  // Cycle between hadiths and reminder
+  useEffect(() => {
+    // Initial hadith
+    setCurrentHadith(hadith);
+    
+    const cycleContent = () => {
+      // Toggle between phone reminder and hadiths
+      if (showPhoneReminder) {
+        // Switch to hadith display
+        setShowPhoneReminder(false);
+        
+        // If we have hadiths from collection, use those
+        if (allHadiths.length > 0) {
+          const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
+          setCurrentHadithIndex(nextIndex);
+          setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
+        } else {
+          // Fallback to the original hadith
+          setCurrentHadith(hadith);
+        }
+      } else {
+        // Switch to phone reminder
+        setShowPhoneReminder(true);
+      }
+    };
+    
+    // Cycle every 30 seconds (phone reminder), and every ~5-7 minutes (hadith)
+    // This creates an average cycle of around 5-7 minutes for each hadith
     const interval = setInterval(() => {
-      setShowPhoneReminder(prev => !prev);
-    }, 30000); // 30 seconds
+      cycleContent();
+    }, showPhoneReminder ? 30000 : Math.floor(Math.random() * (420000 - 300000) + 300000)); // 5-7 minutes for hadith, 30s for reminder
     
     return () => clearInterval(interval);
-  }, []);
+  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex]);
   
   // Update countdown timer every second
   useEffect(() => {
@@ -61,12 +120,12 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
       
       <div className="mb-4">
         <p className="text-lg font-semibold text-amber-800 mb-1">Hadith</p>
-        <p className="text-base text-amber-900/90 leading-relaxed">{hadith.text}</p>
+        <p className="text-base text-amber-900/90 leading-relaxed">{currentHadith.text}</p>
       </div>
       
       <div>
         <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
-        <p className="text-sm text-amber-900/80">{hadith.source}</p>
+        <p className="text-sm text-amber-900/80">{currentHadith.source}</p>
       </div>
     </>
   );

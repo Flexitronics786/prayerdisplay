@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -49,7 +48,6 @@ const Index = () => {
     }
   }, []);
   
-  // Helper function to get the day of the year (1-366)
   const getDayOfYear = (date: Date): number => {
     const start = new Date(date.getFullYear(), 0, 0);
     const diff = date.getTime() - start.getTime();
@@ -105,7 +103,6 @@ const Index = () => {
     };
   }, [loadData]);
 
-  // Find the next prayer
   const getNextPrayer = (): PrayerTime | null => {
     if (!prayerTimes || prayerTimes.length === 0) return null;
     
