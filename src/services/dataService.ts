@@ -1,5 +1,4 @@
-
-import { Hadith, PrayerTime, DetailedPrayerTime } from "@/types";
+import { Hadith, PrayerTime, DetailedPrayerTime, DailyHadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -88,40 +87,65 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
   }
 };
 
+// New function to fetch the hadith for today from daily_hadiths table
 export const fetchHadith = async (): Promise<Hadith> => {
   try {
-    // Get current month in YYYY-MM format
-    const currentMonth = new Date().toISOString().substring(0, 7);
+    // Get today's date
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
     
-    // First check if we have a monthly hadith collection
-    const monthlyHadiths = localStorage.getItem(MONTHLY_HADITH_KEY);
-    if (monthlyHadiths) {
-      const parsedHadiths = JSON.parse(monthlyHadiths) as Hadith[];
+    // Try to fetch from Supabase for today's date first
+    const { data, error } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('day_of_month', dayOfMonth)
+      .eq('month', currentMonth);
+    
+    // If we found a daily hadith for today
+    if (!error && data && data.length > 0) {
+      const todayHadith = data[0];
+      return {
+        id: todayHadith.id,
+        text: todayHadith.text,
+        source: todayHadith.source,
+        lastUpdated: todayHadith.created_at
+      };
+    }
+    
+    // If we didn't find one, try to find any other hadith for the current month
+    const { data: allMonthData, error: allMonthError } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('month', currentMonth);
+    
+    if (!allMonthError && allMonthData && allMonthData.length > 0) {
+      // If we have hadiths for this month but not specifically for today,
+      // pick a random one from this month
+      const randomIndex = Math.floor(Math.random() * allMonthData.length);
+      const randomHadith = allMonthData[randomIndex];
       
-      // Look for a hadith for the current month
-      const currentMonthHadith = parsedHadiths.find(h => h.month === currentMonth);
-      if (currentMonthHadith) {
-        console.log("Using monthly hadith for", currentMonth);
-        return currentMonthHadith;
-      }
+      return {
+        id: randomHadith.id,
+        text: randomHadith.text,
+        source: randomHadith.source,
+        lastUpdated: randomHadith.created_at
+      };
     }
     
-    // Fall back to regular hadith if no monthly one is found
+    // Fall back to checking local storage if we don't find anything in Supabase
     const saved = localStorage.getItem(HADITH_KEY);
-    const hadith = saved ? JSON.parse(saved) : defaultHadith;
-    
-    // If the hadith doesn't have a month, add the current month
-    if (!hadith.month) {
-      hadith.month = currentMonth;
-    }
-    
-    return hadith;
+    return saved ? JSON.parse(saved) : defaultHadith;
   } catch (error) {
     console.error('Error fetching hadith:', error);
-    return defaultHadith;
+    
+    // Fall back to local storage in case of error
+    const saved = localStorage.getItem(HADITH_KEY);
+    return saved ? JSON.parse(saved) : defaultHadith;
   }
 };
 
+// Old function to update hadith - keep for backward compatibility
 export const updateHadith = (hadith: Hadith): void => {
   try {
     hadith.lastUpdated = new Date().toISOString();
@@ -149,6 +173,112 @@ export const updateHadith = (hadith: Hadith): void => {
     
   } catch (error) {
     console.error('Error updating hadith:', error);
+  }
+};
+
+// New functions for daily hadiths
+
+// Fetch all daily hadiths for a specific month
+export const fetchDailyHadithsForMonth = async (month: string): Promise<DailyHadith[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('month', month)
+      .order('day_of_month', { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching daily hadiths:", error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchDailyHadithsForMonth:", error);
+    return [];
+  }
+};
+
+// Save a daily hadith
+export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith> => {
+  try {
+    const isNew = hadith.id.startsWith('temp-');
+    
+    // Set the month if it's not already set
+    if (!hadith.month) {
+      hadith.month = new Date().toISOString().substring(0, 7);
+    }
+    
+    let result;
+    
+    if (isNew) {
+      // For new hadiths, we need to insert
+      const { id, ...hadithWithoutId } = hadith; // Remove the temporary ID
+      
+      const { data, error } = await supabase
+        .from('daily_hadiths')
+        .insert(hadithWithoutId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error inserting daily hadith:", error);
+        throw error;
+      }
+      
+      result = data;
+    } else {
+      // For existing hadiths, we update
+      const { data, error } = await supabase
+        .from('daily_hadiths')
+        .update({
+          day_of_month: hadith.day_of_month,
+          text: hadith.text,
+          source: hadith.source,
+          month: hadith.month
+        })
+        .eq('id', hadith.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error updating daily hadith:", error);
+        throw error;
+      }
+      
+      result = data;
+    }
+    
+    return result as DailyHadith;
+  } catch (error) {
+    console.error("Error in saveDailyHadith:", error);
+    throw error;
+  }
+};
+
+// Delete a daily hadith
+export const deleteDailyHadith = async (id: string): Promise<boolean> => {
+  try {
+    // Check if this is a temporary ID (not yet saved to the database)
+    if (id.startsWith('temp-')) {
+      // Nothing to delete in the database
+      return true;
+    }
+    
+    const { error } = await supabase
+      .from('daily_hadiths')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error("Error deleting daily hadith:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteDailyHadith:", error);
+    throw error;
   }
 };
 

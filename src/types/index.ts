@@ -15,6 +15,15 @@ export interface Hadith {
   month?: string; // Add month property to track which month this hadith is for
 }
 
+export interface DailyHadith {
+  id: string;
+  day_of_month: number;
+  text: string;
+  source: string;
+  month?: string; // YYYY-MM format
+  created_at?: string;
+}
+
 export interface User {
   id: string;
   email: string;

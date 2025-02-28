@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/services/authService";
 import { fetchHadith, fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import HadithEditor from "@/components/admin/HadithEditor";
+import DailyHadithEditor from "@/components/admin/DailyHadithEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { Hadith, PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -105,7 +106,7 @@ const AdminDashboard = () => {
         )}
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-amber-100">
+          <TabsList className="grid w-full grid-cols-3 mb-6 bg-amber-100">
             <TabsTrigger 
               value="prayer-table" 
               className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
@@ -113,10 +114,16 @@ const AdminDashboard = () => {
               Prayer Times Table
             </TabsTrigger>
             <TabsTrigger 
+              value="daily-hadith" 
+              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
+            >
+              Daily Hadiths
+            </TabsTrigger>
+            <TabsTrigger 
               value="hadith" 
               className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
             >
-              Edit Hadith
+              Monthly Hadith
             </TabsTrigger>
           </TabsList>
           
@@ -133,6 +140,10 @@ const AdminDashboard = () => {
               </Button>
             </div>
             <PrayerTimesTableEditor />
+          </TabsContent>
+          
+          <TabsContent value="daily-hadith" className="mt-0">
+            <DailyHadithEditor />
           </TabsContent>
           
           <TabsContent value="hadith" className="mt-0">
