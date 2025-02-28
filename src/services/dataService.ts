@@ -232,7 +232,7 @@ export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith>
     // Determine if this is a new hadith
     const isNew = !hadithData.id || (typeof hadithData.id === 'string' && hadithData.id.startsWith('temp-'));
 
-    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);
+    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);\
     
     let result;
     
