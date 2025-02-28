@@ -11,6 +11,7 @@ const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     const loadData = async () => {
@@ -18,13 +19,34 @@ const Index = () => {
         setIsLoading(true);
         console.log("Loading prayer times and hadith...");
         const times = await fetchPrayerTimes();
-        const dailyHadith = await fetchHadith();
         
-        console.log("Fetched prayer times:", times);
+        // Get today's date for debugging
+        const today = new Date();
+        const dayOfMonth = today.getDate();
+        const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
+        
+        // Debug log to check database content
+        const { data: allHadiths, error: hadithsError } = await supabase
+          .from('daily_hadiths')
+          .select('*');
+        
+        if (hadithsError) {
+          console.error("Error fetching all hadiths:", hadithsError);
+          setDebugInfo(`Error: ${hadithsError.message}`);
+        } else {
+          console.log(`Found ${allHadiths?.length || 0} total hadiths in database:`, allHadiths);
+          setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths.`);
+        }
+        
+        const dailyHadith = await fetchHadith();
+        console.log("Today is day", dayOfMonth, "in month", currentMonth);
+        console.log("Fetched hadith for today:", dailyHadith);
+        
         setPrayerTimes(times);
         setHadith(dailyHadith);
       } catch (error) {
         console.error("Error loading data:", error);
+        setDebugInfo(`Error: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         setIsLoading(false);
       }
@@ -45,6 +67,19 @@ const Index = () => {
       })
       .subscribe();
 
+    // Subscribe to changes in the daily_hadiths table
+    const hadithsSubscription = supabase
+      .channel('daily_hadiths_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'daily_hadiths' 
+      }, () => {
+        console.log("Daily hadiths changed in database, reloading...");
+        loadData();
+      })
+      .subscribe();
+
     // Also check for changes in local storage
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
@@ -61,6 +96,7 @@ const Index = () => {
     return () => {
       clearInterval(interval);
       supabase.removeChannel(prayerTimesSubscription);
+      supabase.removeChannel(hadithsSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
@@ -101,6 +137,14 @@ const Index = () => {
           {/* Right side - Hadith */}
           <div className="lg:col-span-4">
             {hadith && <HadithDisplay hadith={hadith} />}
+            {debugInfo && (
+              <div className="mt-4 p-2 bg-amber-50 rounded-lg text-sm text-amber-800">
+                <details>
+                  <summary className="cursor-pointer">Debug Info</summary>
+                  <div className="mt-2 whitespace-pre-wrap">{debugInfo}</div>
+                </details>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,12 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { DailyHadith } from "@/types";
-import { fetchDailyHadithsForMonth } from "@/services/dataService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Trash2, Plus, CalendarDays } from "lucide-react";
+import { Trash2, Plus, CalendarDays, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DailyHadithEditor = () => {
@@ -14,6 +13,7 @@ const DailyHadithEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().substring(0, 7));
   const [savingHadithId, setSavingHadithId] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>("");
   
   useEffect(() => {
     loadHadiths();
@@ -31,11 +31,21 @@ const DailyHadithEditor = () => {
       
       if (error) {
         console.error("Error fetching hadiths:", error);
+        setDebugInfo(`Error: ${error.message}`);
         throw new Error(`Database error: ${error.message}`);
       }
       
-      console.log(`Found ${data.length} hadiths for month ${currentMonth}:`, data);
+      console.log(`Found ${data?.length} hadiths for month ${currentMonth}:`, data);
       setHadiths(data || []);
+      
+      // Also check how many total hadiths we have
+      const { data: allHadiths, error: allError } = await supabase
+        .from('daily_hadiths')
+        .select('*');
+      
+      if (!allError) {
+        setDebugInfo(`Total hadiths in database: ${allHadiths?.length || 0}`);
+      }
     } catch (error) {
       console.error("Error loading hadiths:", error);
       toast.error("Failed to load hadiths");
@@ -46,7 +56,9 @@ const DailyHadithEditor = () => {
   };
   
   const handleMonthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentMonth(event.target.value);
+    const newMonth = event.target.value;
+    console.log(`Changing month from ${currentMonth} to ${newMonth}`);
+    setCurrentMonth(newMonth);
   };
   
   const handleHadithChange = (index: number, field: keyof DailyHadith, value: string | number) => {
@@ -76,6 +88,7 @@ const DailyHadithEditor = () => {
       month: currentMonth
     };
     
+    console.log(`Adding new hadith for day ${day} in month ${currentMonth}:`, newHadith);
     setHadiths([...hadiths, newHadith]);
   };
   
@@ -111,7 +124,7 @@ const DailyHadithEditor = () => {
       // Check if this is a new hadith or an existing one
       if (hadith.id && hadith.id.startsWith('temp-')) {
         // New hadith - insert directly with supabase
-        console.log("Inserting new hadith");
+        console.log("Inserting new hadith for month:", currentMonth);
         const { data, error } = await supabase
           .from('daily_hadiths')
           .insert(hadithToSave)
@@ -152,13 +165,28 @@ const DailyHadithEditor = () => {
         toast.success("Hadith saved successfully");
         
         // Reload the hadiths to ensure they're up to date
-        loadHadiths();
+        await loadHadiths();
+        
+        // Verify the save
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('daily_hadiths')
+          .select('*')
+          .eq('id', result.id)
+          .single();
+          
+        if (verifyError) {
+          console.error("Error verifying hadith save:", verifyError);
+        } else if (verifyData) {
+          console.log("Verified saved hadith:", verifyData);
+          setDebugInfo(`Verified save: day=${verifyData.day_of_month}, month=${verifyData.month}`);
+        }
       } else {
         throw new Error("No data returned from database");
       }
     } catch (error) {
       console.error("Error saving hadith:", error);
       toast.error(`Failed to save hadith: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setDebugInfo(`Save error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSavingHadithId(null);
     }
@@ -212,7 +240,7 @@ const DailyHadithEditor = () => {
     <div className="bg-white rounded-xl p-6 shadow-md animate-fade-in">
       <h3 className="text-xl font-bold text-amber-800 mb-4">Manage Daily Hadiths</h3>
       
-      <div className="mb-6">
+      <div className="mb-4">
         <label htmlFor="month" className="block text-amber-800 mb-2 flex items-center">
           <CalendarDays className="mr-2" size={18} />
           Month
@@ -228,6 +256,18 @@ const DailyHadithEditor = () => {
           Select a month to manage its daily hadiths
         </p>
       </div>
+      
+      {debugInfo && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <details>
+            <summary className="flex items-center cursor-pointer text-amber-800">
+              <Info size={16} className="mr-2" />
+              Debug Information
+            </summary>
+            <p className="mt-2 text-sm text-amber-700">{debugInfo}</p>
+          </details>
+        </div>
+      )}
       
       <div className="mb-4 flex justify-between items-center">
         <h4 className="text-lg font-semibold text-amber-800">

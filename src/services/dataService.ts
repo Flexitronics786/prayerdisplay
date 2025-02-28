@@ -1,4 +1,3 @@
-
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,16 +84,37 @@ export const fetchHadith = async (): Promise<Hadith> => {
     const dayOfMonth = today.getDate();
     const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
     
-    // Try to fetch from Supabase for today's date first
-    const { data, error } = await supabase
+    console.log(`Fetching hadith for day ${dayOfMonth} in month ${currentMonth}`);
+    
+    // First, check if there are any hadiths in the database
+    const { data: allHadiths, error: allHadithsError } = await supabase
+      .from('daily_hadiths')
+      .select('*');
+      
+    if (allHadithsError) {
+      console.error("Error checking for hadiths:", allHadithsError);
+      throw new Error(`Database error checking for hadiths: ${allHadithsError.message}`);
+    }
+    
+    if (!allHadiths || allHadiths.length === 0) {
+      console.log("No hadiths found in the database at all, using default");
+      return getDefaultHadith();
+    }
+    
+    console.log(`Database has ${allHadiths.length} hadiths in total`);
+    
+    // Try to fetch from Supabase for today's exact date first
+    console.log(`Looking for hadith with day=${dayOfMonth} and month=${currentMonth}`);
+    const { data: exactMatchData, error: exactMatchError } = await supabase
       .from('daily_hadiths')
       .select('*')
       .eq('day_of_month', dayOfMonth)
       .eq('month', currentMonth);
     
     // If we found a daily hadith for today
-    if (!error && data && data.length > 0) {
-      const todayHadith = data[0];
+    if (!exactMatchError && exactMatchData && exactMatchData.length > 0) {
+      const todayHadith = exactMatchData[0];
+      console.log("Found exact match for today:", todayHadith);
       return {
         id: todayHadith.id,
         text: todayHadith.text,
@@ -103,7 +123,9 @@ export const fetchHadith = async (): Promise<Hadith> => {
       };
     }
     
-    // If we didn't find one for today's date, first try to find any hadith for today's day in any month
+    console.log("No exact match found. Looking for any hadith with same day of month");
+    
+    // If we didn't find one for today's date, try to find any hadith for today's day in any month
     const { data: anyMonthData, error: anyMonthError } = await supabase
       .from('daily_hadiths')
       .select('*')
@@ -114,6 +136,7 @@ export const fetchHadith = async (): Promise<Hadith> => {
       const randomIndex = Math.floor(Math.random() * anyMonthData.length);
       const randomHadith = anyMonthData[randomIndex];
       
+      console.log("Found hadith with same day of month:", randomHadith);
       return {
         id: randomHadith.id,
         text: randomHadith.text,
@@ -122,42 +145,34 @@ export const fetchHadith = async (): Promise<Hadith> => {
       };
     }
     
-    // If we still don't have any hadith, fetch any random hadith from the database
-    const { data: allHadithsData, error: allHadithsError } = await supabase
-      .from('daily_hadiths')
-      .select('*');
+    console.log(`No hadith found for day ${dayOfMonth}, getting a random one from ${allHadiths.length} total hadiths`);
     
-    if (!allHadithsError && allHadithsData && allHadithsData.length > 0) {
-      // Pick a completely random hadith from the database
-      const randomIndex = Math.floor(Math.random() * allHadithsData.length);
-      const randomHadith = allHadithsData[randomIndex];
-      
-      return {
-        id: randomHadith.id,
-        text: randomHadith.text,
-        source: randomHadith.source,
-        lastUpdated: randomHadith.created_at
-      };
-    }
+    // If we still don't have any hadith, use a random one from the database
+    // Pick a completely random hadith from the database
+    const randomIndex = Math.floor(Math.random() * allHadiths.length);
+    const randomHadith = allHadiths[randomIndex];
     
-    // Default hadith if none found
+    console.log("Using random hadith:", randomHadith);
     return {
-      id: 'default',
-      text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
-      source: "Sahih al-Bukhari",
-      lastUpdated: new Date().toISOString()
+      id: randomHadith.id,
+      text: randomHadith.text,
+      source: randomHadith.source,
+      lastUpdated: randomHadith.created_at
     };
   } catch (error) {
     console.error('Error fetching hadith:', error);
-    
-    // Default hadith in case of error
-    return {
-      id: 'default',
-      text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
-      source: "Sahih al-Bukhari",
-      lastUpdated: new Date().toISOString()
-    };
+    return getDefaultHadith();
   }
+};
+
+// Helper function to return the default hadith
+const getDefaultHadith = (): Hadith => {
+  return {
+    id: 'default',
+    text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
+    source: "Sahih al-Bukhari",
+    lastUpdated: new Date().toISOString()
+  };
 };
 
 // Functions for daily hadiths
