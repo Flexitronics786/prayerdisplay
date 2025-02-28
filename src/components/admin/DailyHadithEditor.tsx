@@ -1,15 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { DailyHadith } from "@/types";
-import { 
-  fetchDailyHadithsForMonth, 
-  saveDailyHadith, 
-  deleteDailyHadith 
-} from "@/services/dataService";
+import { fetchDailyHadithsForMonth } from "@/services/dataService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const DailyHadithEditor = () => {
@@ -25,11 +22,24 @@ const DailyHadithEditor = () => {
   const loadHadiths = async () => {
     setIsLoading(true);
     try {
-      const monthHadiths = await fetchDailyHadithsForMonth(currentMonth);
-      setHadiths(monthHadiths);
+      console.log(`Loading hadiths for month: ${currentMonth}`);
+      const { data, error } = await supabase
+        .from('daily_hadiths')
+        .select('*')
+        .eq('month', currentMonth)
+        .order('day_of_month', { ascending: true });
+      
+      if (error) {
+        console.error("Error fetching hadiths:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      console.log(`Found ${data.length} hadiths for month ${currentMonth}:`, data);
+      setHadiths(data || []);
     } catch (error) {
       console.error("Error loading hadiths:", error);
       toast.error("Failed to load hadiths");
+      setHadiths([]);
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +101,7 @@ const DailyHadithEditor = () => {
         day_of_month: Number(hadith.day_of_month),
         text: hadith.text.trim(),
         source: hadith.source.trim(),
-        month: currentMonth
+        month: currentMonth // Always use the currently selected month
       };
       
       console.log("Preparing to save hadith:", hadithToSave);
@@ -140,6 +150,9 @@ const DailyHadithEditor = () => {
           prev.map(h => h.id === hadith.id ? result as DailyHadith : h)
         );
         toast.success("Hadith saved successfully");
+        
+        // Reload the hadiths to ensure they're up to date
+        loadHadiths();
       } else {
         throw new Error("No data returned from database");
       }
@@ -187,12 +200,21 @@ const DailyHadithEditor = () => {
     return new Date(year, month, 0).getDate();
   };
   
+  // Format the month name for display
+  const formatMonthName = () => {
+    return new Date(`${currentMonth}-01`).toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  };
+  
   return (
     <div className="bg-white rounded-xl p-6 shadow-md animate-fade-in">
       <h3 className="text-xl font-bold text-amber-800 mb-4">Manage Daily Hadiths</h3>
       
       <div className="mb-6">
-        <label htmlFor="month" className="block text-amber-800 mb-2">
+        <label htmlFor="month" className="block text-amber-800 mb-2 flex items-center">
+          <CalendarDays className="mr-2" size={18} />
           Month
         </label>
         <Input
@@ -209,7 +231,7 @@ const DailyHadithEditor = () => {
       
       <div className="mb-4 flex justify-between items-center">
         <h4 className="text-lg font-semibold text-amber-800">
-          {hadiths.length} Hadiths for {new Date(`${currentMonth}-01`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {hadiths.length} Hadiths for {formatMonthName()}
         </h4>
         <Button 
           onClick={handleAddHadith} 
