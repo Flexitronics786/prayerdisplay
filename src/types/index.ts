@@ -1,11 +1,10 @@
+
 export interface PrayerTime {
   id: string;
   name: string;
   time: string;
-  iqamahTime?: string;
   isActive?: boolean;
   isNext?: boolean;
-  style?: React.CSSProperties;
 }
 
 export interface Hadith {

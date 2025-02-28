@@ -1,370 +1,340 @@
-
-import { Hadith, PrayerTime, DailyHadith, DetailedPrayerTime } from "@/types";
+import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
+import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 
-const PRAYER_TIMES_KEY = 'local-prayer-times';
-const HADITH_KEY = 'daily-hadith';
+// This would be replaced with an actual API call to Supabase or Firebase
+const PRAYER_TIMES_KEY = 'mosque-prayer-times';
 
-// Helper function to get current time in HH:mm format
-const getCurrentTime24h = (): string => {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-};
+// Default prayer times (example)
+const defaultPrayerTimes: PrayerTime[] = [
+  { id: '1', name: 'Fajr', time: '05:30' },
+  { id: '2', name: 'Dhuhr', time: '12:30' },
+  { id: '3', name: 'Asr', time: '15:45' },
+  { id: '4', name: 'Maghrib', time: '18:15' },
+  { id: '5', name: 'Isha', time: '19:45' }
+];
 
-// Helper function to check if a time is before another time
-const isTimeBefore = (time1: string, time2: string): boolean => {
-  const [hours1, minutes1] = time1.split(':').map(Number);
-  const [hours2, minutes2] = time2.split(':').map(Number);
-
-  if (hours1 < hours2) {
-    return true;
-  } else if (hours1 === hours2) {
-    return minutes1 < minutes2;
-  } else {
-    return false;
-  }
-};
-
-// Helper functions for the importPrayerTimesFromSheet function
-const parseCSV = (csvText: string): string[][] => {
-  const rows: string[][] = [];
-  
-  // Split by newline and handle both \r\n and \n
-  const lines = csvText.split(/\r?\n/);
-  
-  for (const line of lines) {
-    if (!line.trim()) continue; // Skip empty lines
-    
-    const row: string[] = [];
-    let inQuotes = false;
-    let currentValue = '';
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        // Handle quotes
-        if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
-          // Double quotes inside quotes mean a literal quote
-          currentValue += '"';
-          i++; // Skip the next quote
-        } else {
-          // Toggle quote state
-          inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        // End of field
-        row.push(currentValue);
-        currentValue = '';
-      } else {
-        // Normal character
-        currentValue += char;
-      }
-    }
-    
-    // Add the last value
-    row.push(currentValue);
-    rows.push(row);
-  }
-  
-  return rows;
-};
-
-const formatDate = (dateStr: string): string => {
-  // Try to parse and format the date to YYYY-MM-DD
-  try {
-    // Check if it's already in YYYY-MM-DD format
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      return dateStr;
-    }
-    
-    // Try to parse as MM/DD/YYYY or DD/MM/YYYY
-    const parts = dateStr.split(/[\/.-]/);
-    if (parts.length === 3) {
-      // Check if it's MM/DD/YYYY (US format)
-      if (parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
-        const month = String(parseInt(parts[0], 10)).padStart(2, '0');
-        const day = String(parseInt(parts[1], 10)).padStart(2, '0');
-        return `${parts[2]}-${month}-${day}`;
-      }
-      
-      // Check if it's DD/MM/YYYY (UK format)
-      if (parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
-        const day = String(parseInt(parts[0], 10)).padStart(2, '0');
-        const month = String(parseInt(parts[1], 10)).padStart(2, '0');
-        return `${parts[2]}-${month}-${day}`;
-      }
-    }
-    
-    // Try to parse as a JavaScript Date
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0];
-    }
-    
-    // Return as is if nothing worked
-    return dateStr;
-  } catch (e) {
-    console.error("Error formatting date:", e);
-    return dateStr;
-  }
-};
-
-const formatTime = (timeStr: string): string => {
-  // Try to parse and format the time to HH:MM:SS
-  try {
-    // Remove any AM/PM indicators and trim
-    let cleanTime = timeStr.replace(/\s*(am|pm|a\.m\.|p\.m\.)\s*$/i, '').trim();
-    
-    // Check if it's in HH:MM:SS format
-    if (/^\d{1,2}:\d{2}:\d{2}$/.test(cleanTime)) {
-      // Ensure hours are padded to 2 digits
-      const [hours, minutes, seconds] = cleanTime.split(':');
-      return `${String(parseInt(hours, 10)).padStart(2, '0')}:${minutes}:${seconds}`;
-    }
-    
-    // Check if it's in HH:MM format
-    if (/^\d{1,2}:\d{2}$/.test(cleanTime)) {
-      // Add seconds and ensure hours are padded
-      const [hours, minutes] = cleanTime.split(':');
-      return `${String(parseInt(hours, 10)).padStart(2, '0')}:${minutes}:00`;
-    }
-    
-    // Return as is if nothing worked
-    return cleanTime;
-  } catch (e) {
-    console.error("Error formatting time:", e);
-    return timeStr;
-  }
-};
-
-const validateRequiredFields = (entry: Partial<DetailedPrayerTime>): string[] => {
-  const missingFields: string[] = [];
-  
-  // Check for required fields
-  if (!entry.date) missingFields.push('date');
-  if (!entry.day) missingFields.push('day');
-  if (!entry.fajr_jamat) missingFields.push('fajr_jamat');
-  if (!entry.sunrise) missingFields.push('sunrise');
-  if (!entry.zuhr_jamat) missingFields.push('zuhr_jamat');
-  if (!entry.asr_jamat) missingFields.push('asr_jamat');
-  if (!entry.maghrib_iftar) missingFields.push('maghrib_iftar');
-  if (!entry.isha_first_jamat) missingFields.push('isha_first_jamat');
-  
-  return missingFields;
-};
-
-const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
-  const savedTimes = localStorage.getItem('local-prayer-times');
-  if (savedTimes) {
-    const localTimes = JSON.parse(savedTimes);
-    // Check if we already have this date
-    const exists = localTimes.some((item: DetailedPrayerTime) => item.date === entry.date);
-    
-    if (exists) {
-      // Update existing entry
-      const updatedTimes = localTimes.map((item: DetailedPrayerTime) => 
-        item.date === entry.date ? { ...item, ...entry } : item
-      );
-      localStorage.setItem('local-prayer-times', JSON.stringify(updatedTimes));
-    } else {
-      // Add new entry
-      localTimes.push(entry);
-      localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
-    }
-  } else {
-    // Create new local storage entry
-    localStorage.setItem('local-prayer-times', JSON.stringify([entry]));
-  }
-};
-
-// Fetch prayer times from local storage
-export const fetchLocalPrayerTimes = (): PrayerTime[] => {
-  try {
-    const storedTimes = localStorage.getItem(PRAYER_TIMES_KEY);
-    return storedTimes ? JSON.parse(storedTimes) : [];
-  } catch (error) {
-    console.error('Error fetching prayer times from local storage:', error);
-    return [];
-  }
-};
-
-// Fetch prayer times from Supabase
 export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
   try {
-    // Fetch prayer times from local storage first
-    let prayerTimes = fetchLocalPrayerTimes();
-    
-    // If local storage is empty, fetch from Supabase
-    if (!prayerTimes.length) {
-      console.log("Fetching prayer times from Supabase...");
-      const { data, error } = await supabase
-        .from('prayer_times')
-        .select('*');
+    // Try to get today's prayer times from Supabase
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .select('*')
+      .eq('date', today);
 
-      if (error) {
-        console.error("Error fetching prayer times from Supabase:", error);
-        throw error;
+    // Check if we have data for today
+    if (error || !data || data.length === 0) {
+      console.log('Falling back to localStorage', error);
+      
+      // Try to get from local fallback storage
+      const localTimes = localStorage.getItem('local-prayer-times');
+      if (localTimes) {
+        const parsedTimes = JSON.parse(localTimes);
+        // Find today's entry from local storage
+        const todayEntry = parsedTimes.find((entry: any) => entry.date === today);
+        if (todayEntry) {
+          console.log("Using locally stored prayer time for today:", todayEntry);
+          return markActivePrayer(mapToDisplayFormat(todayEntry));
+        }
       }
-
-      if (data && data.length > 0) {
-        const detailedPrayerTimes = data as DetailedPrayerTime[];
-        prayerTimes = mapDetailedToSimple(detailedPrayerTimes[0]);
-      } else {
-        prayerTimes = [];
-      }
-
-      // Store the fetched prayer times in local storage
-      localStorage.setItem(PRAYER_TIMES_KEY, JSON.stringify(prayerTimes));
-    } else {
-      console.log("Using prayer times from local storage.");
+      
+      // Fall back to localStorage if no data found for today
+      const saved = localStorage.getItem(PRAYER_TIMES_KEY);
+      const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
+      return markActivePrayer(prayerTimes);
     }
 
-    // Mark active and next prayers
-    prayerTimes = markActivePrayer(prayerTimes);
-    
-    return prayerTimes;
+    // Map Supabase data to PrayerTime format
+    console.log("Using Supabase data for today's prayer times:", data[0]);
+    return markActivePrayer(mapToDisplayFormat(data[0]));
   } catch (error) {
-    console.error("Error fetching prayer times:", error);
-    return [];
+    console.error('Error fetching prayer times:', error);
+    const saved = localStorage.getItem(PRAYER_TIMES_KEY);
+    const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
+    return markActivePrayer(prayerTimes);
   }
 };
 
-// Map detailed prayer time to simple format
-const mapDetailedToSimple = (detailedTime: DetailedPrayerTime): PrayerTime[] => {
+// Helper function to map detailed prayer time to display format
+const mapToDisplayFormat = (data: DetailedPrayerTime): PrayerTime[] => {
   return [
-    { id: '1', name: 'Fajr', time: detailedTime.fajr_jamat.slice(0, 5) },
-    { id: '2', name: 'Sunrise', time: detailedTime.sunrise.slice(0, 5) },
-    { id: '3', name: 'Zuhr', time: detailedTime.zuhr_jamat.slice(0, 5) },
-    { id: '4', name: 'Asr', time: detailedTime.asr_jamat.slice(0, 5) },
-    { id: '5', name: 'Maghrib', time: detailedTime.maghrib_iftar.slice(0, 5) },
-    { id: '6', name: 'Isha', time: detailedTime.isha_first_jamat.slice(0, 5) }
+    { id: '1', name: 'Fajr', time: data.fajr_jamat.slice(0, 5) },
+    { id: '2', name: 'Sunrise', time: data.sunrise.slice(0, 5) },
+    { id: '3', name: 'Zuhr', time: data.zuhr_jamat.slice(0, 5) },
+    { id: '4', name: 'Asr', time: data.asr_jamat.slice(0, 5) },
+    { id: '5', name: 'Maghrib', time: data.maghrib_iftar.slice(0, 5) },
+    { id: '6', name: 'Isha', time: data.isha_first_jamat.slice(0, 5) }
   ];
 };
 
-// Fetch hadith from local storage
-export const fetchLocalHadith = (): Hadith | null => {
-  try {
-    const storedHadith = localStorage.getItem(HADITH_KEY);
-    return storedHadith ? JSON.parse(storedHadith) : null;
-  } catch (error) {
-    console.error('Error fetching hadith from local storage:', error);
-    return null;
-  }
-};
-
-// Fetch a single hadith for the current day from Supabase
-export const fetchHadith = async (): Promise<Hadith | null> => {
-  try {
-    // Get today's date
-    const today = new Date();
-    const dayOfMonth = today.getDate();
-    const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
-    
-    // First, try to fetch the hadith from local storage
-    let hadith = fetchLocalHadith();
-    
-    // If hadith is not in local storage, fetch from Supabase
-    if (!hadith) {
-      console.log("Fetching hadith from Supabase...");
-      const { data, error } = await supabase
-        .from('daily_hadiths')
-        .select('*')
-        .eq('day_of_month', dayOfMonth)
-        .eq('month', currentMonth)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching hadith from Supabase:", error);
-        return null;
-      }
-      
-      if (data) {
-        hadith = {
-          id: data.id,
-          text: data.text,
-          source: data.source,
-          lastUpdated: new Date().toISOString(),
-        };
-        
-        // Store the fetched hadith in local storage
-        localStorage.setItem(HADITH_KEY, JSON.stringify(hadith));
-      }
-    } else {
-      console.log("Using hadith from local storage.");
-    }
-    
-    return hadith;
-  } catch (error) {
-    console.error("Error fetching hadith:", error);
-    return null;
-  }
-};
-
-// Helper function to mark the active and next prayers
-export const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
-  const now = getCurrentTime24h();
-  
-  // Sort times to determine current and next
-  const sortedTimes = [...prayerTimes].sort((a, b) => {
-    return a.time.localeCompare(b.time);
-  });
-  
-  // Find current prayer
-  let activeIndex = -1;
-  let nextIndex = -1;
-
-  // First find if any prayer is happening now
-  for (let i = 0; i < sortedTimes.length - 1; i++) {
-    const currentPrayer = sortedTimes[i];
-    const nextPrayer = sortedTimes[i + 1];
-    
-    // If current time is after current prayer and before next prayer
-    if (!isTimeBefore(now, currentPrayer.time) && isTimeBefore(now, nextPrayer.time)) {
-      activeIndex = i;
-      nextIndex = i + 1;
-      break;
-    }
-  }
-  
-  // If no prayer is active, find the next prayer
-  if (activeIndex === -1) {
-    for (let i = 0; i < sortedTimes.length; i++) {
-      if (isTimeBefore(now, sortedTimes[i].time)) {
-        nextIndex = i;
-        break;
-      }
-    }
-    
-    // If we've passed the last prayer of the day, the next prayer is the first one tomorrow
-    if (nextIndex === -1) {
-      nextIndex = 0;
-    }
-  }
-  
-  // Mark active and next prayers
-  return sortedTimes.map((prayer, index) => ({
-    ...prayer,
-    isActive: index === activeIndex,
-    isNext: index === nextIndex
-  }));
-};
-
-// Re-export the function that HadithEditor depends on
-export const updateHadith = (hadith: Hadith): void => {
-  console.log("updateHadith function called but is deprecated", hadith);
-  // This function is kept for compatibility but doesn't do anything
-};
-
-// Add the function that PrayerTimesEditor depends on
 export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
   try {
     localStorage.setItem(PRAYER_TIMES_KEY, JSON.stringify(prayerTimes));
   } catch (error) {
     console.error('Error updating prayer times:', error);
   }
+};
+
+// Function to fetch the hadith for today from daily_hadiths table
+export const fetchHadith = async (): Promise<Hadith> => {
+  try {
+    // Get today's date
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
+    
+    console.log(`Fetching hadith for day ${dayOfMonth} in month ${currentMonth}`);
+    
+    // First, check if there are any hadiths in the database
+    const { data: allHadiths, error: allHadithsError } = await supabase
+      .from('daily_hadiths')
+      .select('*');
+      
+    if (allHadithsError) {
+      console.error("Error checking for hadiths:", allHadithsError);
+      throw new Error(`Database error checking for hadiths: ${allHadithsError.message}`);
+    }
+    
+    if (!allHadiths || allHadiths.length === 0) {
+      console.log("No hadiths found in the database at all, using default");
+      return getDefaultHadith();
+    }
+    
+    console.log(`Database has ${allHadiths.length} hadiths in total`);
+    
+    // Try to fetch from Supabase for today's exact date first
+    console.log(`Looking for hadith with day=${dayOfMonth} and month=${currentMonth}`);
+    const { data: exactMatchData, error: exactMatchError } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('day_of_month', dayOfMonth)
+      .eq('month', currentMonth);
+    
+    // If we found a daily hadith for today
+    if (!exactMatchError && exactMatchData && exactMatchData.length > 0) {
+      const todayHadith = exactMatchData[0];
+      console.log("Found exact match for today:", todayHadith);
+      return {
+        id: todayHadith.id,
+        text: todayHadith.text,
+        source: todayHadith.source,
+        lastUpdated: todayHadith.created_at
+      };
+    }
+    
+    console.log("No exact match found. Looking for any hadith with same day of month");
+    
+    // If we didn't find one for today's date, try to find any hadith for today's day in any month
+    const { data: anyMonthData, error: anyMonthError } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('day_of_month', dayOfMonth);
+    
+    if (!anyMonthError && anyMonthData && anyMonthData.length > 0) {
+      // Pick a random hadith from any month but with the same day of month
+      const randomIndex = Math.floor(Math.random() * anyMonthData.length);
+      const randomHadith = anyMonthData[randomIndex];
+      
+      console.log("Found hadith with same day of month:", randomHadith);
+      return {
+        id: randomHadith.id,
+        text: randomHadith.text,
+        source: randomHadith.source,
+        lastUpdated: randomHadith.created_at
+      };
+    }
+    
+    console.log(`No hadith found for day ${dayOfMonth}, getting a random one from ${allHadiths.length} total hadiths`);
+    
+    // If we still don't have any hadith, use a random one from the database
+    // Pick a completely random hadith from the database
+    const randomIndex = Math.floor(Math.random() * allHadiths.length);
+    const randomHadith = allHadiths[randomIndex];
+    
+    console.log("Using random hadith:", randomHadith);
+    return {
+      id: randomHadith.id,
+      text: randomHadith.text,
+      source: randomHadith.source,
+      lastUpdated: randomHadith.created_at
+    };
+  } catch (error) {
+    console.error('Error fetching hadith:', error);
+    return getDefaultHadith();
+  }
+};
+
+// Helper function to return the default hadith
+const getDefaultHadith = (): Hadith => {
+  return {
+    id: 'default',
+    text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
+    source: "Sahih al-Bukhari",
+    lastUpdated: new Date().toISOString()
+  };
+};
+
+// Functions for daily hadiths
+
+// Fetch all daily hadiths for a specific month
+export const fetchDailyHadithsForMonth = async (month: string): Promise<DailyHadith[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('daily_hadiths')
+      .select('*')
+      .eq('month', month)
+      .order('day_of_month', { ascending: true });
+    
+    if (error) {
+      console.error("Error fetching daily hadiths:", error);
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error in fetchDailyHadithsForMonth:", error);
+    return [];
+  }
+};
+
+// Save a daily hadith
+export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith> => {
+  try {
+    // Deep copy the hadith to prevent mutation issues
+    const hadithData = JSON.parse(JSON.stringify(hadith));
+    
+    // Ensure the hadith has a month and it's in the correct format (YYYY-MM)
+    if (!hadithData.month || !/^\d{4}-\d{2}$/.test(hadithData.month)) {
+      hadithData.month = new Date().toISOString().substring(0, 7);
+      console.log("Fixed or added month to hadith:", hadithData.month);
+    }
+
+    // Validate essential fields and convert types if needed
+    if (!hadithData.text || typeof hadithData.text !== 'string') {
+      throw new Error("Hadith text is required");
+    }
+    
+    if (!hadithData.source || typeof hadithData.source !== 'string') {
+      throw new Error("Hadith source is required");
+    }
+    
+    if (hadithData.day_of_month === undefined || hadithData.day_of_month === null) {
+      throw new Error("Day of month is required");
+    }
+    
+    // Ensure day_of_month is a number
+    hadithData.day_of_month = Number(hadithData.day_of_month);
+    
+    if (isNaN(hadithData.day_of_month) || hadithData.day_of_month < 1 || hadithData.day_of_month > 31) {
+      throw new Error("Day of month must be a number between 1 and 31");
+    }
+
+    // Determine if this is a new hadith
+    const isNew = !hadithData.id || (typeof hadithData.id === 'string' && hadithData.id.startsWith('temp-'));
+
+    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);
+    
+    let result;
+    
+    if (isNew) {
+      // For new hadiths, create an insert object without the id
+      const { id, ...insertData } = hadithData;
+      
+      console.log("Inserting new hadith with data:", insertData);
+      
+      const { data, error } = await supabase
+        .from('daily_hadiths')
+        .insert(insertData)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error inserting daily hadith:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error("Failed to insert hadith - no data returned from database");
+      }
+      
+      result = data;
+      console.log("Successfully created new hadith:", result);
+    } else {
+      // For existing hadiths, update with specific fields
+      const { id, ...updateData } = hadithData;
+      
+      console.log("Updating existing hadith with ID:", id);
+      console.log("Update data:", updateData);
+      
+      const { data, error } = await supabase
+        .from('daily_hadiths')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error updating daily hadith:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error("Failed to update hadith - no data returned from database");
+      }
+      
+      result = data;
+      console.log("Successfully updated hadith:", result);
+    }
+    
+    // Return the result as a DailyHadith
+    return result as DailyHadith;
+  } catch (error) {
+    console.error("Error in saveDailyHadith:", error);
+    // Re-throw the error with a clear message
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error("Unknown error occurred while saving hadith");
+    }
+  }
+};
+
+// Delete a daily hadith
+export const deleteDailyHadith = async (id: string): Promise<boolean> => {
+  try {
+    // Check if this is a temporary ID (not yet saved to the database)
+    if (id && typeof id === 'string' && id.startsWith('temp-')) {
+      // Nothing to delete in the database
+      return true;
+    }
+    
+    if (!id) {
+      console.error("Cannot delete hadith with null or undefined ID");
+      throw new Error("Invalid hadith ID");
+    }
+    
+    const { error } = await supabase
+      .from('daily_hadiths')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error("Error deleting daily hadith:", error);
+      throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error in deleteDailyHadith:", error);
+    throw error;
+  }
+};
+
+// For backward compatibility with HadithEditor component
+export const updateHadith = (hadith: Hadith): void => {
+  console.log("updateHadith function called but is deprecated", hadith);
+  // This function is kept for compatibility but doesn't do anything
 };
 
 // Functions for the detailed prayer times table
@@ -733,13 +703,13 @@ export const importPrayerTimesFromSheet = async (
     
     console.log(`Processing ${dataRows.length} rows from Google Sheet`);
     
-    // Process each row and insert into local storage directly
+    // Process each row and insert into local storage directly, skipping Supabase due to RLS errors
     const importedEntries: DetailedPrayerTime[] = [];
     const errors: string[] = [];
     
     // Get current local storage entries
     const savedTimes = localStorage.getItem('local-prayer-times');
-    const localTimes: DetailedPrayerTime[] = savedTimes ? JSON.parse(savedTimes) : [];
+    const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
     const existingDates = new Set(localTimes.map((item: DetailedPrayerTime) => item.date));
     
     for (let i = 0; i < dataRows.length; i++) {
@@ -851,27 +821,193 @@ export const importPrayerTimesFromSheet = async (
         return { 
           success: true, 
           count: importedEntries.length, 
-          error: `Imported ${importedEntries.length} entries with ${errors.length} errors: ${errorMessage}` 
+          error: `Imported ${importedEntries.length} entries to local storage due to RLS errors. ${errorMessage}` 
         };
       } else {
         return { 
           success: false, 
           count: 0, 
-          error: `Failed to import any entries. Errors: ${errorMessage}` 
+          error: `Import failed with errors: ${errorMessage}` 
         };
       }
     }
     
     return { 
       success: true, 
-      count: importedEntries.length 
+      count: importedEntries.length,
+      error: importedEntries.length > 0 ? "Imported to local storage due to RLS errors with profiles table." : undefined
     };
   } catch (error) {
     console.error("Error importing from Google Sheets:", error);
     return { 
       success: false, 
       count: 0, 
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error) 
     };
   }
+};
+
+// Helper function to parse CSV text
+const parseCSV = (text: string): string[][] => {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    // Handle quoted values (which may contain commas)
+    const result = [];
+    let inQuotes = false;
+    let currentValue = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    
+    // Add the last value
+    result.push(currentValue.trim());
+    
+    return result;
+  }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+};
+
+// Helper function to format date values
+const formatDate = (dateStr: string): string => {
+  // Try to parse and standardize the date format
+  let formattedDate = dateStr.trim();
+  
+  try {
+    // Check if it's already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+      return formattedDate;
+    }
+    
+    // Try to parse as a date
+    const dateObj = new Date(formattedDate);
+    if (!isNaN(dateObj.getTime())) {
+      // Format as YYYY-MM-DD
+      return dateObj.toISOString().split('T')[0];
+    }
+    
+    // If we get here, use the original string
+    return formattedDate;
+  } catch (error) {
+    console.warn("Error formatting date:", dateStr, error);
+    return formattedDate; // Return original if parsing fails
+  }
+};
+
+// Helper function to format time values
+const formatTime = (timeStr: string): string => {
+  // Standardize time format to HH:MM:SS
+  let formattedTime = timeStr.trim();
+  
+  try {
+    // If it's empty, return an empty string
+    if (!formattedTime) {
+      return '';
+    }
+    
+    // Check if it's already in HH:MM format
+    if (/^\d{1,2}:\d{2}$/.test(formattedTime)) {
+      // Ensure it has leading zeros for hours
+      const [hours, minutes] = formattedTime.split(':');
+      return `${hours.padStart(2, '0')}:${minutes}:00`;
+    }
+    
+    // Check if it's already in HH:MM:SS format
+    if (/^\d{1,2}:\d{2}:\d{2}$/.test(formattedTime)) {
+      // Ensure it has leading zeros for hours
+      const [hours, minutes, seconds] = formattedTime.split(':');
+      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
+    }
+    
+    // Try to parse as a time (e.g., "7:30 AM")
+    const match = formattedTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (match) {
+      let [, hours, minutes, seconds = '00', period] = match;
+      
+      // Convert to 24-hour format if AM/PM is specified
+      if (period) {
+        let hourNum = parseInt(hours, 10);
+        if (period.toUpperCase() === 'PM' && hourNum < 12) {
+          hourNum += 12;
+        } else if (period.toUpperCase() === 'AM' && hourNum === 12) {
+          hourNum = 0;
+        }
+        hours = hourNum.toString();
+      }
+      
+      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
+    }
+    
+    // If we get here, try using the original string
+    console.warn("Using original time string (couldn't format):", formattedTime);
+    return formattedTime;
+  } catch (error) {
+    console.warn("Error formatting time:", timeStr, error);
+    return formattedTime; // Return original if parsing fails
+  }
+};
+
+// Helper function to validate required fields
+const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
+  const requiredFields: (keyof Omit<DetailedPrayerTime, 'id' | 'created_at'>)[] = [
+    'date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 
+    'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'
+  ];
+  
+  return requiredFields.filter(field => !entry[field]);
+};
+
+// Helper function to update local storage with imported entry
+const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
+  const savedTimes = localStorage.getItem('local-prayer-times');
+  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+  
+  // Remove any existing entry for this date
+  const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => 
+    item.date !== entry.date
+  );
+  
+  // Add the new entry
+  filteredTimes.push(entry);
+  
+  // Store back in local storage
+  localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
+};
+
+// Helper function to mark active and next prayer times
+const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
+  const currentTime = getCurrentTime24h();
+  let activeIndex = -1;
+  let nextIndex = -1;
+  
+  // Find active prayer (current or most recent)
+  for (let i = prayerTimes.length - 1; i >= 0; i--) {
+    if (!isTimeBefore(currentTime, prayerTimes[i].time)) {
+      activeIndex = i;
+      break;
+    }
+  }
+  
+  // If no prayer has passed today yet, set active to last prayer from yesterday
+  if (activeIndex === -1) {
+    activeIndex = prayerTimes.length - 1;
+  }
+  
+  // Find next prayer
+  nextIndex = (activeIndex + 1) % prayerTimes.length;
+  
+  // Mark prayers with active and next flags
+  return prayerTimes.map((prayer, index) => ({
+    ...prayer,
+    isActive: index === activeIndex,
+    isNext: index === nextIndex
+  }));
 };
