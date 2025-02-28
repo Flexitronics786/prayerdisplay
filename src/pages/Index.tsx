@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -10,7 +11,6 @@ const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const loadData = useCallback(async () => {
     try {
@@ -26,10 +26,8 @@ const Index = () => {
       
       if (hadithsError) {
         console.error("Error fetching hadith collection:", hadithsError);
-        setDebugInfo(`Error: ${hadithsError.message}`);
       } else {
         console.log(`Found ${hadithCollection?.length || 0} active hadiths in collection:`, hadithCollection);
-        setDebugInfo(`Collection has ${hadithCollection?.length || 0} active hadiths.`);
       }
       
       const dailyHadith = await fetchHadith();
@@ -42,7 +40,6 @@ const Index = () => {
       setHadith(dailyHadith);
     } catch (error) {
       console.error("Error loading data:", error);
-      setDebugInfo(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
@@ -144,14 +141,6 @@ const Index = () => {
           
           <div className="lg:col-span-4">
             {hadith && <HadithDisplay hadith={hadith} nextPrayer={getNextPrayer()} />}
-            {debugInfo && (
-              <div className="mt-4 p-2 bg-amber-50 rounded-lg text-sm text-amber-800">
-                <details>
-                  <summary className="cursor-pointer">Debug Info</summary>
-                  <div className="mt-2 whitespace-pre-wrap">{debugInfo}</div>
-                </details>
-              </div>
-            )}
           </div>
         </div>
       </div>
