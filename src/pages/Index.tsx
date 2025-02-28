@@ -75,41 +75,43 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden p-4 sm:p-6 md:p-8 bg-gradient-to-b from-amber-100 to-amber-50">
+    <div className="min-h-screen relative overflow-hidden py-2 px-3 bg-gradient-to-b from-amber-100 to-amber-50">
       <div className="pattern-overlay"></div>
       
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <div className="gold-border p-6 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg mb-6">
-            <div className="text-center">
-              <div className="w-24 h-24 mx-auto mb-3">
-                <img src="/lovable-uploads/92733e4c-a477-4c2d-b8a9-b2ba9006795b.png" alt="Masjid Logo" className="w-full object-contain" />
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* Left side - Prayer Times */}
+          <div className="lg:col-span-8">
+            <header className="mb-4">
+              <div className="gold-border p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
+                <div className="text-center">
+                  <h1 className="text-3xl sm:text-4xl font-bold gold-gradient-text mb-1 font-serif">
+                    JAMIA MASJID BILAL
+                  </h1>
+                  <h2 className="text-lg text-amber-700 mb-2">
+                    MINHAJ-UL-QURAN INT. DUNDEE
+                  </h2>
+                  <div className="h-0.5 w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-2"></div>
+                  <DigitalClock />
+                </div>
               </div>
-              <h1 className="text-4xl sm:text-5xl font-bold gold-gradient-text mb-2 font-serif">
-                JAMIA MASJID BILAL
-              </h1>
-              <h2 className="text-xl text-amber-700 mb-4">
-                MINHAJ-UL-QURAN INT. DUNDEE
-              </h2>
-              <div className="h-0.5 w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-4"></div>
-              <DigitalClock />
-            </div>
+            </header>
+            <PrayerTimesTable prayerTimes={prayerTimes} compactView={true} />
           </div>
-        </header>
-
-        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
-          <PrayerTimesTable prayerTimes={prayerTimes} />
-          {hadith && <HadithDisplay hadith={hadith} />}
+          
+          {/* Right side - Hadith */}
+          <div className="lg:col-span-4">
+            {hadith && <HadithDisplay hadith={hadith} />}
+            <footer className="mt-2 text-center">
+              <Link 
+                to="/admin" 
+                className="text-amber-700/50 text-xs hover:text-amber-700/70 transition-colors"
+              >
+                Admin
+              </Link>
+            </footer>
+          </div>
         </div>
-        
-        <footer className="mt-10 text-center">
-          <Link 
-            to="/admin" 
-            className="text-amber-700/50 text-xs hover:text-amber-700/70 transition-colors"
-          >
-            Admin Access
-          </Link>
-        </footer>
       </div>
     </div>
   );

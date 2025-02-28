@@ -6,9 +6,10 @@ import { useState, useEffect } from "react";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
+  compactView?: boolean;
 }
 
-const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
+const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
 
   useEffect(() => {
@@ -76,28 +77,28 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           isNext ? 'next-prayer' : ''}`}
       >
         <div className={`prayer-tile-header ${headerClass}`}>
-          <h3 className="text-2xl font-bold">
+          <h3 className="text-xl font-bold">
             {title}
             {isActive && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-white/30 text-white">
+              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-white/30 text-white">
                 Current
               </span>
             )}
             {isNext && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-white/20 text-white/90">
+              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-white/20 text-white/90">
                 Next
               </span>
             )}
           </h3>
         </div>
-        <div className="px-6 py-4">
+        <div className="px-4 py-2">
           {items.map((item, index) => (
             <div key={index} className={`flex justify-between items-center 
-              ${index < items.length - 1 ? 'mb-5 pb-2 border-b border-amber-100' : ''} 
-              ${index === 1 && title === "Fajr" ? 'pt-3' : ''}
+              ${index < items.length - 1 ? 'mb-2 pb-1 border-b border-amber-100' : ''} 
+              ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
-              <span className="text-amber-900 text-lg font-medium">{item.label}:</span>
-              <span className="font-bold text-amber-950 text-xl clock-text">{item.time}</span>
+              <span className="text-amber-900 text-base font-medium">{item.label}:</span>
+              <span className="font-bold text-amber-950 text-lg clock-text">{item.time}</span>
             </div>
           ))}
         </div>
@@ -185,11 +186,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
 
   return (
     <div className="animate-scale-in">
-      <div className="mb-6">
-        <h3 className="text-3xl font-bold text-amber-800 font-serif">Prayer Times</h3>
+      <div className="mb-3">
+        <h3 className="text-2xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-3 gap-3">
         {/* Fajr Tile */}
         {renderPrayerTile(
           "Fajr", 
