@@ -6,12 +6,15 @@ import HadithDisplay from "@/components/HadithDisplay";
 import { fetchHadith, fetchPrayerTimes } from "@/services/dataService";
 import { Hadith, PrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { Bell, Smartphone } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [showPhoneAlert, setShowPhoneAlert] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
@@ -116,6 +119,24 @@ const Index = () => {
   return (
     <div className="min-h-screen relative overflow-hidden py-2 px-3 bg-gradient-to-b from-amber-100 to-amber-50">
       <div className="pattern-overlay"></div>
+      
+      {showPhoneAlert && (
+        <Alert className="bg-amber-600 text-white border-0 shadow-lg mb-4 mx-auto max-w-7xl">
+          <div className="flex items-center gap-3">
+            <Smartphone className="h-5 w-5" />
+            <Bell className="h-5 w-5 animate-pulse" />
+            <AlertDescription className="font-medium text-base">
+              Please do not turn off your phone in the mosque. Instead, switch to silent mode to receive important notifications.
+            </AlertDescription>
+            <button 
+              onClick={() => setShowPhoneAlert(false)} 
+              className="ml-auto text-sm bg-amber-500 hover:bg-amber-700 px-2 py-1 rounded-md transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </Alert>
+      )}
       
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
