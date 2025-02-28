@@ -12,6 +12,7 @@ export interface Hadith {
   text: string;
   source: string;
   lastUpdated?: string;
+  month?: string; // Add month property to track which month this hadith is for
 }
 
 export interface User {

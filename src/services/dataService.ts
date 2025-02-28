@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
 const HADITH_KEY = 'mosque-hadith';
+const MONTHLY_HADITH_KEY = 'mosque-monthly-hadith';
 
 // Default prayer times (example)
 const defaultPrayerTimes: PrayerTime[] = [
@@ -21,7 +22,8 @@ const defaultHadith: Hadith = {
   id: '1',
   text: "The Messenger of Allah (ﷺ) said: 'The most beloved of deeds to Allah are those that are most consistent, even if they are small.'",
   source: "Sahih al-Bukhari",
-  lastUpdated: new Date().toISOString()
+  lastUpdated: new Date().toISOString(),
+  month: new Date().toISOString().substring(0, 7) // Format: YYYY-MM
 };
 
 export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
@@ -88,8 +90,32 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
 
 export const fetchHadith = async (): Promise<Hadith> => {
   try {
+    // Get current month in YYYY-MM format
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    
+    // First check if we have a monthly hadith collection
+    const monthlyHadiths = localStorage.getItem(MONTHLY_HADITH_KEY);
+    if (monthlyHadiths) {
+      const parsedHadiths = JSON.parse(monthlyHadiths) as Hadith[];
+      
+      // Look for a hadith for the current month
+      const currentMonthHadith = parsedHadiths.find(h => h.month === currentMonth);
+      if (currentMonthHadith) {
+        console.log("Using monthly hadith for", currentMonth);
+        return currentMonthHadith;
+      }
+    }
+    
+    // Fall back to regular hadith if no monthly one is found
     const saved = localStorage.getItem(HADITH_KEY);
-    return saved ? JSON.parse(saved) : defaultHadith;
+    const hadith = saved ? JSON.parse(saved) : defaultHadith;
+    
+    // If the hadith doesn't have a month, add the current month
+    if (!hadith.month) {
+      hadith.month = currentMonth;
+    }
+    
+    return hadith;
   } catch (error) {
     console.error('Error fetching hadith:', error);
     return defaultHadith;
@@ -99,7 +125,28 @@ export const fetchHadith = async (): Promise<Hadith> => {
 export const updateHadith = (hadith: Hadith): void => {
   try {
     hadith.lastUpdated = new Date().toISOString();
+    
+    // If month is not specified, assign the current month
+    if (!hadith.month) {
+      hadith.month = new Date().toISOString().substring(0, 7);
+    }
+    
+    // Save to the regular hadith storage
     localStorage.setItem(HADITH_KEY, JSON.stringify(hadith));
+    
+    // Also save to the monthly collection
+    const monthlyHadiths = localStorage.getItem(MONTHLY_HADITH_KEY);
+    let parsedHadiths: Hadith[] = monthlyHadiths ? JSON.parse(monthlyHadiths) : [];
+    
+    // Remove any existing hadith for this month
+    parsedHadiths = parsedHadiths.filter(h => h.month !== hadith.month);
+    
+    // Add the new hadith
+    parsedHadiths.push(hadith);
+    
+    // Save the updated collection
+    localStorage.setItem(MONTHLY_HADITH_KEY, JSON.stringify(parsedHadiths));
+    
   } catch (error) {
     console.error('Error updating hadith:', error);
   }
