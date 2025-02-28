@@ -103,7 +103,7 @@ export const fetchHadith = async (): Promise<Hadith> => {
     
     console.log(`Database has ${allHadiths.length} hadiths in total`);
     
-    // Try to fetch from Supabase for today's exact date first
+    // Step 1: Look for an exact match for today's date (day and month)
     console.log(`Looking for hadith with day=${dayOfMonth} and month=${currentMonth}`);
     const { data: exactMatchData, error: exactMatchError } = await supabase
       .from('daily_hadiths')
@@ -111,7 +111,7 @@ export const fetchHadith = async (): Promise<Hadith> => {
       .eq('day_of_month', dayOfMonth)
       .eq('month', currentMonth);
     
-    // If we found a daily hadith for today
+    // If we found a daily hadith for today's exact date
     if (!exactMatchError && exactMatchData && exactMatchData.length > 0) {
       const todayHadith = exactMatchData[0];
       console.log("Found exact match for today:", todayHadith);
@@ -125,7 +125,7 @@ export const fetchHadith = async (): Promise<Hadith> => {
     
     console.log("No exact match found. Looking for any hadith with same day of month");
     
-    // If we didn't find one for today's date, try to find any hadith for today's day in any month
+    // Step 2: If no exact match, try to find a hadith for this day in any month
     const { data: anyMonthData, error: anyMonthError } = await supabase
       .from('daily_hadiths')
       .select('*')
@@ -147,8 +147,7 @@ export const fetchHadith = async (): Promise<Hadith> => {
     
     console.log(`No hadith found for day ${dayOfMonth}, getting a random one from ${allHadiths.length} total hadiths`);
     
-    // If we still don't have any hadith, use a random one from the database
-    // Pick a completely random hadith from the database
+    // Step 3: If we still don't have any hadith, use a random one from the database
     const randomIndex = Math.floor(Math.random() * allHadiths.length);
     const randomHadith = allHadiths[randomIndex];
     
@@ -824,190 +823,3 @@ export const importPrayerTimesFromSheet = async (
           error: `Imported ${importedEntries.length} entries to local storage due to RLS errors. ${errorMessage}` 
         };
       } else {
-        return { 
-          success: false, 
-          count: 0, 
-          error: `Import failed with errors: ${errorMessage}` 
-        };
-      }
-    }
-    
-    return { 
-      success: true, 
-      count: importedEntries.length,
-      error: importedEntries.length > 0 ? "Imported to local storage due to RLS errors with profiles table." : undefined
-    };
-  } catch (error) {
-    console.error("Error importing from Google Sheets:", error);
-    return { 
-      success: false, 
-      count: 0, 
-      error: error instanceof Error ? error.message : String(error) 
-    };
-  }
-};
-
-// Helper function to parse CSV text
-const parseCSV = (text: string): string[][] => {
-  const lines = text.split('\n');
-  return lines.map(line => {
-    // Handle quoted values (which may contain commas)
-    const result = [];
-    let inQuotes = false;
-    let currentValue = '';
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(currentValue.trim());
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
-    }
-    
-    // Add the last value
-    result.push(currentValue.trim());
-    
-    return result;
-  }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
-};
-
-// Helper function to format date values
-const formatDate = (dateStr: string): string => {
-  // Try to parse and standardize the date format
-  let formattedDate = dateStr.trim();
-  
-  try {
-    // Check if it's already in YYYY-MM-DD format
-    if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
-      return formattedDate;
-    }
-    
-    // Try to parse as a date
-    const dateObj = new Date(formattedDate);
-    if (!isNaN(dateObj.getTime())) {
-      // Format as YYYY-MM-DD
-      return dateObj.toISOString().split('T')[0];
-    }
-    
-    // If we get here, use the original string
-    return formattedDate;
-  } catch (error) {
-    console.warn("Error formatting date:", dateStr, error);
-    return formattedDate; // Return original if parsing fails
-  }
-};
-
-// Helper function to format time values
-const formatTime = (timeStr: string): string => {
-  // Standardize time format to HH:MM:SS
-  let formattedTime = timeStr.trim();
-  
-  try {
-    // If it's empty, return an empty string
-    if (!formattedTime) {
-      return '';
-    }
-    
-    // Check if it's already in HH:MM format
-    if (/^\d{1,2}:\d{2}$/.test(formattedTime)) {
-      // Ensure it has leading zeros for hours
-      const [hours, minutes] = formattedTime.split(':');
-      return `${hours.padStart(2, '0')}:${minutes}:00`;
-    }
-    
-    // Check if it's already in HH:MM:SS format
-    if (/^\d{1,2}:\d{2}:\d{2}$/.test(formattedTime)) {
-      // Ensure it has leading zeros for hours
-      const [hours, minutes, seconds] = formattedTime.split(':');
-      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
-    }
-    
-    // Try to parse as a time (e.g., "7:30 AM")
-    const match = formattedTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
-    if (match) {
-      let [, hours, minutes, seconds = '00', period] = match;
-      
-      // Convert to 24-hour format if AM/PM is specified
-      if (period) {
-        let hourNum = parseInt(hours, 10);
-        if (period.toUpperCase() === 'PM' && hourNum < 12) {
-          hourNum += 12;
-        } else if (period.toUpperCase() === 'AM' && hourNum === 12) {
-          hourNum = 0;
-        }
-        hours = hourNum.toString();
-      }
-      
-      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
-    }
-    
-    // If we get here, try using the original string
-    console.warn("Using original time string (couldn't format):", formattedTime);
-    return formattedTime;
-  } catch (error) {
-    console.warn("Error formatting time:", timeStr, error);
-    return formattedTime; // Return original if parsing fails
-  }
-};
-
-// Helper function to validate required fields
-const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
-  const requiredFields: (keyof Omit<DetailedPrayerTime, 'id' | 'created_at'>)[] = [
-    'date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 
-    'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'
-  ];
-  
-  return requiredFields.filter(field => !entry[field]);
-};
-
-// Helper function to update local storage with imported entry
-const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
-  const savedTimes = localStorage.getItem('local-prayer-times');
-  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
-  
-  // Remove any existing entry for this date
-  const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => 
-    item.date !== entry.date
-  );
-  
-  // Add the new entry
-  filteredTimes.push(entry);
-  
-  // Store back in local storage
-  localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
-};
-
-// Helper function to mark active and next prayer times
-const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
-  const currentTime = getCurrentTime24h();
-  let activeIndex = -1;
-  let nextIndex = -1;
-  
-  // Find active prayer (current or most recent)
-  for (let i = prayerTimes.length - 1; i >= 0; i--) {
-    if (!isTimeBefore(currentTime, prayerTimes[i].time)) {
-      activeIndex = i;
-      break;
-    }
-  }
-  
-  // If no prayer has passed today yet, set active to last prayer from yesterday
-  if (activeIndex === -1) {
-    activeIndex = prayerTimes.length - 1;
-  }
-  
-  // Find next prayer
-  nextIndex = (activeIndex + 1) % prayerTimes.length;
-  
-  // Mark prayers with active and next flags
-  return prayerTimes.map((prayer, index) => ({
-    ...prayer,
-    isActive: index === activeIndex,
-    isNext: index === nextIndex
-  }));
-};

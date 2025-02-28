@@ -12,6 +12,7 @@ const Index = () => {
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,6 +26,8 @@ const Index = () => {
         const dayOfMonth = today.getDate();
         const currentMonth = today.toISOString().substring(0, 7); // YYYY-MM format
         
+        console.log(`Today is day ${dayOfMonth} in month ${currentMonth}`);
+        
         // Debug log to check database content
         const { data: allHadiths, error: hadithsError } = await supabase
           .from('daily_hadiths')
@@ -35,15 +38,25 @@ const Index = () => {
           setDebugInfo(`Error: ${hadithsError.message}`);
         } else {
           console.log(`Found ${allHadiths?.length || 0} total hadiths in database:`, allHadiths);
-          setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths.`);
+          
+          // Group hadiths by month for better debugging
+          const hadithsByMonth: Record<string, any[]> = {};
+          allHadiths?.forEach(h => {
+            if (!hadithsByMonth[h.month]) {
+              hadithsByMonth[h.month] = [];
+            }
+            hadithsByMonth[h.month].push(h);
+          });
+          
+          setDebugInfo(`Database has ${allHadiths?.length || 0} hadiths. Grouped by month: ${JSON.stringify(hadithsByMonth, null, 2)}`);
         }
         
         const dailyHadith = await fetchHadith();
-        console.log("Today is day", dayOfMonth, "in month", currentMonth);
         console.log("Fetched hadith for today:", dailyHadith);
         
         setPrayerTimes(times);
         setHadith(dailyHadith);
+        setLastRefresh(new Date()); // Track when data was last refreshed
       } catch (error) {
         console.error("Error loading data:", error);
         setDebugInfo(`Error: ${error instanceof Error ? error.message : String(error)}`);
@@ -90,8 +103,8 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Refresh prayer times status every minute
-    const interval = setInterval(loadData, 60000);
+    // Refresh prayer times status every 5 minutes instead of every minute
+    const interval = setInterval(loadData, 300000); // Changed from 60000 (1 min) to 300000 (5 mins)
     
     return () => {
       clearInterval(interval);
@@ -140,8 +153,8 @@ const Index = () => {
             {debugInfo && (
               <div className="mt-4 p-2 bg-amber-50 rounded-lg text-sm text-amber-800">
                 <details>
-                  <summary className="cursor-pointer">Debug Info</summary>
-                  <div className="mt-2 whitespace-pre-wrap">{debugInfo}</div>
+                  <summary className="cursor-pointer">Debug Info (Last refreshed: {lastRefresh.toLocaleTimeString()})</summary>
+                  <div className="mt-2 whitespace-pre-wrap overflow-auto max-h-64">{debugInfo}</div>
                 </details>
               </div>
             )}
