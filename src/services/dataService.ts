@@ -1,5 +1,5 @@
 
-import { PrayerTime, DetailedPrayerTime, DailyHadith } from "@/types";
+import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -78,7 +78,7 @@ export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
 };
 
 // Function to fetch the hadith for today from daily_hadiths table
-export const fetchHadith = async () => {
+export const fetchHadith = async (): Promise<Hadith> => {
   try {
     // Get today's date
     const today = new Date();
@@ -103,17 +103,34 @@ export const fetchHadith = async () => {
       };
     }
     
-    // If we didn't find one, try to find any other hadith for the current month
-    const { data: allMonthData, error: allMonthError } = await supabase
+    // If we didn't find one for today's date, first try to find any hadith for today's day in any month
+    const { data: anyMonthData, error: anyMonthError } = await supabase
       .from('daily_hadiths')
       .select('*')
-      .eq('month', currentMonth);
+      .eq('day_of_month', dayOfMonth);
     
-    if (!allMonthError && allMonthData && allMonthData.length > 0) {
-      // If we have hadiths for this month but not specifically for today,
-      // pick a random one from this month
-      const randomIndex = Math.floor(Math.random() * allMonthData.length);
-      const randomHadith = allMonthData[randomIndex];
+    if (!anyMonthError && anyMonthData && anyMonthData.length > 0) {
+      // Pick a random hadith from any month but with the same day of month
+      const randomIndex = Math.floor(Math.random() * anyMonthData.length);
+      const randomHadith = anyMonthData[randomIndex];
+      
+      return {
+        id: randomHadith.id,
+        text: randomHadith.text,
+        source: randomHadith.source,
+        lastUpdated: randomHadith.created_at
+      };
+    }
+    
+    // If we still don't have any hadith, fetch any random hadith from the database
+    const { data: allHadithsData, error: allHadithsError } = await supabase
+      .from('daily_hadiths')
+      .select('*');
+    
+    if (!allHadithsError && allHadithsData && allHadithsData.length > 0) {
+      // Pick a completely random hadith from the database
+      const randomIndex = Math.floor(Math.random() * allHadithsData.length);
+      const randomHadith = allHadithsData[randomIndex];
       
       return {
         id: randomHadith.id,
@@ -247,6 +264,12 @@ export const deleteDailyHadith = async (id: string): Promise<boolean> => {
     console.error("Error in deleteDailyHadith:", error);
     throw error;
   }
+};
+
+// For backward compatibility with HadithEditor component
+export const updateHadith = (hadith: Hadith): void => {
+  console.log("updateHadith function called but is deprecated", hadith);
+  // This function is kept for compatibility but doesn't do anything
 };
 
 // Functions for the detailed prayer times table
