@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DailyHadith } from "@/types";
 import { 
@@ -76,22 +75,31 @@ const DailyHadithEditor = () => {
       // Validate hadith fields
       if (!hadith.text.trim()) {
         toast.error("Hadith text cannot be empty");
+        setSavingHadithId(null);
         return;
       }
       
       if (!hadith.source.trim()) {
         toast.error("Hadith source cannot be empty");
+        setSavingHadithId(null);
         return;
       }
       
-      console.log("Saving hadith:", hadith);
+      // Create a copy of the hadith to avoid mutation issues
+      const hadithToSave = { 
+        ...hadith,
+        month: currentMonth // Ensure month is always set to current month
+      };
       
-      // Ensure month is set
-      if (!hadith.month) {
-        hadith.month = currentMonth;
+      console.log("Saving hadith:", hadithToSave);
+      
+      // Check if id exists and is valid
+      if (!hadithToSave.id) {
+        hadithToSave.id = `temp-${Date.now()}`;
+        console.log("Generated new temporary ID for hadith:", hadithToSave.id);
       }
       
-      const savedHadith = await saveDailyHadith(hadith);
+      const savedHadith = await saveDailyHadith(hadithToSave);
       
       // Update the hadiths array with the saved hadith
       setHadiths(prev => prev.map(h => h.id === hadith.id ? savedHadith : h));
@@ -108,8 +116,16 @@ const DailyHadithEditor = () => {
   const handleDeleteHadith = async (hadith: DailyHadith) => {
     if (window.confirm("Are you sure you want to delete this hadith?")) {
       try {
+        // If it's a temporary ID (not yet saved), just remove from state
+        if (hadith.id && hadith.id.startsWith('temp-')) {
+          setHadiths(prev => prev.filter(h => h.id !== hadith.id));
+          toast.success("Hadith removed");
+          return;
+        }
+        
+        // Otherwise delete from database
         await deleteDailyHadith(hadith.id);
-        setHadiths(hadiths.filter(h => h.id !== hadith.id));
+        setHadiths(prev => prev.filter(h => h.id !== hadith.id));
         toast.success("Hadith deleted successfully");
       } catch (error) {
         console.error("Error deleting hadith:", error);
