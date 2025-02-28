@@ -359,7 +359,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
               time: getZuhrJamat() // Same as Zuhr jamat time
             }
           ],
-          "zuhr-header" // Use the same styling as Zuhr
+          "jummah-header" // Use the new jummah-header class
         )}
       </div>
     </div>

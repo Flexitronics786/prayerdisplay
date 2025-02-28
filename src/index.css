@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
 
 @tailwind base;
@@ -166,9 +165,13 @@
 }
 
 .maghrib-header {
-  @apply bg-red-700 text-white border-red-600;
+  @apply bg-teal-700 text-white border-teal-600;
 }
 
 .isha-header {
   @apply bg-purple-700 text-white border-purple-600;
+}
+
+.jummah-header {
+  @apply bg-indigo-700 text-white border-indigo-500;
 }
