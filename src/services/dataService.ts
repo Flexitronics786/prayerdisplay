@@ -1,4 +1,3 @@
-
 import { Hadith, PrayerTime, User, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,14 +111,27 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
   try {
     console.log("Adding prayer time entry:", entry);
     
-    // Make sure all required fields are present and have string values
-    const sanitizedEntry = Object.fromEntries(
-      Object.entries(entry).map(([key, value]) => [key, value === undefined ? "" : value])
-    );
+    // Fix: Don't convert to an array of objects, keep as a single object
+    // Make sure all required fields have values
+    const sanitizedEntry: Omit<DetailedPrayerTime, 'id' | 'created_at'> = {
+      date: entry.date,
+      day: entry.day,
+      sehri_end: entry.sehri_end || '',
+      fajr_jamat: entry.fajr_jamat || '',
+      sunrise: entry.sunrise || '',
+      zuhr_start: entry.zuhr_start || '',
+      zuhr_jamat: entry.zuhr_jamat || '',
+      asr_start: entry.asr_start || '',
+      asr_jamat: entry.asr_jamat || '',
+      maghrib_iftar: entry.maghrib_iftar || '',
+      isha_start: entry.isha_start || '',
+      isha_first_jamat: entry.isha_first_jamat || '',
+      isha_second_jamat: entry.isha_second_jamat || ''
+    };
     
     const { data, error } = await supabase
       .from('prayer_times')
-      .insert([sanitizedEntry])
+      .insert(sanitizedEntry)
       .select()
       .single();
 
