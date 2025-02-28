@@ -153,7 +153,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
               ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
               <span className="text-amber-900 text-base font-medium">{item.label}:</span>
-              <span className="font-bold text-amber-950 text-lg clock-text">{item.time}</span>
+              <span className="font-bold text-amber-950 text-xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
