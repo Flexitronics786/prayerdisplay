@@ -194,139 +194,322 @@ const PrayerTimesTableEditor = () => {
         </Button>
       </div>
 
-      <div className="overflow-x-auto relative">
-        <ScrollArea className="h-[600px] w-full">
-          <div className="min-w-max">
-            <Table>
-              <TableHeader className="sticky top-0 bg-mosque-dark z-10">
-                <TableRow>
-                  <TableHead className="text-mosque-light w-[100px]">Date</TableHead>
-                  <TableHead className="text-mosque-light">Day</TableHead>
-                  <TableHead className="text-mosque-light">Sehri End</TableHead>
-                  <TableHead className="text-mosque-light">Fajr Jamat</TableHead>
-                  <TableHead className="text-mosque-light">Sunrise</TableHead>
-                  <TableHead className="text-mosque-light">Zuhr Start</TableHead>
-                  <TableHead className="text-mosque-light">Zuhr Jamat</TableHead>
-                  <TableHead className="text-mosque-light">Asr Start</TableHead>
-                  <TableHead className="text-mosque-light">Asr Jamat</TableHead>
-                  <TableHead className="text-mosque-light">Maghrib/Iftar</TableHead>
-                  <TableHead className="text-mosque-light">Isha Start</TableHead>
-                  <TableHead className="text-mosque-light">1st Jama'at</TableHead>
-                  <TableHead className="text-mosque-light">2nd Jama'at</TableHead>
-                  <TableHead className="text-mosque-light w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isAdding && (
-                  <TableRow className="border-t border-white/10">
-                    <TableCell>
-                      <Input
-                        type="date"
-                        value={newEntry.date}
-                        onChange={(e) => handleChange('date', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={newEntry.day}
-                        readOnly
-                        className="bg-white/5 border-white/20 text-white cursor-not-allowed"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.sehri_end || ''}
-                        onChange={(e) => handleChange('sehri_end', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.fajr_jamat || ''}
-                        onChange={(e) => handleChange('fajr_jamat', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.sunrise || ''}
-                        onChange={(e) => handleChange('sunrise', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.zuhr_start || ''}
-                        onChange={(e) => handleChange('zuhr_start', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.zuhr_jamat || ''}
-                        onChange={(e) => handleChange('zuhr_jamat', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.asr_start || ''}
-                        onChange={(e) => handleChange('asr_start', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.asr_jamat || ''}
-                        onChange={(e) => handleChange('asr_jamat', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.maghrib_iftar || ''}
-                        onChange={(e) => handleChange('maghrib_iftar', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.isha_start || ''}
-                        onChange={(e) => handleChange('isha_start', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.isha_first_jamat || ''}
-                        onChange={(e) => handleChange('isha_first_jamat', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="time"
-                        value={newEntry.isha_second_jamat || ''}
-                        onChange={(e) => handleChange('isha_second_jamat', e.target.value)}
-                        className="bg-white/10 border-white/20 text-white"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
+      <div className="w-full overflow-auto">
+        <Table>
+          <TableHeader className="sticky top-0 bg-mosque-dark z-10">
+            <TableRow>
+              <TableHead className="text-mosque-light w-[100px]">Date</TableHead>
+              <TableHead className="text-mosque-light">Day</TableHead>
+              <TableHead className="text-mosque-light">Sehri End</TableHead>
+              <TableHead className="text-mosque-light">Fajr Jamat</TableHead>
+              <TableHead className="text-mosque-light">Sunrise</TableHead>
+              <TableHead className="text-mosque-light">Zuhr Start</TableHead>
+              <TableHead className="text-mosque-light">Zuhr Jamat</TableHead>
+              <TableHead className="text-mosque-light">Asr Start</TableHead>
+              <TableHead className="text-mosque-light">Asr Jamat</TableHead>
+              <TableHead className="text-mosque-light">Maghrib/Iftar</TableHead>
+              <TableHead className="text-mosque-light">Isha Start</TableHead>
+              <TableHead className="text-mosque-light">1st Jama'at</TableHead>
+              <TableHead className="text-mosque-light">2nd Jama'at</TableHead>
+              <TableHead className="text-mosque-light w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isAdding && (
+              <TableRow className="border-t border-white/10">
+                <TableCell>
+                  <Input
+                    type="date"
+                    value={newEntry.date}
+                    onChange={(e) => handleChange('date', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    value={newEntry.day}
+                    readOnly
+                    className="bg-white/5 border-white/20 text-white cursor-not-allowed w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.sehri_end || ''}
+                    onChange={(e) => handleChange('sehri_end', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.fajr_jamat || ''}
+                    onChange={(e) => handleChange('fajr_jamat', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.sunrise || ''}
+                    onChange={(e) => handleChange('sunrise', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.zuhr_start || ''}
+                    onChange={(e) => handleChange('zuhr_start', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.zuhr_jamat || ''}
+                    onChange={(e) => handleChange('zuhr_jamat', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.asr_start || ''}
+                    onChange={(e) => handleChange('asr_start', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.asr_jamat || ''}
+                    onChange={(e) => handleChange('asr_jamat', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.maghrib_iftar || ''}
+                    onChange={(e) => handleChange('maghrib_iftar', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.isha_start || ''}
+                    onChange={(e) => handleChange('isha_start', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.isha_first_jamat || ''}
+                    onChange={(e) => handleChange('isha_first_jamat', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="time"
+                    value={newEntry.isha_second_jamat || ''}
+                    onChange={(e) => handleChange('isha_second_jamat', e.target.value)}
+                    className="bg-white/10 border-white/20 text-white w-full"
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Button 
+                      size="sm" 
+                      onClick={handleAdd}
+                      className="bg-green-600 hover:bg-green-700"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 
+                        <span className="animate-spin mr-1">⏳</span> : 
+                        <Check className="h-4 w-4" />
+                      }
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={() => setIsAdding(false)}
+                      variant="destructive"
+                      disabled={isSubmitting}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            
+            {prayerTimes.map((entry) => (
+              <TableRow key={entry.id} className="border-t border-white/10">
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="date"
+                      value={entry.date}
+                      onChange={(e) => handleChange('date', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.date
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      value={entry.day}
+                      readOnly
+                      className="bg-white/5 border-white/20 text-white cursor-not-allowed w-full"
+                    />
+                  ) : (
+                    entry.day
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.sehri_end}
+                      onChange={(e) => handleChange('sehri_end', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.sehri_end
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.fajr_jamat}
+                      onChange={(e) => handleChange('fajr_jamat', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.fajr_jamat
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.sunrise}
+                      onChange={(e) => handleChange('sunrise', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.sunrise
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.zuhr_start}
+                      onChange={(e) => handleChange('zuhr_start', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.zuhr_start
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.zuhr_jamat}
+                      onChange={(e) => handleChange('zuhr_jamat', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.zuhr_jamat
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.asr_start}
+                      onChange={(e) => handleChange('asr_start', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.asr_start
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.asr_jamat}
+                      onChange={(e) => handleChange('asr_jamat', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.asr_jamat
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.maghrib_iftar}
+                      onChange={(e) => handleChange('maghrib_iftar', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.maghrib_iftar
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.isha_start}
+                      onChange={(e) => handleChange('isha_start', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.isha_start
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.isha_first_jamat}
+                      onChange={(e) => handleChange('isha_first_jamat', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.isha_first_jamat
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingId === entry.id ? (
+                    <Input
+                      type="time"
+                      value={entry.isha_second_jamat}
+                      onChange={(e) => handleChange('isha_second_jamat', e.target.value, entry.id)}
+                      className="bg-white/10 border-white/20 text-white w-full"
+                    />
+                  ) : (
+                    entry.isha_second_jamat
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    {editingId === entry.id ? (
+                      <>
                         <Button 
                           size="sm" 
-                          onClick={handleAdd}
+                          onClick={() => handleUpdate(entry.id)}
                           className="bg-green-600 hover:bg-green-700"
                           disabled={isSubmitting}
                         >
@@ -337,226 +520,39 @@ const PrayerTimesTableEditor = () => {
                         </Button>
                         <Button 
                           size="sm" 
-                          onClick={() => setIsAdding(false)}
+                          onClick={() => setEditingId(null)}
                           variant="destructive"
                           disabled={isSubmitting}
                         >
                           <X className="h-4 w-4" />
                         </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-                
-                {prayerTimes.map((entry) => (
-                  <TableRow key={entry.id} className="border-t border-white/10">
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="date"
-                          value={entry.date}
-                          onChange={(e) => handleChange('date', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.date
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          value={entry.day}
-                          readOnly
-                          className="bg-white/5 border-white/20 text-white cursor-not-allowed"
-                        />
-                      ) : (
-                        entry.day
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.sehri_end}
-                          onChange={(e) => handleChange('sehri_end', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.sehri_end
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.fajr_jamat}
-                          onChange={(e) => handleChange('fajr_jamat', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.fajr_jamat
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.sunrise}
-                          onChange={(e) => handleChange('sunrise', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.sunrise
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.zuhr_start}
-                          onChange={(e) => handleChange('zuhr_start', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.zuhr_start
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.zuhr_jamat}
-                          onChange={(e) => handleChange('zuhr_jamat', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.zuhr_jamat
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.asr_start}
-                          onChange={(e) => handleChange('asr_start', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.asr_start
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.asr_jamat}
-                          onChange={(e) => handleChange('asr_jamat', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.asr_jamat
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.maghrib_iftar}
-                          onChange={(e) => handleChange('maghrib_iftar', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.maghrib_iftar
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.isha_start}
-                          onChange={(e) => handleChange('isha_start', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.isha_start
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.isha_first_jamat}
-                          onChange={(e) => handleChange('isha_first_jamat', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.isha_first_jamat
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === entry.id ? (
-                        <Input
-                          type="time"
-                          value={entry.isha_second_jamat}
-                          onChange={(e) => handleChange('isha_second_jamat', e.target.value, entry.id)}
-                          className="bg-white/10 border-white/20 text-white"
-                        />
-                      ) : (
-                        entry.isha_second_jamat
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {editingId === entry.id ? (
-                          <>
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleUpdate(entry.id)}
-                              className="bg-green-600 hover:bg-green-700"
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting ? 
-                                <span className="animate-spin mr-1">⏳</span> : 
-                                <Check className="h-4 w-4" />
-                              }
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              onClick={() => setEditingId(null)}
-                              variant="destructive"
-                              disabled={isSubmitting}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button 
-                              size="sm" 
-                              onClick={() => setEditingId(entry.id)}
-                              className="bg-mosque-accent hover:bg-mosque-accent/80"
-                              disabled={isSubmitting}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleDelete(entry.id)}
-                              variant="destructive"
-                              disabled={isSubmitting}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </ScrollArea>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          size="sm" 
+                          onClick={() => setEditingId(entry.id)}
+                          className="bg-mosque-accent hover:bg-mosque-accent/80"
+                          disabled={isSubmitting}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleDelete(entry.id)}
+                          variant="destructive"
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       
       <div className="mt-4 text-mosque-light/70 text-xs">
