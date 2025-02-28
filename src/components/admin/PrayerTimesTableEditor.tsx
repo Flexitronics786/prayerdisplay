@@ -177,16 +177,16 @@ const PrayerTimesTableEditor = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center p-4 text-white">Loading prayer times...</div>;
+    return <div className="text-center p-4 text-amber-800">Loading prayer times...</div>;
   }
 
   return (
-    <div className="glass-card rounded-xl p-6 animate-fade-in">
+    <div className="bg-white rounded-xl p-6 shadow-md animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-bold text-white">Prayer Times Table</h3>
+        <h3 className="text-xl font-bold text-amber-800">Prayer Times Table</h3>
         <Button
           onClick={() => setIsAdding(!isAdding)}
-          className="bg-mosque-accent hover:bg-mosque-accent/80 text-white"
+          className="bg-amber-600 hover:bg-amber-700 text-white"
           disabled={isSubmitting}
         >
           {isAdding ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -196,40 +196,40 @@ const PrayerTimesTableEditor = () => {
 
       <div className="w-full overflow-auto">
         <Table>
-          <TableHeader className="sticky top-0 bg-mosque-dark z-10">
+          <TableHeader className="sticky top-0 bg-amber-100 z-10">
             <TableRow>
-              <TableHead className="text-mosque-light w-[100px]">Date</TableHead>
-              <TableHead className="text-mosque-light">Day</TableHead>
-              <TableHead className="text-mosque-light">Sehri End</TableHead>
-              <TableHead className="text-mosque-light">Fajr Jamat</TableHead>
-              <TableHead className="text-mosque-light">Sunrise</TableHead>
-              <TableHead className="text-mosque-light">Zuhr Start</TableHead>
-              <TableHead className="text-mosque-light">Zuhr Jamat</TableHead>
-              <TableHead className="text-mosque-light">Asr Start</TableHead>
-              <TableHead className="text-mosque-light">Asr Jamat</TableHead>
-              <TableHead className="text-mosque-light">Maghrib/Iftar</TableHead>
-              <TableHead className="text-mosque-light">Isha Start</TableHead>
-              <TableHead className="text-mosque-light">1st Jama'at</TableHead>
-              <TableHead className="text-mosque-light">2nd Jama'at</TableHead>
-              <TableHead className="text-mosque-light w-[100px]">Actions</TableHead>
+              <TableHead className="text-amber-800 w-[100px]">Date</TableHead>
+              <TableHead className="text-amber-800">Day</TableHead>
+              <TableHead className="text-amber-800">Sehri End</TableHead>
+              <TableHead className="text-amber-800">Fajr Jamat</TableHead>
+              <TableHead className="text-amber-800">Sunrise</TableHead>
+              <TableHead className="text-amber-800">Zuhr Start</TableHead>
+              <TableHead className="text-amber-800">Zuhr Jamat</TableHead>
+              <TableHead className="text-amber-800">Asr Start</TableHead>
+              <TableHead className="text-amber-800">Asr Jamat</TableHead>
+              <TableHead className="text-amber-800">Maghrib/Iftar</TableHead>
+              <TableHead className="text-amber-800">Isha Start</TableHead>
+              <TableHead className="text-amber-800">1st Jama'at</TableHead>
+              <TableHead className="text-amber-800">2nd Jama'at</TableHead>
+              <TableHead className="text-amber-800 w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isAdding && (
-              <TableRow className="border-t border-white/10">
+              <TableRow className="border-t border-amber-100">
                 <TableCell>
                   <Input
                     type="date"
                     value={newEntry.date}
                     onChange={(e) => handleChange('date', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
                     value={newEntry.day}
                     readOnly
-                    className="bg-white/5 border-white/20 text-white cursor-not-allowed w-full"
+                    className="bg-amber-50/50 border-amber-200 text-amber-700 cursor-not-allowed w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -237,7 +237,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.sehri_end || ''}
                     onChange={(e) => handleChange('sehri_end', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -245,7 +245,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.fajr_jamat || ''}
                     onChange={(e) => handleChange('fajr_jamat', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -253,7 +253,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.sunrise || ''}
                     onChange={(e) => handleChange('sunrise', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -261,7 +261,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.zuhr_start || ''}
                     onChange={(e) => handleChange('zuhr_start', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -269,7 +269,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.zuhr_jamat || ''}
                     onChange={(e) => handleChange('zuhr_jamat', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -277,7 +277,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.asr_start || ''}
                     onChange={(e) => handleChange('asr_start', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -285,7 +285,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.asr_jamat || ''}
                     onChange={(e) => handleChange('asr_jamat', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -293,7 +293,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.maghrib_iftar || ''}
                     onChange={(e) => handleChange('maghrib_iftar', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -301,7 +301,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.isha_start || ''}
                     onChange={(e) => handleChange('isha_start', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -309,7 +309,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.isha_first_jamat || ''}
                     onChange={(e) => handleChange('isha_first_jamat', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -317,7 +317,7 @@ const PrayerTimesTableEditor = () => {
                     type="time"
                     value={newEntry.isha_second_jamat || ''}
                     onChange={(e) => handleChange('isha_second_jamat', e.target.value)}
-                    className="bg-white/10 border-white/20 text-white w-full"
+                    className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                   />
                 </TableCell>
                 <TableCell>
@@ -347,17 +347,17 @@ const PrayerTimesTableEditor = () => {
             )}
             
             {prayerTimes.map((entry) => (
-              <TableRow key={entry.id} className="border-t border-white/10">
+              <TableRow key={entry.id} className="border-t border-amber-100">
                 <TableCell>
                   {editingId === entry.id ? (
                     <Input
                       type="date"
                       value={entry.date}
                       onChange={(e) => handleChange('date', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.date
+                    <span className="text-amber-900">{entry.date}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -365,10 +365,10 @@ const PrayerTimesTableEditor = () => {
                     <Input
                       value={entry.day}
                       readOnly
-                      className="bg-white/5 border-white/20 text-white cursor-not-allowed w-full"
+                      className="bg-amber-50/50 border-amber-200 text-amber-700 cursor-not-allowed w-full"
                     />
                   ) : (
-                    entry.day
+                    <span className="text-amber-900">{entry.day}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -377,10 +377,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.sehri_end}
                       onChange={(e) => handleChange('sehri_end', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.sehri_end
+                    <span className="text-amber-900">{entry.sehri_end}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -389,10 +389,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.fajr_jamat}
                       onChange={(e) => handleChange('fajr_jamat', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.fajr_jamat
+                    <span className="text-amber-900">{entry.fajr_jamat}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -401,10 +401,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.sunrise}
                       onChange={(e) => handleChange('sunrise', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.sunrise
+                    <span className="text-amber-900">{entry.sunrise}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -413,10 +413,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.zuhr_start}
                       onChange={(e) => handleChange('zuhr_start', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.zuhr_start
+                    <span className="text-amber-900">{entry.zuhr_start}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -425,10 +425,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.zuhr_jamat}
                       onChange={(e) => handleChange('zuhr_jamat', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.zuhr_jamat
+                    <span className="text-amber-900">{entry.zuhr_jamat}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -437,10 +437,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.asr_start}
                       onChange={(e) => handleChange('asr_start', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.asr_start
+                    <span className="text-amber-900">{entry.asr_start}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -449,10 +449,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.asr_jamat}
                       onChange={(e) => handleChange('asr_jamat', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.asr_jamat
+                    <span className="text-amber-900">{entry.asr_jamat}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -461,10 +461,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.maghrib_iftar}
                       onChange={(e) => handleChange('maghrib_iftar', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.maghrib_iftar
+                    <span className="text-amber-900">{entry.maghrib_iftar}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -473,10 +473,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.isha_start}
                       onChange={(e) => handleChange('isha_start', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.isha_start
+                    <span className="text-amber-900">{entry.isha_start}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -485,10 +485,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.isha_first_jamat}
                       onChange={(e) => handleChange('isha_first_jamat', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.isha_first_jamat
+                    <span className="text-amber-900">{entry.isha_first_jamat}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -497,10 +497,10 @@ const PrayerTimesTableEditor = () => {
                       type="time"
                       value={entry.isha_second_jamat}
                       onChange={(e) => handleChange('isha_second_jamat', e.target.value, entry.id)}
-                      className="bg-white/10 border-white/20 text-white w-full"
+                      className="bg-amber-50 border-amber-200 text-amber-900 w-full"
                     />
                   ) : (
-                    entry.isha_second_jamat
+                    <span className="text-amber-900">{entry.isha_second_jamat}</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -532,7 +532,7 @@ const PrayerTimesTableEditor = () => {
                         <Button 
                           size="sm" 
                           onClick={() => setEditingId(entry.id)}
-                          className="bg-mosque-accent hover:bg-mosque-accent/80"
+                          className="bg-amber-600 hover:bg-amber-700"
                           disabled={isSubmitting}
                         >
                           <Pencil className="h-4 w-4" />
@@ -555,7 +555,7 @@ const PrayerTimesTableEditor = () => {
         </Table>
       </div>
       
-      <div className="mt-4 text-mosque-light/70 text-xs">
+      <div className="mt-4 text-amber-700 text-xs">
         <p>• All times should be in 24-hour format (HH:MM)</p>
         <p>• Date should be in YYYY-MM-DD format</p>
         <p>• The date in the table will be used for prayer times on the display</p>

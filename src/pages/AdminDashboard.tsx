@@ -47,29 +47,29 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-mosque-light text-xl animate-pulse">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-amber-50">
+        <div className="text-amber-800 text-xl animate-pulse">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden">
+    <div className="min-h-screen p-6 relative overflow-hidden bg-amber-50">
       <div className="pattern-overlay"></div>
       <div className="max-w-7xl mx-auto">
         <AdminNavbar />
         
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-amber-100">
             <TabsTrigger 
               value="prayer-table" 
-              className="data-[state=active]:bg-mosque-accent data-[state=active]:text-white"
+              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
             >
               Prayer Times Table
             </TabsTrigger>
             <TabsTrigger 
               value="hadith" 
-              className="data-[state=active]:bg-mosque-accent data-[state=active]:text-white"
+              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
             >
               Edit Hadith
             </TabsTrigger>

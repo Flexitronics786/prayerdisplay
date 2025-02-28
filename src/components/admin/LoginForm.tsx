@@ -34,11 +34,11 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="glass-card p-8 rounded-xl max-w-md w-full mx-auto animate-fade-in">
-      <h2 className="text-2xl font-bold text-white mb-6">Admin Login</h2>
+    <div className="bg-white p-8 rounded-xl max-w-md w-full mx-auto shadow-lg animate-fade-in">
+      <h2 className="text-2xl font-bold text-amber-800 mb-6">Admin Login</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-mosque-light mb-2">
+          <label htmlFor="email" className="block text-amber-700 mb-2">
             Email
           </label>
           <Input
@@ -47,12 +47,12 @@ const LoginForm = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full bg-white/10 border-white/20 text-white"
+            className="w-full bg-amber-50 border-amber-200 text-amber-900"
             placeholder="admin@mosque.com"
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-mosque-light mb-2">
+          <label htmlFor="password" className="block text-amber-700 mb-2">
             Password
           </label>
           <Input
@@ -61,19 +61,19 @@ const LoginForm = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full bg-white/10 border-white/20 text-white"
+            className="w-full bg-amber-50 border-amber-200 text-amber-900"
             placeholder="••••••••"
           />
         </div>
         <Button
           type="submit"
-          className="w-full bg-mosque-accent hover:bg-mosque-accent/80 text-white"
+          className="w-full bg-amber-600 hover:bg-amber-700 text-white"
           disabled={isLoading}
         >
           {isLoading ? "Logging in..." : "Login"}
         </Button>
       </form>
-      <div className="mt-4 text-mosque-light/70 text-sm text-center">
+      <div className="mt-4 text-amber-600 text-sm text-center">
         <p>Demo credentials:</p>
         <p>Email: admin@mosque.com</p>
         <p>Password: admin123</p>

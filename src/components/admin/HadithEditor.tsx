@@ -33,38 +33,38 @@ const HadithEditor = ({ currentHadith, onUpdate }: HadithEditorProps) => {
   };
 
   return (
-    <div className="glass-card rounded-xl p-6 animate-fade-in">
-      <h3 className="text-xl font-bold text-white mb-4">Edit Hadith of the Day</h3>
+    <div className="bg-white rounded-xl p-6 shadow-md animate-fade-in">
+      <h3 className="text-xl font-bold text-amber-800 mb-4">Edit Hadith of the Day</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="hadithText" className="block text-mosque-light mb-2">
+          <label htmlFor="hadithText" className="block text-amber-800 mb-2">
             Hadith Text
           </label>
           <Textarea
             id="hadithText"
             value={hadith.text}
             onChange={(e) => setHadith({ ...hadith, text: e.target.value })}
-            className="min-h-[100px] bg-white/10 border-white/20 text-white"
+            className="min-h-[100px] bg-amber-50 border-amber-200 text-amber-900"
             placeholder="Enter the hadith text..."
             required
           />
         </div>
         <div>
-          <label htmlFor="source" className="block text-mosque-light mb-2">
+          <label htmlFor="source" className="block text-amber-800 mb-2">
             Source
           </label>
           <Input
             id="source"
             value={hadith.source}
             onChange={(e) => setHadith({ ...hadith, source: e.target.value })}
-            className="bg-white/10 border-white/20 text-white"
+            className="bg-amber-50 border-amber-200 text-amber-900"
             placeholder="e.g., Sahih al-Bukhari"
             required
           />
         </div>
         <Button
           type="submit"
-          className="bg-mosque-accent hover:bg-mosque-accent/80 text-white"
+          className="bg-amber-600 hover:bg-amber-700 text-white"
           disabled={isSubmitting}
         >
           {isSubmitting ? "Updating..." : "Update Hadith"}

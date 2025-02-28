@@ -18,14 +18,14 @@ const AdminNavbar = () => {
   };
 
   return (
-    <nav className="glass-card mb-6 py-4 px-6 rounded-xl flex items-center justify-between">
+    <nav className="bg-white mb-6 py-4 px-6 rounded-xl flex items-center justify-between shadow-md">
       <div>
-        <h2 className="text-xl font-bold text-mosque-light">Prayer Times Admin</h2>
+        <h2 className="text-xl font-bold text-amber-800">Prayer Times Admin</h2>
       </div>
       <div className="flex space-x-4">
         <Button 
           variant="outline" 
-          className="border-mosque-light/30 text-mosque-light hover:bg-mosque-accent/20 hover:text-white"
+          className="border-amber-300 text-amber-700 hover:bg-amber-100 hover:text-amber-900"
           onClick={handleViewDisplay}
         >
           View Display
