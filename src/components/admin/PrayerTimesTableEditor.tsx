@@ -120,8 +120,9 @@ const PrayerTimesTableEditor = () => {
 
   const handleAdd = async () => {
     const requiredFields: (keyof DetailedPrayerTime)[] = [
-      'date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 
-      'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'
+      'date', 'day', 'sehri_end', 'fajr_jamat', 'sunrise', 'zuhr_start', 
+      'zuhr_jamat', 'asr_start', 'asr_jamat', 'maghrib_iftar', 'isha_start', 
+      'isha_first_jamat', 'isha_second_jamat'
     ];
     
     const missingFields = requiredFields.filter(field => !newEntry[field]);
@@ -213,8 +214,6 @@ const PrayerTimesTableEditor = () => {
   // Format time display for 12-hour time
   const formatTimeDisplay = (time24h: string): string => {
     if (!time24h) return '';
-    // Skip if already in 12-hour format
-    if (time24h.includes(' ')) return time24h;
     return convertTo12Hour(time24h);
   };
 
