@@ -232,7 +232,7 @@ export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith>
     // Determine if this is a new hadith
     const isNew = !hadithData.id || (typeof hadithData.id === 'string' && hadithData.id.startsWith('temp-'));
 
-    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);\
+    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);
     
     let result;
     
@@ -823,3 +823,161 @@ export const importPrayerTimesFromSheet = async (
           error: `Imported ${importedEntries.length} entries to local storage due to RLS errors. ${errorMessage}` 
         };
       } else {
+        return { success: false, count: 0, error: errorMessage };
+      }
+    } else {
+      // No errors, return success
+      return { 
+        success: true, 
+        count: importedEntries.length 
+      };
+    }
+  } catch (error) {
+    console.error('Error importing prayer times from sheet:', error);
+    return { 
+      success: false, 
+      count: 0, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred during import'
+    };
+  }
+};
+
+// Helper function to update local storage with an imported entry
+const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
+  const savedTimes = localStorage.getItem('local-prayer-times');
+  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+  
+  // Remove any existing entry for this date (to avoid duplicates)
+  const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => 
+    item.date !== entry.date
+  );
+  
+  // Add the new entry
+  filteredTimes.push(entry);
+  localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
+};
+
+// Helper function to parse CSV data
+const parseCSV = (text: string): string[][] => {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    // Simple CSV parsing (doesn't handle all edge cases but works for most data)
+    const row: string[] = [];
+    let inQuotes = false;
+    let currentField = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        row.push(currentField.trim());
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+    
+    // Add the last field
+    row.push(currentField.trim());
+    return row;
+  }).filter(row => row.length > 0 && !row.every(cell => cell === ''));
+};
+
+// Format date from various formats to YYYY-MM-DD
+const formatDate = (dateStr: string): string => {
+  try {
+    // Try to parse the date string
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      // If it's not a valid date, return as is
+      return dateStr;
+    }
+    
+    // Format as YYYY-MM-DD
+    return date.toISOString().split('T')[0];
+  } catch (e) {
+    return dateStr; // Return original if parsing fails
+  }
+};
+
+// Format time to HH:MM format
+const formatTime = (timeStr: string): string => {
+  if (!timeStr) return '';
+  
+  // Try to extract time in various formats
+  const timePattern = /(\d{1,2})[.:h]?(\d{2})?/;
+  const match = timeStr.match(timePattern);
+  
+  if (match) {
+    const hours = match[1].padStart(2, '0');
+    const minutes = (match[2] || '00').padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+  
+  return timeStr; // Return original if parsing fails
+};
+
+// Validate required fields for prayer time entries
+const validateRequiredFields = (entry: Partial<DetailedPrayerTime>): string[] => {
+  const missingFields: string[] = [];
+  
+  if (!entry.date) missingFields.push('date');
+  if (!entry.day) missingFields.push('day');
+  if (!entry.fajr_jamat) missingFields.push('fajr_jamat');
+  if (!entry.maghrib_iftar) missingFields.push('maghrib_iftar');
+  
+  return missingFields;
+};
+
+// Helper function to mark active and next prayers
+const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
+  const currentTime = getCurrentTime24h();
+  
+  // Sort prayers by time
+  const sortedPrayers = [...prayerTimes].sort((a, b) => {
+    return a.time.localeCompare(b.time);
+  });
+  
+  // Find current and next prayers
+  let foundActive = false;
+  let foundNext = false;
+  
+  // First pass: find active prayer
+  for (let i = sortedPrayers.length - 1; i >= 0; i--) {
+    const prayer = sortedPrayers[i];
+    const isPast = !isTimeBefore(currentTime, prayer.time);
+    
+    if (isPast && !foundActive) {
+      prayer.isActive = true;
+      foundActive = true;
+      
+      // Special styling for active prayers
+      if (prayer.name === 'Maghrib') {
+        prayer.style = { backgroundColor: '#d1fae5' }; // Soft green
+      } else if (prayer.name === 'Isha') {
+        prayer.style = { backgroundColor: '#fef3c7' }; // Soft peach
+      } else if (prayer.name.includes('Jumuah') || prayer.name.includes('Jummah')) {
+        prayer.style = { backgroundColor: '#fef9c3' }; // Soft yellow
+      }
+    } else {
+      prayer.isActive = false;
+    }
+  }
+  
+  // Second pass: find next prayer
+  for (let i = 0; i < sortedPrayers.length; i++) {
+    const prayer = sortedPrayers[i];
+    const isFuture = isTimeBefore(currentTime, prayer.time);
+    
+    if (isFuture && !foundNext) {
+      prayer.isNext = true;
+      foundNext = true;
+    } else {
+      prayer.isNext = false;
+    }
+  }
+  
+  return sortedPrayers;
+};
