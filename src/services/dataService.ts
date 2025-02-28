@@ -186,79 +186,102 @@ export const fetchDailyHadithsForMonth = async (month: string): Promise<DailyHad
 // Save a daily hadith
 export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith> => {
   try {
+    // Deep copy the hadith to prevent mutation issues
+    const hadithData = JSON.parse(JSON.stringify(hadith));
+    
     // Ensure the hadith has a month and it's in the correct format (YYYY-MM)
-    if (!hadith.month || !/^\d{4}-\d{2}$/.test(hadith.month)) {
-      hadith.month = new Date().toISOString().substring(0, 7);
-      console.log("Fixed or added month to hadith:", hadith.month);
+    if (!hadithData.month || !/^\d{4}-\d{2}$/.test(hadithData.month)) {
+      hadithData.month = new Date().toISOString().substring(0, 7);
+      console.log("Fixed or added month to hadith:", hadithData.month);
     }
 
-    // Validate essential fields
-    if (!hadith.text || !hadith.source || !hadith.day_of_month) {
-      console.error("Missing required hadith fields:", hadith);
-      throw new Error("Hadith is missing required fields");
+    // Validate essential fields and convert types if needed
+    if (!hadithData.text || typeof hadithData.text !== 'string') {
+      throw new Error("Hadith text is required");
+    }
+    
+    if (!hadithData.source || typeof hadithData.source !== 'string') {
+      throw new Error("Hadith source is required");
+    }
+    
+    if (hadithData.day_of_month === undefined || hadithData.day_of_month === null) {
+      throw new Error("Day of month is required");
+    }
+    
+    // Ensure day_of_month is a number
+    hadithData.day_of_month = Number(hadithData.day_of_month);
+    
+    if (isNaN(hadithData.day_of_month) || hadithData.day_of_month < 1 || hadithData.day_of_month > 31) {
+      throw new Error("Day of month must be a number between 1 and 31");
     }
 
-    // Check if this is a new hadith (temporary ID) or an existing one
-    const isNew = hadith.id.startsWith('temp-');
+    // Determine if this is a new hadith
+    const isNew = !hadithData.id || (typeof hadithData.id === 'string' && hadithData.id.startsWith('temp-'));
+
+    console.log(`${isNew ? 'Creating new' : 'Updating existing'} hadith:`, hadithData);
     
     let result;
     
     if (isNew) {
-      console.log("Creating new hadith:", { ...hadith, id: undefined });
+      // For new hadiths, create an insert object without the id
+      const { id, ...insertData } = hadithData;
       
-      // For new hadiths, we need to insert
-      const { id, ...hadithWithoutId } = hadith; // Remove the temporary ID
+      console.log("Inserting new hadith with data:", insertData);
       
       const { data, error } = await supabase
         .from('daily_hadiths')
-        .insert(hadithWithoutId)
+        .insert(insertData)
         .select()
         .single();
       
       if (error) {
         console.error("Error inserting daily hadith:", error);
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
       
       if (!data) {
-        throw new Error("Failed to insert hadith - no data returned");
+        throw new Error("Failed to insert hadith - no data returned from database");
       }
       
       result = data;
       console.log("Successfully created new hadith:", result);
     } else {
-      console.log("Updating existing hadith:", hadith);
+      // For existing hadiths, update with specific fields
+      const { id, ...updateData } = hadithData;
       
-      // For existing hadiths, we update
+      console.log("Updating existing hadith with ID:", id);
+      console.log("Update data:", updateData);
+      
       const { data, error } = await supabase
         .from('daily_hadiths')
-        .update({
-          day_of_month: hadith.day_of_month,
-          text: hadith.text,
-          source: hadith.source,
-          month: hadith.month
-        })
-        .eq('id', hadith.id)
+        .update(updateData)
+        .eq('id', id)
         .select()
         .single();
       
       if (error) {
         console.error("Error updating daily hadith:", error);
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
       
       if (!data) {
-        throw new Error("Failed to update hadith - no data returned");
+        throw new Error("Failed to update hadith - no data returned from database");
       }
       
       result = data;
       console.log("Successfully updated hadith:", result);
     }
     
+    // Return the result as a DailyHadith
     return result as DailyHadith;
   } catch (error) {
     console.error("Error in saveDailyHadith:", error);
-    throw error;
+    // Re-throw the error with a clear message
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error("Unknown error occurred while saving hadith");
+    }
   }
 };
 
@@ -266,9 +289,14 @@ export const saveDailyHadith = async (hadith: DailyHadith): Promise<DailyHadith>
 export const deleteDailyHadith = async (id: string): Promise<boolean> => {
   try {
     // Check if this is a temporary ID (not yet saved to the database)
-    if (id.startsWith('temp-')) {
+    if (id && typeof id === 'string' && id.startsWith('temp-')) {
       // Nothing to delete in the database
       return true;
+    }
+    
+    if (!id) {
+      console.error("Cannot delete hadith with null or undefined ID");
+      throw new Error("Invalid hadith ID");
     }
     
     const { error } = await supabase
