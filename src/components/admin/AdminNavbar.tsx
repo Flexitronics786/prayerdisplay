@@ -1,5 +1,7 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
 
 interface AdminNavbarProps {
   onLogout: () => void;
@@ -18,12 +20,19 @@ const AdminNavbar = ({ onLogout }: AdminNavbarProps) => {
         </div>
         
         <div className="flex items-center space-x-4">
-          {/* Replace any other <a> tags with <Link> components */}
           <Link to="/admin/dashboard" className="hover:text-amber-200 transition-colors">
             Dashboard
           </Link>
           
-          {/* Keep any other navigation items with correct Link components */}
+          <a 
+            href="https://jamimasjidbilal.netlify.app/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-white transition-colors"
+          >
+            <span>View Main Display</span>
+            <ExternalLink className="h-4 w-4" />
+          </a>
           
           <button 
             onClick={onLogout}
