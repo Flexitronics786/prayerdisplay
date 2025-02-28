@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -30,11 +30,11 @@
   }
 
   * {
-    @apply border-border selection:bg-mosque-light/30 selection:text-white;
+    @apply border-border selection:bg-mosque-dark/30 selection:text-white;
   }
   
   body {
-    @apply bg-mosque-dark text-foreground antialiased;
+    @apply bg-mosque-green text-foreground antialiased;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
@@ -44,15 +44,15 @@
 }
 
 .glass-card {
-  @apply bg-white/5 backdrop-blur-sm border border-white/10 shadow-md;
+  @apply bg-white/90 backdrop-blur-sm border border-mosque-dark/10 shadow-md;
 }
 
 .active-prayer {
-  @apply relative bg-mosque-accent/20 text-white;
+  @apply relative bg-mosque-accent/30 text-mosque-dark;
 }
 
 .next-prayer {
-  @apply relative bg-mosque-accent/10 text-mosque-light;
+  @apply relative bg-mosque-accent/20 text-mosque-dark;
 }
 
 .active-prayer::before, .next-prayer::before {
@@ -82,6 +82,19 @@
   background-repeat: repeat;
   background-size: 500px;
   opacity: 0.03;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+}
+
+.mosque-pattern-overlay {
+  background-image: url('/pattern.svg');
+  background-repeat: repeat;
+  background-size: 300px;
+  opacity: 0.05;
   position: absolute;
   top: 0;
   left: 0;

@@ -73,7 +73,8 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'sans-serif'],
-				serif: ['Amiri', 'serif']
+				serif: ['Playfair Display', 'serif'],
+				arabic: ['Amiri', 'serif']
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

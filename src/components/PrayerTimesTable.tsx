@@ -71,19 +71,19 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
   ) => {
     return (
       <div className={`glass-card rounded-xl overflow-hidden prayer-transition 
-        ${isActive ? 'active-prayer border-mosque-accent/50' : 
-          isNext ? 'next-prayer border-mosque-accent/30' : 'border-white/10'}`}
+        ${isActive ? 'active-prayer border-mosque-accent/70' : 
+          isNext ? 'next-prayer border-mosque-accent/50' : 'border-mosque-dark/10'}`}
       >
-        <div className="text-center py-3 border-b border-white/10">
-          <h3 className="text-xl font-bold text-mosque-light">
+        <div className="text-center py-3 border-b border-mosque-dark/10 bg-mosque-dark/5">
+          <h3 className="text-2xl font-bold text-mosque-dark">
             {title}
             {isActive && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-mosque-accent/30 text-mosque-light">
+              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-mosque-accent/30 text-mosque-dark">
                 Current
               </span>
             )}
             {isNext && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-mosque-accent/20 text-mosque-light/90">
+              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-mosque-accent/20 text-mosque-dark/90">
                 Next
               </span>
             )}
@@ -92,11 +92,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
         <div className="px-6 py-4">
           {items.map((item, index) => (
             <div key={index} className={`flex justify-between items-center 
-              ${index < items.length - 1 ? 'mb-4' : ''} 
-              ${index === 1 && title === "Fajr" ? 'pt-3 border-t border-dashed border-white/10' : ''}
+              ${index < items.length - 1 ? 'mb-5' : ''} 
+              ${index === 1 && title === "Fajr" ? 'pt-3 border-t border-dashed border-mosque-dark/10' : ''}
             `}>
-              <span className="text-mosque-light/80">{item.label}:</span>
-              <span className="font-medium text-white clock-text">{item.time}</span>
+              <span className="text-mosque-dark/80 text-lg">{item.label}:</span>
+              <span className="font-medium text-mosque-dark text-xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
@@ -185,10 +185,10 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
   return (
     <div className="animate-scale-in">
       <div className="mb-6">
-        <h3 className="text-2xl font-bold text-white">Prayer Times</h3>
+        <h3 className="text-3xl font-bold text-mosque-dark font-serif">Prayer Times</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Fajr Tile */}
         {renderPrayerTile(
           "Fajr", 

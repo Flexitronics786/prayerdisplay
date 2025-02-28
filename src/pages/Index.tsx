@@ -75,17 +75,19 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden p-8">
-      {/* Decorative background pattern */}
-      <div className="pattern-overlay"></div>
+    <div className="min-h-screen relative overflow-hidden p-4 sm:p-6 md:p-8 bg-mosque-green">
+      <div className="mosque-pattern-overlay"></div>
       
       <div className="max-w-6xl mx-auto">
-        <header className="mb-10 text-center">
-          <h1 className="text-4xl font-bold text-mosque-light mb-2">Masjid Prayer Times</h1>
-          <DigitalClock />
+        <header className="mb-8 text-center">
+          <div className="p-4 rounded-xl bg-mosque-dark/90 backdrop-blur-sm border border-mosque-accent/20 shadow-lg mb-6">
+            <h1 className="text-4xl sm:text-5xl font-bold text-mosque-light mb-2 font-serif">Jami' Masjid Bilal</h1>
+            <div className="h-1 w-32 bg-mosque-accent/50 mx-auto rounded-full mb-2"></div>
+            <DigitalClock />
+          </div>
         </header>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-8">
           <PrayerTimesTable prayerTimes={prayerTimes} />
           {hadith && <HadithDisplay hadith={hadith} />}
         </div>
@@ -93,7 +95,7 @@ const Index = () => {
         <footer className="mt-10 text-center">
           <Link 
             to="/admin" 
-            className="text-mosque-light/30 text-xs hover:text-mosque-light/50 transition-colors"
+            className="text-mosque-dark/50 text-xs hover:text-mosque-dark/70 transition-colors"
           >
             Admin Access
           </Link>
