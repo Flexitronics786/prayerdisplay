@@ -395,6 +395,286 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
   }
 };
 
+// New function to import data from Google Sheets
+export const importPrayerTimesFromSheet = async (
+  sheetId: string, 
+  tabName: string = 'Sheet1',
+  hasHeaderRow: boolean = true,
+  isPublic: boolean = true
+): Promise<{ success: boolean; count: number; error?: string }> => {
+  try {
+    // Construct the Google Sheets API URL
+    // For public sheets, we can use the CSV export feature
+    let url;
+    if (isPublic) {
+      url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
+    } else {
+      // For non-public sheets, we would need a different approach that involves authentication
+      return { 
+        success: false, 
+        count: 0, 
+        error: "Non-public sheets are not supported. Please make your sheet public or use another method." 
+      };
+    }
+
+    console.log("Fetching Google Sheet from URL:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch sheet: ${response.status} ${response.statusText}`);
+    }
+    
+    const csvText = await response.text();
+    const rows = parseCSV(csvText);
+    
+    if (rows.length === 0) {
+      return { success: false, count: 0, error: "No data found in the sheet" };
+    }
+    
+    // Skip header row if specified
+    const dataRows = hasHeaderRow ? rows.slice(1) : rows;
+    
+    if (dataRows.length === 0) {
+      return { success: false, count: 0, error: "No data rows found after header" };
+    }
+    
+    console.log(`Processing ${dataRows.length} rows from Google Sheet`);
+    
+    // Process each row and insert into Supabase
+    const importedEntries: DetailedPrayerTime[] = [];
+    const errors: string[] = [];
+    
+    for (let i = 0; i < dataRows.length; i++) {
+      const row = dataRows[i];
+      
+      // Check if row has enough columns
+      if (row.length < 13) {
+        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)} doesn't have enough columns (${row.length}/13)`);
+        continue;
+      }
+      
+      try {
+        // Map columns to prayer time fields
+        const entry: Omit<DetailedPrayerTime, 'id' | 'created_at'> = {
+          date: formatDate(row[0]),
+          day: row[1],
+          sehri_end: formatTime(row[2]),
+          fajr_jamat: formatTime(row[3]),
+          sunrise: formatTime(row[4]),
+          zuhr_start: formatTime(row[5]),
+          zuhr_jamat: formatTime(row[6]),
+          asr_start: formatTime(row[7]),
+          asr_jamat: formatTime(row[8]),
+          maghrib_iftar: formatTime(row[9]),
+          isha_start: formatTime(row[10]),
+          isha_first_jamat: formatTime(row[11]),
+          isha_second_jamat: formatTime(row[12])
+        };
+        
+        // Validate required fields
+        const missingFields = validateRequiredFields(entry);
+        if (missingFields.length > 0) {
+          errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)} is missing required fields: ${missingFields.join(', ')}`);
+          continue;
+        }
+        
+        // Insert into Supabase
+        const { data, error } = await supabase
+          .from('prayer_times')
+          .upsert({ ...entry }, { onConflict: 'date' })
+          .select()
+          .single();
+          
+        if (error) {
+          console.error(`Error upserting row ${i}:`, error);
+          errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${error.message}`);
+          continue;
+        }
+        
+        if (data) {
+          importedEntries.push(data as DetailedPrayerTime);
+          
+          // Also update local storage for redundancy
+          updateLocalStorageWithImportedEntry(data as DetailedPrayerTime);
+        }
+      } catch (rowError) {
+        console.error(`Error processing row ${i}:`, rowError);
+        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
+      }
+    }
+    
+    // Trigger refresh event
+    window.dispatchEvent(new StorageEvent('storage', { key: 'local-prayer-times' }));
+    
+    console.log(`Import complete: ${importedEntries.length} rows imported, ${errors.length} errors`);
+    
+    // Return summary
+    if (errors.length > 0) {
+      const errorMessage = errors.length <= 3 
+        ? errors.join('; ') 
+        : `${errors.slice(0, 3).join('; ')}... and ${errors.length - 3} more errors`;
+        
+      if (importedEntries.length > 0) {
+        return { 
+          success: true, 
+          count: importedEntries.length, 
+          error: `Imported with ${errors.length} errors: ${errorMessage}` 
+        };
+      } else {
+        return { 
+          success: false, 
+          count: 0, 
+          error: `Import failed with errors: ${errorMessage}` 
+        };
+      }
+    }
+    
+    return { success: true, count: importedEntries.length };
+  } catch (error) {
+    console.error("Error importing from Google Sheets:", error);
+    return { 
+      success: false, 
+      count: 0, 
+      error: error instanceof Error ? error.message : String(error) 
+    };
+  }
+};
+
+// Helper function to parse CSV text
+const parseCSV = (text: string): string[][] => {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    // Handle quoted values (which may contain commas)
+    const result = [];
+    let inQuotes = false;
+    let currentValue = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(currentValue.trim());
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    
+    // Add the last value
+    result.push(currentValue.trim());
+    
+    return result;
+  }).filter(row => row.length > 0 && row.some(cell => cell.trim() !== ''));
+};
+
+// Helper function to format date values
+const formatDate = (dateStr: string): string => {
+  // Try to parse and standardize the date format
+  let formattedDate = dateStr.trim();
+  
+  try {
+    // Check if it's already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+      return formattedDate;
+    }
+    
+    // Try to parse as a date
+    const dateObj = new Date(formattedDate);
+    if (!isNaN(dateObj.getTime())) {
+      // Format as YYYY-MM-DD
+      return dateObj.toISOString().split('T')[0];
+    }
+    
+    // If we get here, use the original string
+    return formattedDate;
+  } catch (error) {
+    console.warn("Error formatting date:", dateStr, error);
+    return formattedDate; // Return original if parsing fails
+  }
+};
+
+// Helper function to format time values
+const formatTime = (timeStr: string): string => {
+  // Standardize time format to HH:MM:SS
+  let formattedTime = timeStr.trim();
+  
+  try {
+    // If it's empty, return an empty string
+    if (!formattedTime) {
+      return '';
+    }
+    
+    // Check if it's already in HH:MM format
+    if (/^\d{1,2}:\d{2}$/.test(formattedTime)) {
+      // Ensure it has leading zeros for hours
+      const [hours, minutes] = formattedTime.split(':');
+      return `${hours.padStart(2, '0')}:${minutes}:00`;
+    }
+    
+    // Check if it's already in HH:MM:SS format
+    if (/^\d{1,2}:\d{2}:\d{2}$/.test(formattedTime)) {
+      // Ensure it has leading zeros for hours
+      const [hours, minutes, seconds] = formattedTime.split(':');
+      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
+    }
+    
+    // Try to parse as a time (e.g., "7:30 AM")
+    const match = formattedTime.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (match) {
+      let [, hours, minutes, seconds = '00', period] = match;
+      
+      // Convert to 24-hour format if AM/PM is specified
+      if (period) {
+        let hourNum = parseInt(hours, 10);
+        if (period.toUpperCase() === 'PM' && hourNum < 12) {
+          hourNum += 12;
+        } else if (period.toUpperCase() === 'AM' && hourNum === 12) {
+          hourNum = 0;
+        }
+        hours = hourNum.toString();
+      }
+      
+      return `${hours.padStart(2, '0')}:${minutes}:${seconds}`;
+    }
+    
+    // If we get here, try using the original string
+    console.warn("Using original time string (couldn't format):", formattedTime);
+    return formattedTime;
+  } catch (error) {
+    console.warn("Error formatting time:", timeStr, error);
+    return formattedTime; // Return original if parsing fails
+  }
+};
+
+// Helper function to validate required fields
+const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
+  const requiredFields: (keyof Omit<DetailedPrayerTime, 'id' | 'created_at'>)[] = [
+    'date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 
+    'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'
+  ];
+  
+  return requiredFields.filter(field => !entry[field]);
+};
+
+// Helper function to update local storage with imported entry
+const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
+  const savedTimes = localStorage.getItem('local-prayer-times');
+  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+  
+  // Remove any existing entry for this date
+  const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => 
+    item.date !== entry.date
+  );
+  
+  // Add the new entry
+  filteredTimes.push(entry);
+  
+  // Store back in local storage
+  localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
+};
+
 // Helper function to mark active and next prayer times
 const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
   const currentTime = getCurrentTime24h();
