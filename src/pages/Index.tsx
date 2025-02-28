@@ -108,6 +108,14 @@ const Index = () => {
     };
   }, [loadData]);
 
+  // Find the next prayer
+  const getNextPrayer = (): PrayerTime | null => {
+    if (!prayerTimes || prayerTimes.length === 0) return null;
+    
+    const nextPrayerIndex = prayerTimes.findIndex(prayer => prayer.isNext);
+    return nextPrayerIndex !== -1 ? prayerTimes[nextPrayerIndex] : null;
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 to-amber-50">
@@ -159,7 +167,7 @@ const Index = () => {
           </div>
           
           <div className="lg:col-span-4">
-            {hadith && <HadithDisplay hadith={hadith} />}
+            {hadith && <HadithDisplay hadith={hadith} nextPrayer={getNextPrayer()} />}
             {debugInfo && (
               <div className="mt-4 p-2 bg-amber-50 rounded-lg text-sm text-amber-800">
                 <details>
