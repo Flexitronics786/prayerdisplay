@@ -127,7 +127,7 @@ export const registerAdmin = async (email: string, password: string): Promise<{u
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
-        id: data.user.id,
+        id: data.user.id,  // Include the user ID here
         email: data.user.email || '',
         is_admin: true
       });

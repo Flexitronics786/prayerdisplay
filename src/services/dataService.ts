@@ -1,12 +1,11 @@
 
-import { Hadith, PrayerTime, User, DetailedPrayerTime } from "@/types";
+import { Hadith, PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
 
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
 const HADITH_KEY = 'mosque-hadith';
-const USER_KEY = 'mosque-user';
 
 // Default prayer times (example)
 const defaultPrayerTimes: PrayerTime[] = [
@@ -394,31 +393,6 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
     console.error('Error deleting prayer time entry:', error);
     return false;
   }
-};
-
-// Mock authentication functions
-export const login = (email: string, password: string): boolean => {
-  // In a real app, this would make an API call to verify credentials
-  if (email === 'admin@mosque.com' && password === 'admin123') {
-    const user: User = { email, isAdmin: true };
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    return true;
-  }
-  return false;
-};
-
-export const getCurrentUser = (): User | null => {
-  try {
-    const saved = localStorage.getItem(USER_KEY);
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
-  }
-};
-
-export const logout = (): void => {
-  localStorage.removeItem(USER_KEY);
 };
 
 // Helper function to mark active and next prayer times
