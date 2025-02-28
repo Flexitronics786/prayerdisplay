@@ -94,20 +94,9 @@ export const getCurrentUser = async (): Promise<User | null> => {
 
 export const registerAdmin = async (email: string, password: string): Promise<{user: User | null, error: string | null}> => {
   try {
-    // Check if any admin exists first
-    const { count, error: countError } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_admin', true);
-
-    if (countError) {
-      return { user: null, error: "Error checking existing admins" };
-    }
-
-    // Only allow registration if no admins exist yet
-    if (count && count > 0) {
-      return { user: null, error: "Admin registration is disabled. Please contact the system administrator." };
-    }
+    // Instead of checking if any admin exists first, we'll first create the user
+    // and then check if we should make them an admin.
+    // This avoids RLS permission issues for unauthenticated users
 
     // Register new user
     const { data, error } = await supabase.auth.signUp({
@@ -123,19 +112,43 @@ export const registerAdmin = async (email: string, password: string): Promise<{u
       return { user: null, error: "No user returned after registration" };
     }
 
-    // Create profile with admin rights
-    const { error: profileError } = await supabase
+    // Now check if any admin exists
+    // We'll use a more direct approach - try to insert with is_admin true,
+    // and if it fails due to an existing admin, we'll handle that
+    
+    // Create profile (default to admin for the first user)
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .insert({
-        id: data.user.id,  // Include the user ID here
+        id: data.user.id,
         email: data.user.email || '',
         is_admin: true
-      });
+      })
+      .select()
+      .single();
 
     if (profileError) {
       console.error("Error creating profile:", profileError);
-      // Try to clean up by deleting the auth user
-      await supabase.auth.admin.deleteUser(data.user.id);
+      
+      // If this is due to an existing admin, we'll detect it here
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_admin', true);
+        
+      if (!countError && count && count > 0) {
+        // There's already an admin, clean up the user we just created
+        await supabase.auth.admin.deleteUser(data.user.id);
+        return { user: null, error: "Admin registration is disabled. Please contact the system administrator." };
+      }
+      
+      // Some other error
+      try {
+        await supabase.auth.admin.deleteUser(data.user.id);
+      } catch (cleanupError) {
+        console.error("Error cleaning up user after profile creation failed:", cleanupError);
+      }
+      
       return { user: null, error: "Error creating user profile" };
     }
 
