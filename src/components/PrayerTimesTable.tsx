@@ -31,28 +31,16 @@ const PrayerTimesTable: React.FC<PrayerTimesTableProps> = ({
     return orderA - orderB;
   });
 
-  // Function to get appropriate classes for prayer tiles based on status
-  const getTileClasses = (prayer: PrayerTime) => {
-    const baseClasses = "flex flex-col justify-between p-4 rounded-lg transition-all";
-    
-    // Get prayer-specific header class
-    let headerClass = "";
-    if (prayer.name === "Fajr") headerClass = "fajr-header";
-    else if (prayer.name === "Zuhr" || prayer.name === "Jummah") headerClass = "zuhr-header";
-    else if (prayer.name === "Asr") headerClass = "asr-header";
-    else if (prayer.name === "Maghrib") headerClass = "maghrib-header";
-    else if (prayer.name === "Isha") headerClass = "isha-header";
-    else headerClass = "bg-amber-100 text-amber-800 border-amber-200";
-    
-    // Add active/next classes
-    if (prayer.isActive) {
-      return `${baseClasses} active-prayer border border-amber-300 shadow-md`;
-    }
-    if (prayer.isNext) {
-      return `${baseClasses} next-prayer border border-amber-200`;
-    }
-    
-    return `${baseClasses} border border-amber-100 hover:bg-amber-50/50`;
+  // Group prayer times by category for layout purposes
+  const mainPrayers = sortedPrayerTimes.filter(prayer => 
+    ['Fajr', 'Zuhr', 'Asr', 'Maghrib', 'Isha'].includes(prayer.name)
+  );
+
+  // Get status labels
+  const getStatusLabel = (prayer: PrayerTime) => {
+    if (prayer.isActive) return "Current";
+    if (prayer.isNext) return "Next";
+    return "";
   };
 
   return (
@@ -61,35 +49,105 @@ const PrayerTimesTable: React.FC<PrayerTimesTableProps> = ({
         Prayer Times
       </h3>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {sortedPrayerTimes.map((prayer) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {mainPrayers.map((prayer) => (
           <div
             key={prayer.id}
-            className={getTileClasses(prayer)}
-            style={prayer.style}
+            className="prayer-tile bg-white border border-amber-100 rounded-lg overflow-hidden"
           >
-            <div className={`prayer-tile-header -mx-4 -mt-4 mb-2 rounded-t-lg ${prayer.name.toLowerCase()}-header`}>
-              <h4 className="font-medium text-lg">
-                {prayer.name}
-                {prayer.isActive && (
-                  <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-                )}
-                {prayer.isNext && (
-                  <span className="ml-2 inline-block w-2 h-2 bg-amber-400 rounded-full"></span>
-                )}
-              </h4>
+            <div className={`prayer-header ${prayer.name.toLowerCase()}-header p-2 text-center text-white font-medium`}>
+              {prayer.name}
+              {getStatusLabel(prayer) && (
+                <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-white/20">
+                  {getStatusLabel(prayer)}
+                </span>
+              )}
             </div>
             
-            <div className="flex-grow"></div>
-            
-            <div className="text-center">
-              <div className="text-2xl font-bold tracking-wide clock-text">
-                {prayer.time}
-              </div>
-              {!compactView && prayer.iqamahTime && (
-                <div className="text-sm mt-1 text-amber-700">
-                  Iqamah: {prayer.iqamahTime}
+            <div className="p-3">
+              {prayer.name === 'Fajr' && (
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-amber-700">Start:</span>
+                    <span className="font-medium">{prayer.time}</span>
+                  </div>
+                  {prayer.iqamahTime && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">Jamat:</span>
+                      <span className="font-medium">{prayer.iqamahTime}</span>
+                    </div>
+                  )}
+                  {/* Add sunrise time if available */}
+                  {sortedPrayerTimes.find(p => p.name === 'Sunrise')?.time && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">Sunrise:</span>
+                      <span className="font-medium">
+                        {sortedPrayerTimes.find(p => p.name === 'Sunrise')?.time}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {prayer.name === 'Zuhr' && (
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-amber-700">Start:</span>
+                    <span className="font-medium">{prayer.time}</span>
+                  </div>
+                  {prayer.iqamahTime && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">Jamat:</span>
+                      <span className="font-medium">{prayer.iqamahTime}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {prayer.name === 'Asr' && (
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-amber-700">Start:</span>
+                    <span className="font-medium">{prayer.time}</span>
+                  </div>
+                  {prayer.iqamahTime && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">Jamat:</span>
+                      <span className="font-medium">{prayer.iqamahTime}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {prayer.name === 'Maghrib' && (
+                <div className="flex justify-between py-1">
+                  <span className="text-amber-700">Iftar:</span>
+                  <span className="font-medium">{prayer.time}</span>
                 </div>
+              )}
+              
+              {prayer.name === 'Isha' && (
+                <>
+                  <div className="flex justify-between py-1">
+                    <span className="text-amber-700">Start:</span>
+                    <span className="font-medium">{prayer.time}</span>
+                  </div>
+                  {prayer.iqamahTime && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">1st Jamat:</span>
+                      <span className="font-medium">{prayer.iqamahTime}</span>
+                    </div>
+                  )}
+                  {/* If we have second jamat time for Isha */}
+                  {sortedPrayerTimes.find(p => p.name === 'Isha 2nd')?.time && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-amber-700">2nd Jamat:</span>
+                      <span className="font-medium">
+                        {sortedPrayerTimes.find(p => p.name === 'Isha 2nd')?.time}
+                      </span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
