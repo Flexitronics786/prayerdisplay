@@ -1,4 +1,3 @@
-
 import { Hadith, PrayerTime, User, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,11 +31,24 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
-      .eq('date', today)
-      .single();
+      .eq('date', today);
 
-    if (error || !data) {
+    // Check if we have data for today
+    if (error || !data || data.length === 0) {
       console.log('Falling back to localStorage', error);
+      
+      // Try to get from local fallback storage
+      const localTimes = localStorage.getItem('local-prayer-times');
+      if (localTimes) {
+        const parsedTimes = JSON.parse(localTimes);
+        // Find today's entry from local storage
+        const todayEntry = parsedTimes.find((entry: any) => entry.date === today);
+        if (todayEntry) {
+          console.log("Using locally stored prayer time for today:", todayEntry);
+          return markActivePrayer(mapToDisplayFormat(todayEntry));
+        }
+      }
+      
       // Fall back to localStorage if no data found for today
       const saved = localStorage.getItem(PRAYER_TIMES_KEY);
       const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
@@ -44,22 +56,26 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     }
 
     // Map Supabase data to PrayerTime format
-    const prayerTimesFromDb: PrayerTime[] = [
-      { id: '1', name: 'Fajr', time: data.fajr_jamat.slice(0, 5) },
-      { id: '2', name: 'Sunrise', time: data.sunrise.slice(0, 5) },
-      { id: '3', name: 'Zuhr', time: data.zuhr_jamat.slice(0, 5) },
-      { id: '4', name: 'Asr', time: data.asr_jamat.slice(0, 5) },
-      { id: '5', name: 'Maghrib', time: data.maghrib_iftar.slice(0, 5) },
-      { id: '6', name: 'Isha', time: data.isha_first_jamat.slice(0, 5) }
-    ];
-
-    return markActivePrayer(prayerTimesFromDb);
+    console.log("Using Supabase data for today's prayer times:", data[0]);
+    return markActivePrayer(mapToDisplayFormat(data[0]));
   } catch (error) {
     console.error('Error fetching prayer times:', error);
     const saved = localStorage.getItem(PRAYER_TIMES_KEY);
     const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
     return markActivePrayer(prayerTimes);
   }
+};
+
+// Helper function to map detailed prayer time to display format
+const mapToDisplayFormat = (data: DetailedPrayerTime): PrayerTime[] => {
+  return [
+    { id: '1', name: 'Fajr', time: data.fajr_jamat.slice(0, 5) },
+    { id: '2', name: 'Sunrise', time: data.sunrise.slice(0, 5) },
+    { id: '3', name: 'Zuhr', time: data.zuhr_jamat.slice(0, 5) },
+    { id: '4', name: 'Asr', time: data.asr_jamat.slice(0, 5) },
+    { id: '5', name: 'Maghrib', time: data.maghrib_iftar.slice(0, 5) },
+    { id: '6', name: 'Isha', time: data.isha_first_jamat.slice(0, 5) }
+  ];
 };
 
 export const updatePrayerTimes = (prayerTimes: PrayerTime[]): void => {
@@ -92,18 +108,49 @@ export const updateHadith = (hadith: Hadith): void => {
 // Functions for the detailed prayer times table
 export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
   try {
+    // First try to fetch from Supabase
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
       .order('date', { ascending: true });
 
-    if (error) {
-      throw error;
+    let prayerTimes: DetailedPrayerTime[] = [];
+    
+    if (error || !data || data.length === 0) {
+      console.error('Error or no data from Supabase:', error);
+    } else {
+      prayerTimes = data as DetailedPrayerTime[];
     }
 
-    return data as DetailedPrayerTime[];
+    // Also check local storage for any offline entries
+    const localTimes = localStorage.getItem('local-prayer-times');
+    if (localTimes) {
+      const parsedLocalTimes = JSON.parse(localTimes) as DetailedPrayerTime[];
+      // Merge with any data from Supabase, removing duplicates based on date
+      const existingDates = new Set(prayerTimes.map(entry => entry.date));
+      
+      for (const localEntry of parsedLocalTimes) {
+        // Only add if we don't already have an entry for this date
+        if (!existingDates.has(localEntry.date)) {
+          prayerTimes.push(localEntry);
+          existingDates.add(localEntry.date);
+        }
+      }
+    }
+    
+    // Sort by date
+    return prayerTimes.sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   } catch (error) {
     console.error('Error fetching all prayer times:', error);
+    
+    // Fallback to local storage completely
+    const localTimes = localStorage.getItem('local-prayer-times');
+    if (localTimes) {
+      return JSON.parse(localTimes) as DetailedPrayerTime[];
+    }
+    
     return [];
   }
 };
@@ -177,6 +224,27 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
 
 export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedPrayerTime>): Promise<DetailedPrayerTime | null> => {
   try {
+    // Check if this is a temporary ID (for locally stored entries)
+    if (id.startsWith('temp-')) {
+      // Update in local storage
+      const savedTimes = localStorage.getItem('local-prayer-times');
+      if (savedTimes) {
+        const localTimes = JSON.parse(savedTimes);
+        const updatedTimes = localTimes.map((item: DetailedPrayerTime) => 
+          item.id === id ? { ...item, ...entry } : item
+        );
+        localStorage.setItem('local-prayer-times', JSON.stringify(updatedTimes));
+        
+        // Find and return the updated entry
+        const updatedEntry = updatedTimes.find((item: DetailedPrayerTime) => item.id === id);
+        if (updatedEntry) {
+          return updatedEntry;
+        }
+      }
+      return null;
+    }
+    
+    // Otherwise update in Supabase
     const { data, error } = await supabase
       .from('prayer_times')
       .update(entry)
@@ -198,6 +266,19 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
 
 export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
   try {
+    // Check if this is a temporary ID (for locally stored entries)
+    if (id.startsWith('temp-')) {
+      // Delete from local storage
+      const savedTimes = localStorage.getItem('local-prayer-times');
+      if (savedTimes) {
+        const localTimes = JSON.parse(savedTimes);
+        const filteredTimes = localTimes.filter((item: DetailedPrayerTime) => item.id !== id);
+        localStorage.setItem('local-prayer-times', JSON.stringify(filteredTimes));
+      }
+      return true;
+    }
+    
+    // Otherwise delete from Supabase
     const { error } = await supabase
       .from('prayer_times')
       .delete()

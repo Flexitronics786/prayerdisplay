@@ -16,9 +16,12 @@ const Index = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        setIsLoading(true);
+        console.log("Loading prayer times and hadith...");
         const times = await fetchPrayerTimes();
         const dailyHadith = await fetchHadith();
         
+        console.log("Fetched prayer times:", times);
         setPrayerTimes(times);
         setHadith(dailyHadith);
       } catch (error) {
@@ -38,16 +41,28 @@ const Index = () => {
         schema: 'public', 
         table: 'prayer_times' 
       }, () => {
+        console.log("Prayer times changed in database, reloading...");
         loadData();
       })
       .subscribe();
 
+    // Also check for changes in local storage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'local-prayer-times') {
+        console.log("Prayer times changed in local storage, reloading...");
+        loadData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
     // Refresh prayer times status every minute
     const interval = setInterval(loadData, 60000);
     
     return () => {
       clearInterval(interval);
       supabase.removeChannel(prayerTimesSubscription);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
