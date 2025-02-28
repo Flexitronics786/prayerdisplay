@@ -20,12 +20,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith }) => {
         <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
         <p className="text-sm text-amber-900/80">{hadith.source}</p>
       </div>
-      
-      {hadith.lastUpdated && (
-        <div className="mt-3 text-xs text-amber-700/60">
-          Last updated: {new Date(hadith.lastUpdated).toLocaleDateString()}
-        </div>
-      )}
     </div>
   );
 };
