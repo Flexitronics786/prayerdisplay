@@ -1,12 +1,33 @@
 
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
+import { fetchAllPrayerTimes } from "@/services/dataService";
+import { useState, useEffect } from "react";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
 }
 
 const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
+  const [detailedTimes, setDetailedTimes] = useState<any>(null);
+
+  useEffect(() => {
+    const loadDetailedTimes = async () => {
+      try {
+        const times = await fetchAllPrayerTimes();
+        const today = new Date().toISOString().split('T')[0];
+        const todayTimes = times.find(t => t.date === today);
+        if (todayTimes) {
+          setDetailedTimes(todayTimes);
+        }
+      } catch (error) {
+        console.error("Error loading detailed prayer times:", error);
+      }
+    };
+
+    loadDetailedTimes();
+  }, []);
+
   // Group prayer times by name for display in tiles
   const getPrayerDetails = (name: string) => {
     const prayers = prayerTimes.filter(prayer => 
@@ -83,6 +104,84 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
     );
   };
 
+  // If we have detailed times, use them; otherwise use the simplified times
+  const getFajrStart = () => {
+    if (detailedTimes && detailedTimes.sehri_end) {
+      return convertTo12Hour(detailedTimes.sehri_end);
+    }
+    return getPrayerTime("Fajr") ? convertTo12Hour(getPrayerTime("Fajr")!.time) : "";
+  };
+
+  const getFajrJamat = () => {
+    if (detailedTimes && detailedTimes.fajr_jamat) {
+      return convertTo12Hour(detailedTimes.fajr_jamat);
+    }
+    return getPrayerTime("Fajr") ? convertTo12Hour(getPrayerTime("Fajr")!.time) : "";
+  };
+
+  const getZuhrStart = () => {
+    if (detailedTimes && detailedTimes.zuhr_start) {
+      return convertTo12Hour(detailedTimes.zuhr_start);
+    }
+    return getPrayerTime("Zuhr") ? convertTo12Hour(getPrayerTime("Zuhr")!.time) : "";
+  };
+
+  const getZuhrJamat = () => {
+    if (detailedTimes && detailedTimes.zuhr_jamat) {
+      return convertTo12Hour(detailedTimes.zuhr_jamat);
+    }
+    return getPrayerTime("Zuhr") ? convertTo12Hour(getPrayerTime("Zuhr")!.time) : "";
+  };
+
+  const getAsrStart = () => {
+    if (detailedTimes && detailedTimes.asr_start) {
+      return convertTo12Hour(detailedTimes.asr_start);
+    }
+    return getPrayerTime("Asr") ? convertTo12Hour(getPrayerTime("Asr")!.time) : "";
+  };
+
+  const getAsrJamat = () => {
+    if (detailedTimes && detailedTimes.asr_jamat) {
+      return convertTo12Hour(detailedTimes.asr_jamat);
+    }
+    return getPrayerTime("Asr") ? convertTo12Hour(getPrayerTime("Asr")!.time) : "";
+  };
+
+  const getMaghribTime = () => {
+    if (detailedTimes && detailedTimes.maghrib_iftar) {
+      return convertTo12Hour(detailedTimes.maghrib_iftar);
+    }
+    return getPrayerTime("Maghrib") ? convertTo12Hour(getPrayerTime("Maghrib")!.time) : "";
+  };
+
+  const getIshaStart = () => {
+    if (detailedTimes && detailedTimes.isha_start) {
+      return convertTo12Hour(detailedTimes.isha_start);
+    }
+    return getPrayerTime("Isha") ? convertTo12Hour(getPrayerTime("Isha")!.time) : "";
+  };
+
+  const getIshaFirstJamat = () => {
+    if (detailedTimes && detailedTimes.isha_first_jamat) {
+      return convertTo12Hour(detailedTimes.isha_first_jamat);
+    }
+    return getPrayerTime("Isha") ? convertTo12Hour(getPrayerTime("Isha")!.time) : "";
+  };
+
+  const getIshaSecondJamat = () => {
+    if (detailedTimes && detailedTimes.isha_second_jamat) {
+      return convertTo12Hour(detailedTimes.isha_second_jamat);
+    }
+    return "";
+  };
+
+  const getSunriseFromDetailedTimes = () => {
+    if (detailedTimes && detailedTimes.sunrise) {
+      return convertTo12Hour(detailedTimes.sunrise);
+    }
+    return getSunriseTime();
+  };
+
   return (
     <div className="animate-scale-in">
       <div className="mb-6">
@@ -98,15 +197,15 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           [
             { 
               label: "Start", 
-              time: getPrayerTime("Fajr") ? convertTo12Hour(getPrayerTime("Fajr")!.time) : "" 
+              time: getFajrStart()
             },
             { 
               label: "Jamat", 
-              time: getPrayerTime("Fajr") ? convertTo12Hour(getPrayerTime("Fajr")!.time) : "" 
+              time: getFajrJamat()
             },
             { 
               label: "Sunrise", 
-              time: getSunriseTime() 
+              time: getSunriseFromDetailedTimes()
             }
           ]
         )}
@@ -119,11 +218,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           [
             { 
               label: "Start", 
-              time: getPrayerTime("Zuhr") ? convertTo12Hour(getPrayerTime("Zuhr")!.time) : "" 
+              time: getZuhrStart()
             },
             { 
               label: "Jamat", 
-              time: getPrayerTime("Zuhr") ? convertTo12Hour(getPrayerTime("Zuhr")!.time) : "" 
+              time: getZuhrJamat()
             }
           ]
         )}
@@ -136,11 +235,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           [
             { 
               label: "Start", 
-              time: getPrayerTime("Asr") ? convertTo12Hour(getPrayerTime("Asr")!.time) : "" 
+              time: getAsrStart()
             },
             { 
               label: "Jamat", 
-              time: getPrayerTime("Asr") ? convertTo12Hour(getPrayerTime("Asr")!.time) : "" 
+              time: getAsrJamat()
             }
           ]
         )}
@@ -153,7 +252,7 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           [
             { 
               label: "Azan", 
-              time: getPrayerTime("Maghrib") ? convertTo12Hour(getPrayerTime("Maghrib")!.time) : "" 
+              time: getMaghribTime()
             }
           ]
         )}
@@ -166,11 +265,15 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           [
             { 
               label: "Start", 
-              time: getPrayerTime("Isha") ? convertTo12Hour(getPrayerTime("Isha")!.time) : "" 
+              time: getIshaStart()
             },
             { 
-              label: "Jamat", 
-              time: getPrayerTime("Isha") ? convertTo12Hour(getPrayerTime("Isha")!.time) : "" 
+              label: "1st Jamat", 
+              time: getIshaFirstJamat()
+            },
+            { 
+              label: "2nd Jamat", 
+              time: getIshaSecondJamat()
             }
           ]
         )}
