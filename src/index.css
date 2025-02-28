@@ -165,13 +165,13 @@
 }
 
 .maghrib-header {
-  @apply bg-teal-700 text-white border-teal-600;
+  @apply bg-[#4bc2ce] text-white border-[#4bc2ce]/80;
 }
 
 .isha-header {
-  @apply bg-purple-700 text-white border-purple-600;
+  @apply bg-[#e45959] text-white border-[#e45959]/80;
 }
 
 .jummah-header {
-  @apply bg-indigo-700 text-white border-indigo-500;
+  @apply bg-[#617792] text-white border-[#617792]/80;
 }
