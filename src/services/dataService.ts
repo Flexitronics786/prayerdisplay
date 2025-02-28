@@ -1,4 +1,4 @@
-<lov-code>
+
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,30 @@ const defaultPrayerTimes: PrayerTime[] = [
   { id: '4', name: 'Maghrib', time: '18:15' },
   { id: '5', name: 'Isha', time: '19:45' }
 ];
+
+// Mark active prayer based on current time
+const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
+  const currentTime = getCurrentTime24h();
+  let nextPrayerIndex = -1;
+  
+  // Find the next prayer
+  for (let i = 0; i < prayerTimes.length; i++) {
+    if (isTimeBefore(currentTime, prayerTimes[i].time)) {
+      nextPrayerIndex = i;
+      break;
+    }
+  }
+  
+  // Mark prayers as active or next
+  return prayerTimes.map((prayer, index) => {
+    const isActive = nextPrayerIndex === -1 ? 
+                    index === prayerTimes.length - 1 : 
+                    index < nextPrayerIndex;
+    const isNext = index === nextPrayerIndex;
+    
+    return { ...prayer, isActive, isNext };
+  });
+};
 
 export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
   try {
@@ -714,6 +738,123 @@ export const deleteAllPrayerTimes = async (): Promise<boolean> => {
   }
 };
 
+// Helper functions for Google Sheets import
+const parseCSV = (text: string): string[][] => {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    // Handle quoted values with commas inside them
+    const values: string[] = [];
+    let inQuote = false;
+    let currentValue = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuote = !inQuote;
+      } else if (char === ',' && !inQuote) {
+        values.push(currentValue);
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    
+    // Add the last value
+    values.push(currentValue);
+    
+    return values;
+  }).filter(row => row.length > 0 && row.some(cell => cell.trim().length > 0));
+};
+
+const formatDate = (dateStr: string): string => {
+  // Try to parse various date formats
+  let date;
+  
+  // Check if it's already in YYYY-MM-DD format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return dateStr;
+  }
+  
+  // Try DD/MM/YYYY format
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+    const parts = dateStr.split('/');
+    date = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
+  } else {
+    // Try to parse as a general date string
+    date = new Date(dateStr);
+  }
+  
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid date format: ${dateStr}`);
+  }
+  
+  // Format as YYYY-MM-DD
+  return date.toISOString().split('T')[0];
+};
+
+const formatTime = (timeStr: string): string => {
+  // If already in HH:MM format (with or without seconds), return as is
+  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(timeStr)) {
+    // Ensure hours are two digits
+    const parts = timeStr.split(':');
+    return `${parts[0].padStart(2, '0')}:${parts[1]}${parts[2] ? `:${parts[2]}` : ':00'}`;
+  }
+  
+  // Try to parse AM/PM format
+  const amPmMatch = timeStr.match(/(\d{1,2}):?(\d{2})?\s*(am|pm|AM|PM)/i);
+  if (amPmMatch) {
+    let hours = parseInt(amPmMatch[1], 10);
+    const minutes = amPmMatch[2] ? parseInt(amPmMatch[2], 10) : 0;
+    const isPm = amPmMatch[3].toLowerCase() === 'pm';
+    
+    if (isPm && hours < 12) hours += 12;
+    if (!isPm && hours === 12) hours = 0;
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+  }
+  
+  // If it's just a number, assume it's hours
+  if (/^\d{1,2}$/.test(timeStr)) {
+    return `${timeStr.padStart(2, '0')}:00:00`;
+  }
+  
+  // If we couldn't parse it, return as is
+  return timeStr;
+};
+
+const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
+  const missingFields: string[] = [];
+  
+  if (!entry.date) missingFields.push('date');
+  if (!entry.day) missingFields.push('day');
+  if (!entry.fajr_jamat) missingFields.push('fajr_jamat');
+  if (!entry.maghrib_iftar) missingFields.push('maghrib_iftar');
+  
+  return missingFields;
+};
+
+const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
+  const savedTimes = localStorage.getItem('local-prayer-times');
+  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+  
+  // Find and update or add
+  let found = false;
+  const updatedTimes = localTimes.map((item: DetailedPrayerTime) => {
+    if (item.date === entry.date) {
+      found = true;
+      return entry;
+    }
+    return item;
+  });
+  
+  if (!found) {
+    updatedTimes.push(entry);
+  }
+  
+  localStorage.setItem('local-prayer-times', JSON.stringify(updatedTimes));
+};
+
 // New function to import data from Google Sheets
 export const importPrayerTimesFromSheet = async (
   sheetId: string, 
@@ -855,4 +996,30 @@ export const importPrayerTimesFromSheet = async (
         importedEntries.push(localEntry);
       } catch (rowError) {
         console.error(`Error processing row ${i}:`, rowError);
-        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(row
+        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
+      }
+    }
+    
+    // Save all changes to local storage
+    localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
+    
+    // Trigger a storage event so other tabs/components know to refresh
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'local-prayer-times'
+    }));
+    
+    // Return results
+    return {
+      success: true,
+      count: importedEntries.length,
+      error: errors.length > 0 ? `Imported ${importedEntries.length} entries with ${errors.length} errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? ' (and more)' : ''}` : undefined
+    };
+  } catch (error) {
+    console.error("Error importing prayer times from sheet:", error);
+    return { 
+      success: false, 
+      count: 0, 
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+};
