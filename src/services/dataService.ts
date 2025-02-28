@@ -16,28 +16,61 @@ const defaultPrayerTimes: PrayerTime[] = [
   { id: '5', name: 'Isha', time: '19:45' }
 ];
 
-// Mark active prayer based on current time
+// Helper function to mark the active prayer time based on current time
 const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
   const currentTime = getCurrentTime24h();
-  let nextPrayerIndex = -1;
   
-  // Find the next prayer
-  for (let i = 0; i < prayerTimes.length; i++) {
-    if (isTimeBefore(currentTime, prayerTimes[i].time)) {
-      nextPrayerIndex = i;
-      break;
+  // First, set all to inactive
+  const updatedTimes = prayerTimes.map(prayer => ({
+    ...prayer,
+    isActive: false,
+    isNext: false
+  }));
+  
+  // Sort times chronologically
+  const sortedTimes = [...updatedTimes].sort((a, b) => {
+    return a.time.localeCompare(b.time);
+  });
+  
+  // Find current and next prayer
+  let foundActive = false;
+  let foundNext = false;
+  
+  for (let i = 0; i < sortedTimes.length; i++) {
+    const prayer = sortedTimes[i];
+    
+    if (!foundActive && !isTimeBefore(currentTime, prayer.time)) {
+      // This prayer has already started but hasn't been surpassed by the next one
+      if (i === sortedTimes.length - 1 || isTimeBefore(currentTime, sortedTimes[i+1].time)) {
+        // Mark as active
+        const index = updatedTimes.findIndex(p => p.id === prayer.id);
+        if (index !== -1) {
+          updatedTimes[index].isActive = true;
+        }
+        foundActive = true;
+      }
+    } else if (!foundNext && isTimeBefore(currentTime, prayer.time)) {
+      // This is the next prayer
+      const index = updatedTimes.findIndex(p => p.id === prayer.id);
+      if (index !== -1) {
+        updatedTimes[index].isNext = true;
+      }
+      foundNext = true;
+    }
+    
+    if (foundActive && foundNext) break;
+  }
+  
+  // Edge case: if no active prayer found (before first prayer of the day)
+  // Mark the first prayer as next
+  if (!foundActive && !foundNext && sortedTimes.length > 0) {
+    const index = updatedTimes.findIndex(p => p.id === sortedTimes[0].id);
+    if (index !== -1) {
+      updatedTimes[index].isNext = true;
     }
   }
   
-  // Mark prayers as active or next
-  return prayerTimes.map((prayer, index) => {
-    const isActive = nextPrayerIndex === -1 ? 
-                    index === prayerTimes.length - 1 : 
-                    index < nextPrayerIndex;
-    const isNext = index === nextPrayerIndex;
-    
-    return { ...prayer, isActive, isNext };
-  });
+  return updatedTimes;
 };
 
 export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {

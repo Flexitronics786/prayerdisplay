@@ -21,28 +21,43 @@ const AdminDashboard = () => {
   const [isDeletingData, setIsDeletingData] = useState(false);
   const [activeTab, setActiveTab] = useState("prayer-table");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
-      // Check if user is authenticated
       try {
+        // Check if user is authenticated
         const user = await getCurrentUser();
+        console.log("Current user:", user);
+        
         if (!user || !user.isAdmin) {
+          setAuthError("You must be logged in as an admin to access this page");
           toast.error("You must be logged in as an admin to access this page");
-          navigate("/admin");
+          setTimeout(() => {
+            navigate("/admin");
+          }, 2000);
           return;
         }
         
         setCurrentUser(user);
         
         // Load data
-        const currentPrayerTimes = await fetchPrayerTimes();
-        setPrayerTimes(currentPrayerTimes);
+        try {
+          const currentPrayerTimes = await fetchPrayerTimes();
+          setPrayerTimes(currentPrayerTimes);
+        } catch (dataError) {
+          console.error("Error loading prayer times:", dataError);
+          toast.error("Failed to load prayer times data");
+          // Continue loading the dashboard even if data loading fails
+        }
       } catch (error) {
         console.error("Error loading admin data:", error);
-        toast.error("Failed to load admin data");
-        navigate("/admin");
+        setAuthError("Authentication error");
+        toast.error("Authentication error. Please log in again.");
+        setTimeout(() => {
+          navigate("/admin");
+        }, 2000);
       } finally {
         setIsLoading(false);
       }
@@ -95,6 +110,15 @@ const AdminDashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-amber-50">
         <div className="text-amber-800 text-xl animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-amber-50">
+        <div className="text-red-600 text-xl mb-4">{authError}</div>
+        <Button onClick={() => navigate("/admin")}>Return to Login</Button>
       </div>
     );
   }
