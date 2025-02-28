@@ -1,3 +1,4 @@
+
 export interface PrayerTime {
   id: string;
   name: string;
@@ -46,4 +47,10 @@ export interface HadithCollectionItem {
   source: string;
   is_active: boolean;
   created_at: string | null;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  isAdmin: boolean;
 }
