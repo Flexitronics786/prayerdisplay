@@ -184,6 +184,10 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     return getSunriseTime();
   };
 
+  // Determine if it's Friday (for Jummah)
+  const today = new Date();
+  const isFriday = today.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
+
   return (
     <div className="animate-scale-in">
       <div className="mb-3">
@@ -283,6 +287,24 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
             }
           ],
           "isha-header"
+        )}
+
+        {/* Jummah Tile (Friday Prayer) */}
+        {renderPrayerTile(
+          "Jummah", 
+          false, // Never active or next since this is a special prayer
+          false,
+          [
+            { 
+              label: "Khutbah", 
+              time: getZuhrStart() // Same as Zuhr start time
+            },
+            { 
+              label: "Jamat", 
+              time: getZuhrJamat() // Same as Zuhr jamat time
+            }
+          ],
+          "zuhr-header" // Use the same styling as Zuhr
         )}
       </div>
     </div>
