@@ -75,9 +75,9 @@ const DigitalClock = () => {
 
   return (
     <div className="text-center">
-      <div className="text-3xl font-bold text-mosque-light clock-text">{formatTime(time)}</div>
-      <div className="mt-1 text-lg text-mosque-light/80">{date}</div>
-      <div className="mt-1 text-base text-mosque-light/70">{islamicDate}</div>
+      <div className="text-3xl font-bold text-amber-800 clock-text">{formatTime(time)}</div>
+      <div className="mt-1 text-lg text-amber-700">{date}</div>
+      <div className="mt-1 text-base text-amber-600">{islamicDate}</div>
     </div>
   );
 };

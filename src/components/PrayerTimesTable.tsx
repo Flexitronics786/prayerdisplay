@@ -67,23 +67,24 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
     title: string, 
     isActive: boolean, 
     isNext: boolean,
-    items: { label: string, time: string }[]
+    items: { label: string, time: string }[],
+    headerClass: string
   ) => {
     return (
-      <div className={`glass-card rounded-xl overflow-hidden prayer-transition 
-        ${isActive ? 'active-prayer border-mosque-accent/70' : 
-          isNext ? 'next-prayer border-mosque-accent/50' : 'border-mosque-dark/10'}`}
+      <div className={`prayer-card rounded-xl overflow-hidden prayer-transition 
+        ${isActive ? 'active-prayer' : 
+          isNext ? 'next-prayer' : ''}`}
       >
-        <div className="text-center py-3 border-b border-mosque-dark/10 bg-mosque-dark/5">
-          <h3 className="text-2xl font-bold text-mosque-dark">
+        <div className={`prayer-tile-header ${headerClass}`}>
+          <h3 className="text-2xl font-bold">
             {title}
             {isActive && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-mosque-accent/30 text-mosque-dark">
+              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-white/30 text-white">
                 Current
               </span>
             )}
             {isNext && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-mosque-accent/20 text-mosque-dark/90">
+              <span className="ml-2 inline-block px-2 py-0.5 text-sm rounded-full bg-white/20 text-white/90">
                 Next
               </span>
             )}
@@ -92,11 +93,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
         <div className="px-6 py-4">
           {items.map((item, index) => (
             <div key={index} className={`flex justify-between items-center 
-              ${index < items.length - 1 ? 'mb-5' : ''} 
-              ${index === 1 && title === "Fajr" ? 'pt-3 border-t border-dashed border-mosque-dark/10' : ''}
+              ${index < items.length - 1 ? 'mb-5 pb-2 border-b border-amber-100' : ''} 
+              ${index === 1 && title === "Fajr" ? 'pt-3' : ''}
             `}>
-              <span className="text-mosque-dark/80 text-lg">{item.label}:</span>
-              <span className="font-medium text-mosque-dark text-xl clock-text">{item.time}</span>
+              <span className="text-amber-900 text-lg font-medium">{item.label}:</span>
+              <span className="font-bold text-amber-950 text-xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
@@ -185,7 +186,7 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
   return (
     <div className="animate-scale-in">
       <div className="mb-6">
-        <h3 className="text-3xl font-bold text-mosque-dark font-serif">Prayer Times</h3>
+        <h3 className="text-3xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -207,7 +208,8 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
               label: "Sunrise", 
               time: getSunriseFromDetailedTimes()
             }
-          ]
+          ],
+          "fajr-header"
         )}
 
         {/* Zuhr Tile */}
@@ -224,7 +226,8 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
               label: "Jamat", 
               time: getZuhrJamat()
             }
-          ]
+          ],
+          "zuhr-header"
         )}
 
         {/* Asr Tile */}
@@ -241,7 +244,8 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
               label: "Jamat", 
               time: getAsrJamat()
             }
-          ]
+          ],
+          "asr-header"
         )}
 
         {/* Maghrib Tile */}
@@ -251,10 +255,11 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
           maghribDetails.isNext,
           [
             { 
-              label: "Azan", 
+              label: "Iftar", 
               time: getMaghribTime()
             }
-          ]
+          ],
+          "maghrib-header"
         )}
 
         {/* Isha Tile */}
@@ -275,7 +280,8 @@ const PrayerTimesTable = ({ prayerTimes }: PrayerTimesTableProps) => {
               label: "2nd Jamat", 
               time: getIshaSecondJamat()
             }
-          ]
+          ],
+          "isha-header"
         )}
       </div>
     </div>

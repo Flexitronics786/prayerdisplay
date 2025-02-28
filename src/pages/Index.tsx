@@ -68,22 +68,32 @@ const Index = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-mosque-light text-xl animate-pulse">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 to-amber-50">
+        <div className="text-amber-800 text-xl animate-pulse">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden p-4 sm:p-6 md:p-8 bg-mosque-green">
-      <div className="mosque-pattern-overlay"></div>
+    <div className="min-h-screen relative overflow-hidden p-4 sm:p-6 md:p-8 bg-gradient-to-b from-amber-100 to-amber-50">
+      <div className="pattern-overlay"></div>
       
       <div className="max-w-6xl mx-auto">
-        <header className="mb-8 text-center">
-          <div className="p-4 rounded-xl bg-mosque-dark/90 backdrop-blur-sm border border-mosque-accent/20 shadow-lg mb-6">
-            <h1 className="text-4xl sm:text-5xl font-bold text-mosque-light mb-2 font-serif">Jami' Masjid Bilal</h1>
-            <div className="h-1 w-32 bg-mosque-accent/50 mx-auto rounded-full mb-2"></div>
-            <DigitalClock />
+        <header className="mb-8">
+          <div className="gold-border p-6 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg mb-6">
+            <div className="text-center">
+              <div className="w-24 h-24 mx-auto mb-3">
+                <img src="/lovable-uploads/92733e4c-a477-4c2d-b8a9-b2ba9006795b.png" alt="Masjid Logo" className="w-full object-contain" />
+              </div>
+              <h1 className="text-4xl sm:text-5xl font-bold gold-gradient-text mb-2 font-serif">
+                JAMIA MASJID BILAL
+              </h1>
+              <h2 className="text-xl text-amber-700 mb-4">
+                MINHAJ-UL-QURAN INT. DUNDEE
+              </h2>
+              <div className="h-0.5 w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-4"></div>
+              <DigitalClock />
+            </div>
           </div>
         </header>
 
@@ -95,7 +105,7 @@ const Index = () => {
         <footer className="mt-10 text-center">
           <Link 
             to="/admin" 
-            className="text-mosque-dark/50 text-xs hover:text-mosque-dark/70 transition-colors"
+            className="text-amber-700/50 text-xs hover:text-amber-700/70 transition-colors"
           >
             Admin Access
           </Link>
