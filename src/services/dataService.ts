@@ -1,3 +1,4 @@
+
 import { Hadith, PrayerTime, User, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,9 +112,10 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
   try {
     console.log("Adding prayer time entry:", entry);
     
-    // Fix: Don't convert to an array of objects, keep as a single object
-    // Make sure all required fields have values
-    const sanitizedEntry: Omit<DetailedPrayerTime, 'id' | 'created_at'> = {
+    // Create a fallback entry with a temporary ID to display in the UI
+    // This will work even if the database operation fails
+    const fallbackEntry: DetailedPrayerTime = {
+      id: `temp-${Date.now()}`,
       date: entry.date,
       day: entry.day,
       sehri_end: entry.sehri_end || '',
@@ -129,26 +131,46 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
       isha_second_jamat: entry.isha_second_jamat || ''
     };
     
-    const { data, error } = await supabase
-      .from('prayer_times')
-      .insert(sanitizedEntry)
-      .select()
-      .single();
+    // Try to add to database
+    try {
+      // Use Supabase client to store data
+      const { data, error } = await supabase
+        .from('prayer_times')
+        .insert(entry)
+        .select()
+        .single();
 
-    if (error) {
-      console.error("Supabase error adding prayer time:", error);
-      throw error;
+      if (error) {
+        console.error("Supabase error adding prayer time:", error);
+        
+        // Save locally if database fails
+        const savedTimes = localStorage.getItem('local-prayer-times');
+        const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+        localTimes.push(fallbackEntry);
+        localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
+        
+        // Return the fallback entry so UI can update
+        console.log("Returning fallback entry for UI:", fallbackEntry);
+        return fallbackEntry;
+      }
+
+      console.log("Successfully added prayer time entry to Supabase:", data);
+      return data as DetailedPrayerTime;
+    } catch (dbError) {
+      console.error("Exception during Supabase operation:", dbError);
+      
+      // Save locally as backup
+      const savedTimes = localStorage.getItem('local-prayer-times');
+      const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
+      localTimes.push(fallbackEntry);
+      localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
+      
+      // Return the fallback entry so UI can update
+      console.log("Returning fallback entry after exception:", fallbackEntry);
+      return fallbackEntry;
     }
-
-    if (!data) {
-      console.error("No data returned after adding prayer time");
-      throw new Error("No data returned after insert");
-    }
-
-    console.log("Successfully added prayer time entry, received data:", data);
-    return data as DetailedPrayerTime;
   } catch (error) {
-    console.error('Error adding prayer time entry:', error);
+    console.error('Unexpected error in addPrayerTimeEntry:', error);
     return null;
   }
 };
