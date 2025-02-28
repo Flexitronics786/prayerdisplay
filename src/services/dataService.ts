@@ -395,6 +395,37 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
   }
 };
 
+// New function to delete all prayer times from database and local storage
+export const deleteAllPrayerTimes = async (): Promise<boolean> => {
+  try {
+    // Delete all data from Supabase prayer_times table
+    const { error } = await supabase
+      .from('prayer_times')
+      .delete()
+      .neq('id', 'placeholder'); // This effectively deletes all rows
+    
+    if (error) {
+      console.error("Supabase error deleting all prayer times:", error);
+      throw error;
+    }
+    
+    // Also clear local storage
+    localStorage.removeItem('local-prayer-times');
+    localStorage.removeItem(PRAYER_TIMES_KEY);
+    
+    // Trigger a storage event so other tabs/components know to refresh
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'local-prayer-times'
+    }));
+    
+    console.log("Successfully deleted all prayer times");
+    return true;
+  } catch (error) {
+    console.error('Error deleting all prayer times:', error);
+    return false;
+  }
+};
+
 // New function to import data from Google Sheets
 export const importPrayerTimesFromSheet = async (
   sheetId: string, 

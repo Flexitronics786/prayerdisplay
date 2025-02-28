@@ -2,19 +2,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCurrentUser } from "@/services/authService";
-import { fetchHadith, fetchPrayerTimes } from "@/services/dataService";
+import { fetchHadith, fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import HadithEditor from "@/components/admin/HadithEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { Hadith, PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeletingData, setIsDeletingData] = useState(false);
   const [activeTab, setActiveTab] = useState("prayer-table");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
@@ -54,6 +59,31 @@ const AdminDashboard = () => {
     setHadith(updatedHadith);
   };
 
+  const handleDeleteAllData = async () => {
+    if (window.confirm("Are you sure you want to delete ALL prayer times data? This action cannot be undone.")) {
+      setIsDeletingData(true);
+      try {
+        const result = await deleteAllPrayerTimes();
+        if (result) {
+          toast.success("All prayer times data has been deleted");
+          // Refresh any relevant queries
+          queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
+          // Force a refresh of the component
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } else {
+          toast.error("Failed to delete all data");
+        }
+      } catch (error) {
+        console.error("Error deleting all data:", error);
+        toast.error("An error occurred while deleting data");
+      } finally {
+        setIsDeletingData(false);
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-amber-50">
@@ -91,6 +121,17 @@ const AdminDashboard = () => {
           </TabsList>
           
           <TabsContent value="prayer-table" className="mt-0">
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteAllData}
+                disabled={isDeletingData}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeletingData ? "Deleting..." : "Delete All Data"}
+              </Button>
+            </div>
             <PrayerTimesTableEditor />
           </TabsContent>
           
