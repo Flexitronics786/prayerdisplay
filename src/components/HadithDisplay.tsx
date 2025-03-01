@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { Hadith, PrayerTime } from "@/types";
-import { Smartphone, BellRing } from "lucide-react";
+import { Smartphone } from "lucide-react";
 import { fetchHadithCollection } from "@/services/dataService";
 import { HadithCollectionItem } from "@/types";
 
@@ -17,7 +16,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
   const [reminderCount, setReminderCount] = useState(0);
   
-  // Load all active hadiths from collection
   useEffect(() => {
     const loadAllHadiths = async () => {
       try {
@@ -35,7 +33,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     loadAllHadiths();
   }, []);
   
-  // Convert hadith collection item to Hadith format
   const convertToHadith = (item: HadithCollectionItem): Hadith => {
     return {
       id: item.id,
@@ -45,44 +42,33 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     };
   };
   
-  // Cycle between hadiths and reminder
   useEffect(() => {
-    // Initial hadith
     setCurrentHadith(hadith);
     
     const cycleContent = () => {
       if (showPhoneReminder) {
-        // After showing reminder, go back to hadith
         setShowPhoneReminder(false);
         
-        // If we've shown the reminder 3 times, switch to a new hadith
         if (reminderCount >= 3) {
-          // Reset reminder count
           setReminderCount(0);
           
-          // Change to next hadith
           if (allHadiths.length > 0) {
             const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
             setCurrentHadithIndex(nextIndex);
             setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
           } else {
-            // Fallback to the original hadith
             setCurrentHadith(hadith);
           }
         }
       } else {
-        // Switch to phone reminder
         setShowPhoneReminder(true);
         setReminderCount(prevCount => prevCount + 1);
       }
     };
     
-    // Phone reminder shows for 30 seconds
-    // Hadith shows for approximately 2 minutes between reminders
-    // After 3 reminders (about 7 minutes total), we switch to a new hadith
     const interval = setInterval(() => {
       cycleContent();
-    }, showPhoneReminder ? 30000 : 120000); // 30s for reminder, 2min for hadith
+    }, showPhoneReminder ? 30000 : 120000);
     
     return () => clearInterval(interval);
   }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex, reminderCount]);
@@ -113,16 +99,10 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         Mobile Phone Reminder
       </h3>
       
-      <div className="relative">
-        <div className="absolute -right-10 -top-8 animate-pulse">
-          <BellRing className="h-7 w-7 text-amber-500" />
-        </div>
-        
-        <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
-          <p className="text-lg text-amber-800 text-center leading-relaxed">
-            Please turn off your mobile phone while in the mosque as a sign of respect.
-          </p>
-        </div>
+      <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
+        <p className="text-lg text-amber-800 text-center leading-relaxed">
+          Please turn off your mobile phone while in the mosque as a sign of respect.
+        </p>
       </div>
     </div>
   );
