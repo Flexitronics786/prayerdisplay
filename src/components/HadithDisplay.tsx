@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Hadith, PrayerTime } from "@/types";
 import { Smartphone } from "lucide-react";
 import { fetchHadithCollection } from "@/services/dataService";
@@ -16,15 +16,26 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
   
+  // Reference to track if component is mounted
+  const isMounted = useRef(true);
+  
   // Load all active hadiths on component mount
   useEffect(() => {
     const loadAllHadiths = async () => {
       try {
         const hadithCollection = await fetchHadithCollection();
         const activeHadiths = hadithCollection.filter(h => h.is_active);
-        if (activeHadiths.length > 0) {
+        
+        if (activeHadiths.length > 0 && isMounted.current) {
           setAllHadiths(activeHadiths);
           console.log(`Loaded ${activeHadiths.length} active hadiths for cycling`);
+          
+          // Find initial hadith index
+          const initialIndex = activeHadiths.findIndex(h => h.id === hadith.id);
+          if (initialIndex !== -1) {
+            setCurrentHadithIndex(initialIndex);
+            console.log(`Initial hadith index set to ${initialIndex}`);
+          }
         }
       } catch (error) {
         console.error("Error loading hadith collection:", error);
@@ -32,7 +43,12 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     };
     
     loadAllHadiths();
-  }, []);
+    
+    // Cleanup function
+    return () => {
+      isMounted.current = false;
+    };
+  }, [hadith.id]);
   
   const convertToHadith = (item: HadithCollectionItem): Hadith => {
     return {
@@ -43,60 +59,65 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     };
   };
   
-  // Handle the cycling between hadith and phone reminder
+  // Set up cycling timer
   useEffect(() => {
-    // Set initial hadith
+    // Initialize with the provided hadith
     setCurrentHadith(hadith);
+    console.log(`Starting with hadith: ${hadith.id}`);
     
-    // Find the initial index if possible
-    if (allHadiths.length > 0) {
-      const foundIndex = allHadiths.findIndex(h => h.id === hadith.id);
-      if (foundIndex !== -1) {
-        setCurrentHadithIndex(foundIndex);
-        console.log(`Initial hadith index set to ${foundIndex}`);
-      }
-    }
+    let cycleTimer: NodeJS.Timeout | null = null;
     
-    // Create cycling function
-    const cycleContent = () => {
-      console.log(`Current state - showPhoneReminder: ${showPhoneReminder}, currentHadithIndex: ${currentHadithIndex}, total hadiths: ${allHadiths.length}`);
+    // Function to handle cycling
+    const runCycle = () => {
+      // Start with showing the hadith for 2 minutes
+      console.log("Starting cycle: showing hadith for 2 minutes");
       
-      if (showPhoneReminder) {
-        // Hide phone reminder
-        setShowPhoneReminder(false);
-        
-        // Move to next hadith
-        if (allHadiths.length > 0) {
-          const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
-          console.log(`Cycling to next hadith: index ${currentHadithIndex} → ${nextIndex}`);
+      // After 2 minutes, show phone reminder
+      const phoneReminderTimer = setTimeout(() => {
+        if (isMounted.current) {
+          console.log("Showing phone reminder for 30 seconds");
+          setShowPhoneReminder(true);
           
-          setCurrentHadithIndex(nextIndex);
-          const nextHadith = convertToHadith(allHadiths[nextIndex]);
-          console.log(`Next hadith: ${nextHadith.id} - ${nextHadith.text.substring(0, 30)}...`);
-          setCurrentHadith(nextHadith);
-        } else {
-          console.log("No hadiths available for cycling, using original hadith");
-          setCurrentHadith(hadith);
+          // After 30 seconds of phone reminder, show next hadith
+          const nextHadithTimer = setTimeout(() => {
+            if (isMounted.current) {
+              setShowPhoneReminder(false);
+              
+              if (allHadiths.length > 1) {
+                // Move to next hadith
+                const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
+                console.log(`Moving to next hadith: index ${currentHadithIndex} → ${nextIndex}`);
+                setCurrentHadithIndex(nextIndex);
+                
+                const nextHadith = convertToHadith(allHadiths[nextIndex]);
+                console.log(`Next hadith: ${nextHadith.id} - ${nextHadith.text.substring(0, 30)}...`);
+                setCurrentHadith(nextHadith);
+              }
+            }
+          }, 30000); // 30 seconds for phone reminder
+          
+          return () => clearTimeout(nextHadithTimer);
         }
-      } else {
-        // Show phone reminder
-        console.log('Switching to phone reminder');
-        setShowPhoneReminder(true);
-      }
+      }, 120000); // 2 minutes for hadith
+      
+      return () => clearTimeout(phoneReminderTimer);
     };
     
-    // Create interval to cycle content
-    console.log("Setting up cycling interval");
-    const interval = setInterval(() => {
-      cycleContent();
-    }, showPhoneReminder ? 30000 : 120000); // 30s for reminder, 120s for hadith
+    // Start the cycle
+    let clearFn = runCycle();
     
-    // Clean up interval on component unmount or when dependencies change
+    // Set up recurring cycle every 2.5 minutes (2min hadith + 30sec reminder)
+    cycleTimer = setInterval(() => {
+      if (clearFn) clearFn();
+      clearFn = runCycle();
+    }, 150000); // 2.5 minutes total cycle time
+    
+    // Clean up all timers when component unmounts or dependencies change
     return () => {
-      console.log("Clearing cycling interval");
-      clearInterval(interval);
+      if (clearFn) clearFn();
+      if (cycleTimer) clearInterval(cycleTimer);
     };
-  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex]);
+  }, [hadith, allHadiths, currentHadithIndex]);
   
   // Render the hadith content
   const renderHadith = () => (
