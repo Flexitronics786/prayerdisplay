@@ -516,7 +516,7 @@ export const deleteAllPrayerTimes = async (): Promise<boolean> => {
     const { error } = await supabase
       .from('prayer_times')
       .delete()
-      .neq('id', 'placeholder'); // This effectively deletes all rows
+      .gt('id', '0'); // This is a safer way to delete all rows
     
     if (error) {
       console.error("Supabase error deleting all prayer times:", error);

@@ -6,7 +6,6 @@ import { fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { PrayerTime, User } from "@/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -94,11 +93,12 @@ const AdminDashboard = () => {
             window.location.reload();
           }, 1000);
         } else {
-          toast.error("Failed to delete all data");
+          console.error("Failed to delete all data - operation returned false");
+          toast.error("Failed to delete all data. Please try again.");
         }
       } catch (error) {
         console.error("Error deleting all data:", error);
-        toast.error("An error occurred while deleting data");
+        toast.error(`Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
       } finally {
         setIsDeletingData(false);
       }
