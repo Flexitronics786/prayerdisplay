@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { getCurrentUser, logout } from "@/services/authService";
 import { fetchPrayerTimes, deleteAllPrayerTimes } from "@/services/dataService";
 import AdminNavbar from "@/components/admin/AdminNavbar";
-import HadithCollectionEditor from "@/components/admin/HadithCollectionEditor";
 import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { PrayerTime, User } from "@/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -135,41 +134,24 @@ const AdminDashboard = () => {
           </div>
         )}
         
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-amber-100">
-            <TabsTrigger 
-              value="prayer-table" 
-              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
-            >
-              Prayer Times Table
-            </TabsTrigger>
-            <TabsTrigger 
-              value="hadith-collection" 
-              className="data-[state=active]:bg-amber-600 data-[state=active]:text-white"
-            >
-              Hadith Collection
-            </TabsTrigger>
-          </TabsList>
+        {/* Single tab for Prayer Times Table */}
+        <div className="w-full mb-6">
+          <h2 className="text-2xl font-bold text-amber-800 mb-4">Prayer Times Management</h2>
           
-          <TabsContent value="prayer-table" className="mt-0">
-            <div className="flex justify-end mb-4">
-              <Button 
-                variant="destructive"
-                onClick={handleDeleteAllData}
-                disabled={isDeletingData}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                {isDeletingData ? "Deleting..." : "Delete All Data"}
-              </Button>
-            </div>
-            <PrayerTimesTableEditor />
-          </TabsContent>
+          <div className="flex justify-end mb-4">
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteAllData}
+              disabled={isDeletingData}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeletingData ? "Deleting..." : "Delete All Data"}
+            </Button>
+          </div>
           
-          <TabsContent value="hadith-collection" className="mt-0">
-            <HadithCollectionEditor />
-          </TabsContent>
-        </Tabs>
+          <PrayerTimesTableEditor />
+        </div>
       </div>
     </div>
   );
