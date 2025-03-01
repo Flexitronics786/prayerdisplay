@@ -59,7 +59,6 @@ const PrayerTimesTableEditor = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   
-  // Form states
   const [formData, setFormData] = useState<Omit<DetailedPrayerTime, 'id' | 'created_at'>>({
     date: new Date().toISOString().split('T')[0],
     day: '',
@@ -76,7 +75,6 @@ const PrayerTimesTableEditor = () => {
     isha_second_jamat: ''
   });
   
-  // Import form states
   const [importData, setImportData] = useState({
     sheetId: '',
     tabName: 'Sheet1',
@@ -84,7 +82,6 @@ const PrayerTimesTableEditor = () => {
     isPublic: true
   });
   
-  // Fetch prayer times data
   const { 
     data: prayerTimes = [], 
     isLoading, 
@@ -96,11 +93,9 @@ const PrayerTimesTableEditor = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
   
-  // Listen for storage events (for cross-tab updates)
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'local-prayer-times') {
-        // Refresh data when local storage changes
         queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
       }
     };
@@ -111,7 +106,6 @@ const PrayerTimesTableEditor = () => {
     };
   }, [queryClient]);
   
-  // Reset form when dialog closes
   useEffect(() => {
     if (!isAddDialogOpen) {
       setFormData({
@@ -132,36 +126,30 @@ const PrayerTimesTableEditor = () => {
     }
   }, [isAddDialogOpen]);
   
-  // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  // Handle import form input changes
   const handleImportInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setImportData(prev => ({ ...prev, [name]: value }));
   };
   
-  // Handle checkbox changes for import form
   const handleImportCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
     setImportData(prev => ({ ...prev, [name]: checked }));
   };
   
-  // Handle select changes for import form
   const handleImportSelectChange = (name: string, value: string) => {
     setImportData(prev => ({ ...prev, [name]: value === 'true' }));
   };
   
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      // Validate required fields
       const requiredFields = ['date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'];
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
       
@@ -171,7 +159,6 @@ const PrayerTimesTableEditor = () => {
       }
       
       if (editingId) {
-        // Update existing entry
         const result = await updatePrayerTimeEntry(editingId, formData);
         if (result) {
           toast.success("Prayer time updated successfully");
@@ -182,7 +169,6 @@ const PrayerTimesTableEditor = () => {
           toast.error("Failed to update prayer time");
         }
       } else {
-        // Add new entry
         const result = await addPrayerTimeEntry(formData);
         if (result) {
           toast.success("Prayer time added successfully");
@@ -200,13 +186,11 @@ const PrayerTimesTableEditor = () => {
     }
   };
   
-  // Handle import form submission
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      // Validate sheet ID
       if (!importData.sheetId) {
         toast.error("Please enter a Google Sheet ID");
         return;
@@ -222,7 +206,6 @@ const PrayerTimesTableEditor = () => {
       if (result.success) {
         toast.success(`Successfully imported ${result.count} prayer times`);
         if (result.error) {
-          // This is a warning, not an error
           toast.warning(result.error);
         }
         setIsImportDialogOpen(false);
@@ -238,7 +221,6 @@ const PrayerTimesTableEditor = () => {
     }
   };
   
-  // Handle edit button click
   const handleEdit = (entry: DetailedPrayerTime) => {
     setEditingId(entry.id);
     setFormData({
@@ -259,7 +241,6 @@ const PrayerTimesTableEditor = () => {
     setIsAddDialogOpen(true);
   };
   
-  // Handle delete button click
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this prayer time?")) {
       try {
@@ -277,7 +258,6 @@ const PrayerTimesTableEditor = () => {
     }
   };
 
-  // Handle delete all data
   const handleDeleteAllData = async () => {
     setIsDeletingAll(true);
     try {
@@ -297,7 +277,6 @@ const PrayerTimesTableEditor = () => {
     }
   };
   
-  // Format date for display
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);

@@ -864,15 +864,15 @@ const parseCSV = (text: string): string[][] => {
 
 // Helper to process rows and columns from CSV data to create prayer time entries
 const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'created_at'>[] => {
-  // Skip header row
-  const dataRows = csvData.slice(1);
+  // Skip header row if it exists
+  const dataRows = csvData.length > 1 ? csvData.slice(1) : csvData;
   
   return dataRows.map(row => {
     // Create prayer time entry from CSV row
     // Mapping depends on the exact CSV format - adjust column indices as needed
     return {
-      date: row[0], // Assume date is in the first column
-      day: row[1], // Assume day is in the second column
+      date: row[0] || '', // Assume date is in the first column
+      day: row[1] || '', // Assume day is in the second column
       sehri_end: row[2] || '',
       fajr_jamat: row[3] || '',
       sunrise: row[4] || '',
@@ -889,14 +889,21 @@ const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'c
 };
 
 // Function to import prayer times from CSV file
-export const importFromCSV = async (csvText: string): Promise<boolean> => {
+export const importFromCSV = async (csvText: string): Promise<{
+  success: boolean;
+  count: number;
+  error?: string;
+}> => {
   try {
     const parsed = parseCSV(csvText);
     console.log("Parsed CSV data:", parsed);
     
     if (parsed.length < 2) {
-      console.error("CSV file contains insufficient data");
-      return false;
+      return {
+        success: false,
+        count: 0,
+        error: "CSV file contains insufficient data"
+      };
     }
     
     const prayerTimes = processCSVData(parsed);
@@ -908,6 +915,12 @@ export const importFromCSV = async (csvText: string): Promise<boolean> => {
     
     for (const entry of prayerTimes) {
       try {
+        // Skip entries with missing required data
+        if (!entry.date || !entry.day) {
+          failCount++;
+          continue;
+        }
+        
         await addPrayerTimeEntry(entry);
         successCount++;
       } catch (error) {
@@ -917,29 +930,61 @@ export const importFromCSV = async (csvText: string): Promise<boolean> => {
     }
     
     console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
-    return successCount > 0;
+    
+    if (successCount === 0 && failCount > 0) {
+      return {
+        success: false,
+        count: 0,
+        error: `Failed to import any prayer times. ${failCount} entries had errors.`
+      };
+    }
+    
+    let warningMessage = '';
+    if (failCount > 0) {
+      warningMessage = `Note: ${failCount} entries failed to import.`;
+    }
+    
+    return {
+      success: true,
+      count: successCount,
+      error: warningMessage.length > 0 ? warningMessage : undefined
+    };
   } catch (error) {
     console.error("Error importing from CSV:", error);
-    return false;
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : "Unknown error during import"
+    };
   }
 };
 
 // Function to import prayer times from Google Sheet
-export const importPrayerTimesFromSheet = async (sheetUrl: string): Promise<{ success: boolean; message: string }> => {
+export const importPrayerTimesFromSheet = async (
+  sheetId: string,
+  tabName: string = 'Sheet1',
+  hasHeaderRow: boolean = true,
+  isPublic: boolean = true
+): Promise<{
+  success: boolean;
+  count: number;
+  error?: string;
+}> => {
   try {
-    if (!sheetUrl) {
-      return { success: false, message: "Please provide a valid Google Sheet URL" };
+    if (!sheetId) {
+      return { 
+        success: false, 
+        count: 0,
+        error: "Please provide a valid Google Sheet ID"
+      };
     }
     
-    // Extract sheet ID and convert to CSV download URL
-    // Format: https://docs.google.com/spreadsheets/d/SHEET_ID/edit#gid=0
-    const matches = sheetUrl.match(/\/d\/(.*?)\/edit/);
-    if (!matches || !matches[1]) {
-      return { success: false, message: "Invalid Google Sheet URL format" };
+    // Create CSV download URL from sheet ID
+    // If a specific tab name is provided, use it
+    let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    if (tabName && tabName !== 'Sheet1') {
+      csvUrl += `&gid=${tabName}`;
     }
-    
-    const sheetId = matches[1];
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
     
     console.log("Attempting to fetch CSV from:", csvUrl);
     
@@ -948,26 +993,29 @@ export const importPrayerTimesFromSheet = async (sheetUrl: string): Promise<{ su
     if (!response.ok) {
       return { 
         success: false, 
-        message: `Failed to fetch sheet: ${response.status} ${response.statusText}. Make sure the sheet is public.` 
+        count: 0,
+        error: `Failed to fetch sheet: ${response.status} ${response.statusText}. Make sure the sheet is public.`
       };
     }
     
     const csvText = await response.text();
     if (!csvText || csvText.trim().length === 0) {
-      return { success: false, message: "Sheet contains no data" };
+      return { 
+        success: false, 
+        count: 0,
+        error: "Sheet contains no data"
+      };
     }
     
     console.log("CSV data retrieved, importing...");
-    const importSuccess = await importFromCSV(csvText);
-    
-    if (importSuccess) {
-      return { success: true, message: "Prayer times imported successfully" };
-    } else {
-      return { success: false, message: "Failed to import prayer times from sheet" };
-    }
+    return await importFromCSV(csvText);
   } catch (error) {
     console.error("Error importing from Google Sheet:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, message: `Error: ${errorMessage}` };
+    return { 
+      success: false, 
+      count: 0,
+      error: `Error: ${errorMessage}`
+    };
   }
 };
