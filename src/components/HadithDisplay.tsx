@@ -57,6 +57,17 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     
     return () => {
       isMounted.current = false;
+      
+      // Clean up any lingering timers
+      if (cycleTimerRef.current) {
+        clearTimeout(cycleTimerRef.current);
+        cycleTimerRef.current = null;
+      }
+      
+      if (phoneReminderTimerRef.current) {
+        clearTimeout(phoneReminderTimerRef.current);
+        phoneReminderTimerRef.current = null;
+      }
     };
   }, [hadith.id]);
   
@@ -91,64 +102,74 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     });
   };
   
-  // Setup cycling system
+  // Setup cycling system - Completely rewritten to fix the timing issues
   useEffect(() => {
+    // Only set up cycling if we have active hadiths
     if (activeHadiths.length === 0) return;
     
+    console.log("Setting up hadith cycling mechanism");
+    
     // Initialize with the current hadith
-    const initialHadith = activeHadiths[currentHadithIndex] 
-      ? convertToHadith(activeHadiths[currentHadithIndex]) 
-      : hadith;
+    if (activeHadiths[currentHadithIndex]) {
+      const initialHadith = convertToHadith(activeHadiths[currentHadithIndex]);
+      setDisplayedHadith(initialHadith);
+      console.log(`Initial hadith displayed: ${initialHadith.id}`);
+    }
     
-    setDisplayedHadith(initialHadith);
-    console.log(`Initial hadith displayed: ${initialHadith.id}`);
-    
-    // Clear any existing timers
+    // Clear any existing timers to avoid duplicates
     if (cycleTimerRef.current) {
       clearTimeout(cycleTimerRef.current);
+      cycleTimerRef.current = null;
     }
     
     if (phoneReminderTimerRef.current) {
       clearTimeout(phoneReminderTimerRef.current);
+      phoneReminderTimerRef.current = null;
     }
     
-    // Function to start cycle
+    // Initial state: showing hadith (not phone reminder)
+    setShowPhoneReminder(false);
+    
+    // Function to handle the complete cycle
     const startCycle = () => {
-      // Show hadith for 2 minutes
-      setShowPhoneReminder(false);
+      // Phase 1: Show hadith for 2 minutes (120000ms)
       console.log("Showing hadith for 2 minutes");
+      setShowPhoneReminder(false);
       
-      // After 2 minutes, show phone reminder for 30 seconds
+      // After 2 minutes, start Phase 2: Show phone reminder
       cycleTimerRef.current = setTimeout(() => {
         if (!isMounted.current) return;
         
-        setShowPhoneReminder(true);
         console.log("Showing phone reminder for 30 seconds");
+        setShowPhoneReminder(true);
         
-        // After 30 seconds, move to next hadith and restart cycle
+        // After 30 seconds (30000ms), move to next hadith and restart cycle
         phoneReminderTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
+          console.log("Phone reminder timeout completed, moving to next hadith");
           moveToNextHadith();
-          startCycle();
-        }, 30000); // 30 seconds for phone reminder
-      }, 120000); // 2 minutes for hadith
+          startCycle(); // Restart the cycle with the next hadith
+        }, 30000);
+      }, 120000);
     };
     
     // Start the initial cycle
     startCycle();
     
-    // Clean up on unmount
+    // Clean up timers when component unmounts or dependencies change
     return () => {
+      console.log("Cleaning up hadith cycling timers");
       if (cycleTimerRef.current) {
         clearTimeout(cycleTimerRef.current);
+        cycleTimerRef.current = null;
       }
       if (phoneReminderTimerRef.current) {
         clearTimeout(phoneReminderTimerRef.current);
+        phoneReminderTimerRef.current = null;
       }
-      console.log("Cleaned up hadith cycling timers");
     };
-  }, [hadith, activeHadiths]); // Only re-run when hadith or activeHadiths change
+  }, [activeHadiths, currentHadithIndex]); // Re-run when either activeHadiths or currentHadithIndex changes
   
   // Render the hadith content
   const renderHadith = () => (
