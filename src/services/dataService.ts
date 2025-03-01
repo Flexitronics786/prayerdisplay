@@ -1,4 +1,3 @@
-
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -598,77 +597,6 @@ const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'c
   });
 };
 
-// Function to import prayer times from CSV file
-export const importFromCSV = async (csvText: string): Promise<{
-  success: boolean;
-  count: number;
-  error?: string;
-}> => {
-  try {
-    const parsed = parseCSV(csvText);
-    console.log("Parsed CSV data:", parsed);
-    
-    if (parsed.length < 2) {
-      return {
-        success: false,
-        count: 0,
-        error: "CSV file contains insufficient data"
-      };
-    }
-    
-    const prayerTimes = processCSVData(parsed);
-    console.log("Processed prayer times:", prayerTimes);
-    
-    // Try to add all entries to the database
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const entry of prayerTimes) {
-      try {
-        // Skip entries with missing required data
-        if (!entry.date || !entry.day) {
-          failCount++;
-          continue;
-        }
-        
-        await addPrayerTimeEntry(entry);
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to add entry for date ${entry.date}:`, error);
-        failCount++;
-      }
-    }
-    
-    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
-    
-    if (successCount === 0 && failCount > 0) {
-      return {
-        success: false,
-        count: 0,
-        error: `Failed to import any prayer times. ${failCount} entries had errors.`
-      };
-    }
-    
-    let warningMessage = '';
-    if (failCount > 0) {
-      warningMessage = `Note: ${failCount} entries failed to import.`;
-    }
-    
-    return {
-      success: true,
-      count: successCount,
-      error: warningMessage.length > 0 ? warningMessage : undefined
-    };
-  } catch (error) {
-    console.error("Error importing from CSV:", error);
-    return {
-      success: false,
-      count: 0,
-      error: error instanceof Error ? error.message : "Unknown error during import"
-    };
-  }
-};
-
 // Function to import prayer times from Google Sheet
 export const importPrayerTimesFromSheet = async (
   sheetId: string,
@@ -689,10 +617,27 @@ export const importPrayerTimesFromSheet = async (
       };
     }
     
+    // Extract Sheet ID from URL if user pasted a full URL
+    if (sheetId.includes('docs.google.com/spreadsheets')) {
+      const urlMatch = sheetId.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (urlMatch && urlMatch[1]) {
+        sheetId = urlMatch[1];
+        console.log("Extracted Sheet ID from URL:", sheetId);
+      } else {
+        return {
+          success: false,
+          count: 0,
+          error: "Could not extract a valid Sheet ID from the provided URL"
+        };
+      }
+    }
+    
     // Create CSV download URL from sheet ID
-    // If a specific tab name is provided, use it
+    // For a specific tab/sheet, we need to use gid, not the tab name directly
     let csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
     if (tabName && tabName !== 'Sheet1') {
+      // Try to use tab name as provided, but note this might not work correctly
+      // For specific sheets, users should use the gid number
       csvUrl += `&gid=${tabName}`;
     }
     
@@ -700,11 +645,23 @@ export const importPrayerTimesFromSheet = async (
     
     // Fetch the sheet data as CSV
     const response = await fetch(csvUrl);
+    
     if (!response.ok) {
+      // Provide more detailed error information
+      let errorMessage = `Failed to fetch sheet: ${response.status}`;
+      
+      if (response.status === 404) {
+        errorMessage += ". Make sure the Sheet ID is correct and the sheet is publicly accessible.";
+      } else if (response.status === 403) {
+        errorMessage += ". Access forbidden. The sheet must be shared with 'Anyone with the link' or 'Public on the web'.";
+      } else {
+        errorMessage += ` ${response.statusText}`;
+      }
+      
       return { 
         success: false, 
         count: 0,
-        error: `Failed to fetch sheet: ${response.status} ${response.statusText}. Make sure the sheet is public.`
+        error: errorMessage
       };
     }
     
