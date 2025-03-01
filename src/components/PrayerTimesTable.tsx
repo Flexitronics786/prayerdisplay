@@ -1,4 +1,3 @@
-
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
@@ -239,6 +238,42 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     return getSunriseTime();
   };
 
+  // Calculate Jummah timings (Khutbah is 10 minutes before Jamat)
+  const getJummahKhutbahTime = () => {
+    const jamatTime = getZuhrJamat();
+    if (!jamatTime) return "";
+    
+    // Convert '1:15 PM' format to Date object for calculation
+    const [time, period] = jamatTime.split(' ');
+    const [hours, minutes] = time.split(':').map(part => parseInt(part, 10));
+    
+    // Create a date object for calculation
+    const date = new Date();
+    let hour = hours;
+    
+    // Convert from 12-hour to 24-hour format for calculations
+    if (period === 'PM' && hour < 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    
+    date.setHours(hour, minutes);
+    
+    // Subtract 10 minutes for khutbah time
+    date.setMinutes(date.getMinutes() - 10);
+    
+    // Format back to 12-hour time
+    let khutbahHour = date.getHours();
+    const khutbahMinutes = date.getMinutes();
+    let ampm = 'AM';
+    
+    if (khutbahHour >= 12) {
+      ampm = 'PM';
+      if (khutbahHour > 12) khutbahHour -= 12;
+    }
+    if (khutbahHour === 0) khutbahHour = 12;
+    
+    return `${khutbahHour}:${khutbahMinutes.toString().padStart(2, '0')} ${ampm}`;
+  };
+
   // Determine if it's Friday (for Jummah)
   const today = new Date();
   const isFriday = today.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
@@ -351,8 +386,12 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           false,
           [
             { 
-              label: "Khutbah", 
+              label: "Start", 
               time: getZuhrStart() // Same as Zuhr start time
+            },
+            { 
+              label: "Khutbah", 
+              time: getJummahKhutbahTime() // Khutbah is 10 minutes before Jamat
             },
             { 
               label: "Jamat", 
