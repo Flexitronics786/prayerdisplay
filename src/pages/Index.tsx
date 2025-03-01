@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -15,7 +14,7 @@ const Index = () => {
   const [midnightReloadSet, setMidnightReloadSet] = useState(false);
   const [currentDate, setCurrentDate] = useState(formatDate());
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
-  const dataLoadingRef = useRef(false); // Add ref to track loading state
+  const dataLoadingRef = useRef(false);
 
   useEffect(() => {
     const checkIfTV = () => {
@@ -39,17 +38,15 @@ const Index = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Combined interval for date and clock updates
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
-    }, 60000); // Update every minute
+    }, 60000);
     
     return () => clearInterval(dateInterval);
   }, []);
 
   const loadData = useCallback(async () => {
-    // Prevent concurrent loading operations
     if (dataLoadingRef.current) {
       console.log("Already loading data, skipping this request");
       return;
@@ -70,25 +67,20 @@ const Index = () => {
     }
   }, []);
 
-  // Find next prayer time and schedule a check right before it starts
   const scheduleNextCheck = useCallback((prayers: PrayerTime[]) => {
-    // Clear any existing timer
     if (nextCheckTimer) {
       clearTimeout(nextCheckTimer);
     }
     
-    // Find the next prayer
     const nextPrayer = prayers.find(prayer => prayer.isNext);
     
     if (!nextPrayer) {
       console.log("No next prayer found, scheduling check in 30 minutes");
-      // If no next prayer found, check again in 30 minutes as a fallback
       const timer = setTimeout(() => loadData(), 30 * 60 * 1000);
       setNextCheckTimer(timer);
       return;
     }
     
-    // Calculate time until next prayer
     const now = new Date();
     const currentHours = now.getHours();
     const currentMinutes = now.getMinutes();
@@ -97,25 +89,20 @@ const Index = () => {
     const [prayerHours, prayerMinutes] = nextPrayer.time.split(':').map(Number);
     let prayerTimeInMinutes = prayerHours * 60 + prayerMinutes;
     
-    // If prayer is tomorrow (time is earlier than current time)
     if (prayerTimeInMinutes < currentTimeInMinutes) {
-      prayerTimeInMinutes += 24 * 60; // Add 24 hours
+      prayerTimeInMinutes += 24 * 60;
     }
     
-    // Calculate minutes until next prayer
-    let minutesUntilPrayer = prayerTimeInMinutes - currentTimeInMinutes;
+    const minutesUntilPrayer = prayerTimeInMinutes - currentTimeInMinutes;
     
-    // Schedule check 5 minutes before prayer time or now if it's less than 5 minutes away
     const checkOffsetMinutes = 5;
     const checkInMinutes = Math.max(0, minutesUntilPrayer - checkOffsetMinutes);
     
     console.log(`Next prayer (${nextPrayer.name}) at ${nextPrayer.time}, checking in ${checkInMinutes} minutes`);
     
-    // Set timeout to check before prayer time (converting minutes to milliseconds)
     const timer = setTimeout(() => loadData(), checkInMinutes * 60 * 1000);
     setNextCheckTimer(timer);
     
-    // Also schedule an additional check right at prayer time
     if (minutesUntilPrayer > 0) {
       setTimeout(() => loadData(), minutesUntilPrayer * 60 * 1000);
     }
@@ -128,35 +115,30 @@ const Index = () => {
     return Math.floor(diff / oneDay);
   };
 
-  // Setup midnight reload only once
   useEffect(() => {
     if (!midnightReloadSet) {
       const setupMidnightReload = () => {
         const now = new Date();
         const midnight = new Date(now);
-        midnight.setHours(24, 0, 0, 0);
+        midnight.setHours(24, 2, 0, 0);
         
         const timeUntilMidnight = midnight.getTime() - now.getTime();
-        console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
+        console.log(`Page will fully reload at 2 minutes after midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
         
-        // Use setTimeout not page reload to reduce disruption
         setTimeout(() => {
-          console.log("Midnight reached - refreshing prayer times");
-          loadData();
+          console.log("Midnight+2min reached - refreshing entire page");
+          window.location.reload();
         }, timeUntilMidnight);
       };
       
       setupMidnightReload();
       setMidnightReloadSet(true);
     }
-  }, [midnightReloadSet, loadData]);
+  }, [midnightReloadSet]);
 
-  // Main data loading and subscription effect
   useEffect(() => {
-    // Initial data load
     loadData();
 
-    // Setup Supabase real-time subscription
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', { 
@@ -169,7 +151,6 @@ const Index = () => {
       })
       .subscribe();
 
-    // Handle localStorage changes from other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
         console.log("Prayer times changed in local storage, reloading...");
