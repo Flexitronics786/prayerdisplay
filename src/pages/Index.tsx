@@ -37,10 +37,11 @@ const Index = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Combined interval for date and clock updates
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
-    }, 60000);
+    }, 60000); // Update every minute
     
     return () => clearInterval(dateInterval);
   }, []);
@@ -65,6 +66,7 @@ const Index = () => {
     return Math.floor(diff / oneDay);
   };
 
+  // Setup midnight reload only once
   useEffect(() => {
     if (!midnightReloadSet) {
       const setupMidnightReload = () => {
@@ -75,20 +77,24 @@ const Index = () => {
         const timeUntilMidnight = midnight.getTime() - now.getTime();
         console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
         
+        // Use setTimeout not page reload to reduce disruption
         setTimeout(() => {
-          console.log("Midnight reached - reloading page to refresh prayer times");
-          window.location.reload();
+          console.log("Midnight reached - refreshing prayer times");
+          loadData();
         }, timeUntilMidnight);
       };
       
       setupMidnightReload();
       setMidnightReloadSet(true);
     }
-  }, [midnightReloadSet]);
+  }, [midnightReloadSet, loadData]);
 
+  // Main data loading and subscription effect
   useEffect(() => {
+    // Initial data load
     loadData();
 
+    // Setup Supabase real-time subscription
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', { 
@@ -101,6 +107,7 @@ const Index = () => {
       })
       .subscribe();
 
+    // Handle localStorage changes from other tabs
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
         console.log("Prayer times changed in local storage, reloading...");
@@ -110,10 +117,11 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Reduce checking frequency to every 5 minutes instead of every minute
     const interval = setInterval(() => {
       console.log("Checking prayer times status...");
       loadData();
-    }, 60000);
+    }, 300000); // Changed from 60000 (1 minute) to 300000 (5 minutes)
     
     return () => {
       clearInterval(interval);
