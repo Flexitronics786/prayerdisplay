@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Hadith, PrayerTime } from "@/types";
 import { Smartphone } from "lucide-react";
-import { fetchHadithCollection } from "@/services/dataService";
-import { HadithCollectionItem } from "@/types";
+import { fetchHadith } from "@/services/dataService";
 
 interface HadithDisplayProps {
   hadith: Hadith;
@@ -12,10 +11,7 @@ interface HadithDisplayProps {
 
 const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => {
   const [showPhoneReminder, setShowPhoneReminder] = useState(false);
-  const [activeHadiths, setActiveHadiths] = useState<HadithCollectionItem[]>([]);
-  const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [displayedHadith, setDisplayedHadith] = useState<Hadith>(hadith);
-  const [cycleCount, setCycleCount] = useState(0);
   
   // References to track component mount status and timers
   const isMounted = useRef(true);
@@ -28,33 +24,20 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
                 navigator.userAgent.toLowerCase().includes('silk') || 
                 navigator.userAgent.toLowerCase().includes('firetv'));
   
-  // Load all active hadiths on component mount
+  // Load hadith on component mount
   useEffect(() => {
-    const loadHadiths = async () => {
+    const loadHadith = async () => {
       try {
-        console.log("Fetching hadith collection...");
-        const collection = await fetchHadithCollection();
-        const filtered = collection.filter(h => h.is_active);
-        
-        if (filtered.length > 0 && isMounted.current) {
-          setActiveHadiths(filtered);
-          console.log(`Loaded ${filtered.length} active hadiths:`, filtered.map(h => h.id));
-          
-          // Set initial index
-          const initialIndex = filtered.findIndex(h => h.id === hadith.id);
-          if (initialIndex !== -1) {
-            setCurrentHadithIndex(initialIndex);
-            console.log(`Starting with hadith index: ${initialIndex}, ID: ${hadith.id}`);
-          }
-        } else {
-          console.warn("No active hadiths found in collection");
+        const defaultHadith = await fetchHadith();
+        if (isMounted.current) {
+          setDisplayedHadith(defaultHadith);
         }
       } catch (error) {
-        console.error("Error loading hadith collection:", error);
+        console.error("Error loading hadith:", error);
       }
     };
     
-    loadHadiths();
+    loadHadith();
     
     return () => {
       isMounted.current = false;
@@ -70,58 +53,11 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         phoneReminderTimerRef.current = null;
       }
     };
-  }, [hadith.id]);
-  
-  // Helper function to convert HadithCollectionItem to Hadith type
-  const convertToHadith = (item: HadithCollectionItem): Hadith => {
-    return {
-      id: item.id,
-      text: item.text,
-      source: item.source,
-      lastUpdated: item.created_at || new Date().toISOString()
-    };
-  };
-  
-  // Move to the next hadith in the collection
-  const moveToNextHadith = () => {
-    if (activeHadiths.length <= 1) {
-      console.log("Only one hadith available, not cycling");
-      return;
-    }
-    
-    setCurrentHadithIndex(prevIndex => {
-      // Calculate next index with proper wrapping
-      const nextIndex = (prevIndex + 1) % activeHadiths.length;
-      console.log(`Moving to next hadith: index ${prevIndex} → ${nextIndex}`);
-      
-      // Update displayed hadith
-      const nextHadith = convertToHadith(activeHadiths[nextIndex]);
-      setDisplayedHadith(nextHadith);
-      console.log(`Next hadith displayed: ${nextHadith.id}`);
-      
-      // Track if we've completed a full cycle
-      if (nextIndex === 0) {
-        setCycleCount(prev => prev + 1);
-        console.log("Completed full cycle through all hadiths");
-      }
-      
-      return nextIndex;
-    });
-  };
+  }, []);
   
   // Setup cycling system
   useEffect(() => {
-    // Only set up cycling if we have active hadiths
-    if (activeHadiths.length === 0) return;
-    
     console.log("Setting up hadith cycling mechanism");
-    
-    // Initialize with the current hadith
-    if (activeHadiths[currentHadithIndex]) {
-      const initialHadith = convertToHadith(activeHadiths[currentHadithIndex]);
-      setDisplayedHadith(initialHadith);
-      console.log(`Initial hadith displayed: ${initialHadith.id}`);
-    }
     
     // Clear any existing timers to avoid duplicates
     if (cycleTimerRef.current) {
@@ -150,13 +86,12 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         console.log("Showing phone reminder for 30 seconds");
         setShowPhoneReminder(true);
         
-        // After 30 seconds (30000ms), move to next hadith
+        // After 30 seconds (30000ms), go back to hadith
         phoneReminderTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
-          console.log("Phone reminder timeout completed, moving to next hadith");
-          moveToNextHadith();
-          startCycle(); // Continue the cycle with the next hadith
+          console.log("Phone reminder timeout completed, going back to hadith");
+          startCycle(); // Continue the cycle
         }, 30000);
       }, 120000);
     };
@@ -176,7 +111,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         phoneReminderTimerRef.current = null;
       }
     };
-  }, [activeHadiths]); // Only re-run when activeHadiths changes
+  }, []); 
   
   // Render the hadith content
   const renderHadith = () => (
