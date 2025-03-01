@@ -9,57 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      daily_hadiths: {
-        Row: {
-          created_at: string | null
-          day_of_month: number
-          id: string
-          month: string | null
-          source: string
-          text: string
-        }
-        Insert: {
-          created_at?: string | null
-          day_of_month: number
-          id?: string
-          month?: string | null
-          source: string
-          text: string
-        }
-        Update: {
-          created_at?: string | null
-          day_of_month?: number
-          id?: string
-          month?: string | null
-          source?: string
-          text?: string
-        }
-        Relationships: []
-      }
-      hadith_collection: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          source: string
-          text: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          source: string
-          text: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          source?: string
-          text?: string
-        }
-        Relationships: []
-      }
       prayer_times: {
         Row: {
           asr_jamat: string
