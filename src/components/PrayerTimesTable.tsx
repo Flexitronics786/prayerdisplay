@@ -1,4 +1,3 @@
-
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
@@ -94,7 +93,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   ) => {
     return (
       <div className={`prayer-card rounded-xl overflow-hidden prayer-transition 
-        ${isActive ? 'active-prayer border-amber-500 border-2' : 
+        ${isActive ? 'active-prayer' : 
           isNext ? 'next-prayer' : ''}`}
       >
         <div className={`prayer-tile-header ${headerClass}`}>
