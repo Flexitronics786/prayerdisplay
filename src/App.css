@@ -1,8 +1,15 @@
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
+}
+
+@media (min-width: 640px) {
+  #root {
+    padding: 2rem;
+  }
 }
 
 .logo {
@@ -34,9 +41,23 @@
 }
 
 .card {
-  padding: 2em;
+  padding: 1.5em;
+}
+
+@media (min-width: 640px) {
+  .card {
+    padding: 2em;
+  }
 }
 
 .read-the-docs {
   color: #888;
+}
+
+/* Add mobile-specific font sizes */
+@media (max-width: 640px) {
+  .text-2xs {
+    font-size: 0.625rem;
+    line-height: 0.75rem;
+  }
 }

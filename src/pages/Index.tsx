@@ -140,15 +140,15 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-8">
             <header className="mb-4">
-              <div className="gold-border p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
+              <div className="gold-border p-3 sm:p-4 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
                 <div className="text-center">
-                  <h1 className="text-3xl sm:text-4xl font-bold gold-gradient-text mb-1 font-serif">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold gold-gradient-text mb-1 font-serif">
                     JAMIA MASJID BILAL
                   </h1>
-                  <h2 className="text-lg text-amber-700 mb-2">
+                  <h2 className="text-base sm:text-lg text-amber-700 mb-2">
                     MINHAJ-UL-QURAN INT. DUNDEE
                   </h2>
-                  <div className="h-0.5 w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-2"></div>
+                  <div className="h-0.5 w-24 sm:w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-2"></div>
                   <DigitalClock />
                 </div>
               </div>
@@ -156,7 +156,7 @@ const Index = () => {
             <PrayerTimesTable prayerTimes={prayerTimes} compactView={true} />
           </div>
           
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 mt-2 lg:mt-0">
             {hadith && <HadithDisplay hadith={hadith} nextPrayer={getNextPrayer()} />}
           </div>
         </div>

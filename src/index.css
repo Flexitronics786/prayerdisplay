@@ -193,3 +193,27 @@
   animation: pulse-soft 3s ease-in-out infinite;
 }
 
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .gold-border {
+    border-radius: 16px;
+  }
+  
+  .prayer-card {
+    @apply rounded-lg;
+  }
+  
+  .prayer-tile-header {
+    @apply py-2;
+  }
+  
+  /* Adjust spacing for prayer cards on mobile */
+  .mobile-prayer-grid {
+    @apply grid-cols-2 gap-2;
+  }
+  
+  /* Make hadith display take full width on mobile */
+  .mobile-hadith-container {
+    @apply col-span-2 mt-2;
+  }
+}

@@ -28,7 +28,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     loadDetailedTimes();
   }, []);
 
-  // Group prayer times by name for display in tiles
   const getPrayerDetails = (name: string) => {
     const prayers = prayerTimes.filter(prayer => 
       prayer.name.toLowerCase() === name.toLowerCase() || 
@@ -36,32 +35,25 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
       (name === "Fajr" && prayer.name === "Sunrise")
     );
     
-    // If we have detailed times, apply the custom rules for when prayers end
     let isActive = prayers.some(p => p.isActive);
     let isNext = prayers.some(p => p.isNext);
 
-    // Apply custom rules for when prayers are active
     if (detailedTimes && isActive) {
       const now = new Date();
       const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
       
       if (name === "Fajr" && detailedTimes.sunrise && currentTime >= detailedTimes.sunrise) {
-        // Fajr ends at Sunrise
         isActive = false;
       } else if (name === "Zuhr" && detailedTimes.asr_start && currentTime >= detailedTimes.asr_start) {
-        // Zuhr ends when Asr starts
         isActive = false;
       } else if (name === "Asr" && detailedTimes.maghrib_iftar && currentTime >= detailedTimes.maghrib_iftar) {
-        // Asr ends when Maghrib starts
         isActive = false;
       } else if (name === "Maghrib" && detailedTimes.maghrib_iftar) {
-        // Maghrib ends after 1 hour
         const maghribParts = detailedTimes.maghrib_iftar.split(':');
         if (maghribParts.length >= 2) {
           const maghribHour = parseInt(maghribParts[0], 10);
           const maghribMinute = parseInt(maghribParts[1], 10);
           
-          // Calculate 1 hour after Maghrib
           let oneHourLaterHour = maghribHour + 1;
           if (oneHourLaterHour >= 24) oneHourLaterHour -= 24;
           
@@ -72,12 +64,10 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           }
         }
       } else if (name === "Isha" && detailedTimes.fajr_jamat) {
-        // Isha ends when Fajr starts
         const nextDayFajr = detailedTimes.fajr_jamat;
         
-        // If current time is past midnight but before Fajr
         const hour = now.getHours();
-        if (hour < 12) { // Morning hours, check if Isha should still be active
+        if (hour < 12) {
           const fajrParts = nextDayFajr.split(':');
           if (fajrParts.length >= 2) {
             const fajrHour = parseInt(fajrParts[0], 10);
@@ -104,7 +94,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   const maghribDetails = getPrayerDetails("Maghrib");
   const ishaDetails = getPrayerDetails("Isha");
 
-  // Function to get details for a specific prayer
   const getPrayerTime = (name: string) => {
     return prayerTimes.find(prayer => 
       prayer.name.toLowerCase() === name.toLowerCase() || 
@@ -112,7 +101,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     );
   };
 
-  // Function to get sunrise time
   const getSunriseTime = () => {
     const sunrise = prayerTimes.find(prayer => prayer.name === "Sunrise");
     return sunrise ? convertTo12Hour(sunrise.time) : "";
@@ -131,28 +119,28 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           isNext ? 'next-prayer' : ''}`}
       >
         <div className={`prayer-tile-header ${headerClass}`}>
-          <h3 className="text-xl font-bold">
+          <h3 className="text-lg sm:text-xl font-bold">
             {title}
             {isActive && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-white/30 text-white">
+              <span className="ml-2 inline-block px-1.5 py-0.5 text-2xs sm:text-xs rounded-full bg-white/30 text-white">
                 Current
               </span>
             )}
             {isNext && (
-              <span className="ml-2 inline-block px-2 py-0.5 text-xs rounded-full bg-white/20 text-white/90">
+              <span className="ml-2 inline-block px-1.5 py-0.5 text-2xs sm:text-xs rounded-full bg-white/20 text-white/90">
                 Next
               </span>
             )}
           </h3>
         </div>
-        <div className="px-4 py-2">
+        <div className="px-2 sm:px-4 py-2">
           {items.map((item, index) => (
             <div key={index} className={`flex justify-between items-center 
-              ${index < items.length - 1 ? 'mb-2 pb-1 border-b border-amber-100' : ''} 
+              ${index < items.length - 1 ? 'mb-1 sm:mb-2 pb-1 border-b border-amber-100' : ''} 
               ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
-              <span className="text-amber-900 text-base font-medium">{item.label}:</span>
-              <span className="font-bold text-amber-950 text-xl clock-text">{item.time}</span>
+              <span className="text-amber-900 text-sm sm:text-base font-medium">{item.label}:</span>
+              <span className="font-bold text-amber-950 text-lg sm:text-xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
@@ -160,7 +148,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     );
   };
 
-  // If we have detailed times, use them; otherwise use the simplified times
   const getFajrStart = () => {
     if (detailedTimes && detailedTimes.sehri_end) {
       return convertTo12Hour(detailedTimes.sehri_end);
@@ -238,29 +225,23 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     return getSunriseTime();
   };
 
-  // Calculate Jummah timings (Khutbah is 10 minutes before Jamat)
   const getJummahKhutbahTime = () => {
     const jamatTime = getZuhrJamat();
     if (!jamatTime) return "";
     
-    // Convert '1:15 PM' format to Date object for calculation
     const [time, period] = jamatTime.split(' ');
     const [hours, minutes] = time.split(':').map(part => parseInt(part, 10));
     
-    // Create a date object for calculation
     const date = new Date();
     let hour = hours;
     
-    // Convert from 12-hour to 24-hour format for calculations
     if (period === 'PM' && hour < 12) hour += 12;
     if (period === 'AM' && hour === 12) hour = 0;
     
     date.setHours(hour, minutes);
     
-    // Subtract 10 minutes for khutbah time
     date.setMinutes(date.getMinutes() - 10);
     
-    // Format back to 12-hour time
     let khutbahHour = date.getHours();
     const khutbahMinutes = date.getMinutes();
     let ampm = 'AM';
@@ -274,18 +255,16 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     return `${khutbahHour}:${khutbahMinutes.toString().padStart(2, '0')} ${ampm}`;
   };
 
-  // Determine if it's Friday (for Jummah)
   const today = new Date();
-  const isFriday = today.getDay() === 5; // 5 represents Friday (0 is Sunday, 1 is Monday, etc.)
+  const isFriday = today.getDay() === 5;
 
   return (
     <div className="animate-scale-in">
-      <div className="mb-3">
-        <h3 className="text-2xl font-bold text-amber-800 font-serif">Prayer Times</h3>
+      <div className="mb-2 sm:mb-3">
+        <h3 className="text-xl sm:text-2xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {/* Fajr Tile */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mobile-prayer-grid">
         {renderPrayerTile(
           "Fajr", 
           fajrDetails.isActive, 
@@ -307,7 +286,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "fajr-header"
         )}
 
-        {/* Zuhr Tile */}
         {renderPrayerTile(
           "Zuhr", 
           zuhrDetails.isActive, 
@@ -325,7 +303,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "zuhr-header"
         )}
 
-        {/* Asr Tile */}
         {renderPrayerTile(
           "Asr", 
           asrDetails.isActive, 
@@ -343,7 +320,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "asr-header"
         )}
 
-        {/* Maghrib Tile */}
         {renderPrayerTile(
           "Maghrib", 
           maghribDetails.isActive, 
@@ -357,7 +333,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "maghrib-header"
         )}
 
-        {/* Isha Tile */}
         {renderPrayerTile(
           "Isha", 
           ishaDetails.isActive, 
@@ -379,26 +354,25 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "isha-header"
         )}
 
-        {/* Jummah Tile (Friday Prayer) */}
         {renderPrayerTile(
           "Jummah", 
-          false, // Never active or next since this is a special prayer
+          false,
           false,
           [
             { 
               label: "Start", 
-              time: getZuhrStart() // Same as Zuhr start time
+              time: getZuhrStart()
             },
             { 
               label: "Khutbah", 
-              time: getJummahKhutbahTime() // Khutbah is 10 minutes before Jamat
+              time: getJummahKhutbahTime()
             },
             { 
               label: "Jamat", 
-              time: getZuhrJamat() // Same as Zuhr jamat time
+              time: getZuhrJamat()
             }
           ],
-          "jummah-header" // Use the new jummah-header class
+          "jummah-header"
         )}
       </div>
     </div>

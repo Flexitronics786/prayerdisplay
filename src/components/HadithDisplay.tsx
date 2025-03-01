@@ -19,6 +19,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   // References to track component mount status and timers
   const isMounted = useRef(true);
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const phoneReminderTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Load all active hadiths on component mount
   useEffect(() => {
@@ -96,38 +97,33 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     setDisplayedHadith(initialHadith);
     console.log(`Initial hadith displayed: ${initialHadith.id}`);
     
-    // Clear any existing timer
+    // Clear any existing timers
     if (cycleTimerRef.current) {
       clearTimeout(cycleTimerRef.current);
     }
     
-    let isFirstCycle = true;
+    if (phoneReminderTimerRef.current) {
+      clearTimeout(phoneReminderTimerRef.current);
+    }
     
-    // Function to start a cycle
+    // Function to start cycle
     const startCycle = () => {
-      // First show the hadith for 2 minutes
+      // Show hadith for 2 minutes
       setShowPhoneReminder(false);
-      
-      if (!isFirstCycle) {
-        // Move to the next hadith (but not on the first cycle)
-        moveToNextHadith();
-      } else {
-        isFirstCycle = false;
-      }
-      
       console.log("Showing hadith for 2 minutes");
       
-      // After 2 minutes, show the phone reminder for 30 seconds
+      // After 2 minutes, show phone reminder for 30 seconds
       cycleTimerRef.current = setTimeout(() => {
         if (!isMounted.current) return;
         
         setShowPhoneReminder(true);
         console.log("Showing phone reminder for 30 seconds");
         
-        // After 30 seconds, start the cycle again
-        cycleTimerRef.current = setTimeout(() => {
+        // After 30 seconds, move to next hadith and restart cycle
+        phoneReminderTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
+          moveToNextHadith();
           startCycle();
         }, 30000); // 30 seconds for phone reminder
       }, 120000); // 2 minutes for hadith
@@ -141,6 +137,9 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
       if (cycleTimerRef.current) {
         clearTimeout(cycleTimerRef.current);
       }
+      if (phoneReminderTimerRef.current) {
+        clearTimeout(phoneReminderTimerRef.current);
+      }
       console.log("Cleaned up hadith cycling timers");
     };
   }, [hadith, activeHadiths]); // Only re-run when hadith or activeHadiths change
@@ -148,32 +147,32 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   // Render the hadith content
   const renderHadith = () => (
     <>
-      <h3 className="text-2xl font-bold text-amber-800 mb-4 font-serif">Hadith</h3>
+      <h3 className="text-xl sm:text-2xl font-bold text-amber-800 mb-3 sm:mb-4 font-serif">Hadith</h3>
       
-      <div className="mb-4">
-        <p className="text-base text-amber-900/90 leading-relaxed">{displayedHadith.text}</p>
+      <div className="mb-3 sm:mb-4">
+        <p className="text-sm sm:text-base text-amber-900/90 leading-relaxed">{displayedHadith.text}</p>
       </div>
       
       <div>
-        <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
-        <p className="text-sm text-amber-900/80">{displayedHadith.source}</p>
+        <p className="text-sm sm:text-base font-semibold text-amber-800 mb-1">Reference</p>
+        <p className="text-xs sm:text-sm text-amber-900/80">{displayedHadith.source}</p>
       </div>
     </>
   );
   
   // Render the phone reminder content
   const renderPhoneReminder = () => (
-    <div className="flex flex-col h-full justify-center items-center py-6 animate-pulse-soft">
-      <div className="bg-gradient-to-b from-amber-500/90 to-amber-400/90 p-5 rounded-full mb-5 shadow-lg">
-        <Smartphone className="h-12 w-12 text-white" />
+    <div className="flex flex-col h-full justify-center items-center py-4 sm:py-6 animate-pulse-soft">
+      <div className="bg-gradient-to-b from-amber-500/90 to-amber-400/90 p-4 sm:p-5 rounded-full mb-4 sm:mb-5 shadow-lg">
+        <Smartphone className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
       </div>
       
-      <h3 className="text-2xl font-bold text-amber-800 mb-3 font-serif text-center bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 bg-clip-text text-transparent">
+      <h3 className="text-xl sm:text-2xl font-bold text-amber-800 mb-2 sm:mb-3 font-serif text-center bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 bg-clip-text text-transparent">
         Mobile Phone Reminder
       </h3>
       
-      <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
-        <p className="text-lg text-amber-800 text-center leading-relaxed">
+      <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-3 sm:p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
+        <p className="text-base sm:text-lg text-amber-800 text-center leading-relaxed">
           Please turn off your mobile phone while in the mosque as a sign of respect.
         </p>
       </div>
@@ -181,7 +180,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   );
   
   return (
-    <div className="gold-border prayer-card rounded-xl p-4 h-full animate-fade-in">
+    <div className="gold-border prayer-card rounded-xl p-3 sm:p-4 h-full animate-fade-in">
       {showPhoneReminder ? renderPhoneReminder() : renderHadith()}
     </div>
   );
