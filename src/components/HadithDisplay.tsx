@@ -86,7 +86,38 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     
     const updateCountdown = () => {
       const now = new Date();
-      const [hours, minutes] = nextPrayer.time.split(':').map(Number);
+      
+      // Determine which time to use based on prayer name
+      let timeToUse = '';
+      
+      // Handle special cases based on prayer name
+      switch (nextPrayer.name.toLowerCase()) {
+        case 'fajr':
+          timeToUse = nextPrayer.time; // Use Fajr Jamat time as is
+          break;
+        case 'sunrise':
+          timeToUse = nextPrayer.time; // Use Sunrise time as is
+          break;
+        case 'zuhr':
+          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Zuhr start time if available
+          break;
+        case 'asr':
+          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Asr start time if available
+          break;
+        case 'maghrib':
+          timeToUse = nextPrayer.time; // Use Maghrib/Iftar time as is
+          break;
+        case 'isha':
+          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Isha start time if available
+          break;
+        case 'jummah':
+          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use start time for Jummah/Khutbah
+          break;
+        default:
+          timeToUse = nextPrayer.time; // Fallback to the provided time
+      }
+      
+      const [hours, minutes] = timeToUse.split(':').map(Number);
       
       // Create a date object for the next prayer time
       const prayerTime = new Date();
