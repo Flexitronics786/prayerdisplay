@@ -14,6 +14,7 @@ const Index = () => {
   const [isTV, setIsTV] = useState(false);
   const [midnightReloadSet, setMidnightReloadSet] = useState(false);
   const [currentDate, setCurrentDate] = useState(formatDate());
+  const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const checkIfTV = () => {
@@ -52,12 +53,64 @@ const Index = () => {
       console.log("Loading prayer times...");
       const times = await fetchPrayerTimes();
       setPrayerTimes(times);
+      scheduleNextCheck(times);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Find next prayer time and schedule a check right before it starts
+  const scheduleNextCheck = useCallback((prayers: PrayerTime[]) => {
+    // Clear any existing timer
+    if (nextCheckTimer) {
+      clearTimeout(nextCheckTimer);
+    }
+    
+    // Find the next prayer
+    const nextPrayer = prayers.find(prayer => prayer.isNext);
+    
+    if (!nextPrayer) {
+      console.log("No next prayer found, scheduling check in 30 minutes");
+      // If no next prayer found, check again in 30 minutes as a fallback
+      const timer = setTimeout(() => loadData(), 30 * 60 * 1000);
+      setNextCheckTimer(timer);
+      return;
+    }
+    
+    // Calculate time until next prayer
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTimeInMinutes = currentHours * 60 + currentMinutes;
+    
+    const [prayerHours, prayerMinutes] = nextPrayer.time.split(':').map(Number);
+    let prayerTimeInMinutes = prayerHours * 60 + prayerMinutes;
+    
+    // If prayer is tomorrow (time is earlier than current time)
+    if (prayerTimeInMinutes < currentTimeInMinutes) {
+      prayerTimeInMinutes += 24 * 60; // Add 24 hours
+    }
+    
+    // Calculate minutes until next prayer
+    let minutesUntilPrayer = prayerTimeInMinutes - currentTimeInMinutes;
+    
+    // Schedule check 5 minutes before prayer time or now if it's less than 5 minutes away
+    const checkOffsetMinutes = 5;
+    const checkInMinutes = Math.max(0, minutesUntilPrayer - checkOffsetMinutes);
+    
+    console.log(`Next prayer (${nextPrayer.name}) at ${nextPrayer.time}, checking in ${checkInMinutes} minutes`);
+    
+    // Set timeout to check before prayer time (converting minutes to milliseconds)
+    const timer = setTimeout(() => loadData(), checkInMinutes * 60 * 1000);
+    setNextCheckTimer(timer);
+    
+    // Also schedule an additional check right at prayer time
+    if (minutesUntilPrayer > 0) {
+      setTimeout(() => loadData(), minutesUntilPrayer * 60 * 1000);
+    }
+  }, [loadData, nextCheckTimer]);
 
   const getDayOfYear = (date: Date): number => {
     const start = new Date(date.getFullYear(), 0, 0);
@@ -117,18 +170,14 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Reduce checking frequency to every 5 minutes instead of every minute
-    const interval = setInterval(() => {
-      console.log("Checking prayer times status...");
-      loadData();
-    }, 300000); // Changed from 60000 (1 minute) to 300000 (5 minutes)
-    
     return () => {
-      clearInterval(interval);
+      if (nextCheckTimer) {
+        clearTimeout(nextCheckTimer);
+      }
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [loadData]);
+  }, [loadData, nextCheckTimer]);
 
   if (isLoading) {
     return (
