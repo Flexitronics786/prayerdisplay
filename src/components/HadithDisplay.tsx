@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Hadith, PrayerTime } from "@/types";
 import { Smartphone } from "lucide-react";
@@ -75,10 +76,9 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   
   const renderHadith = () => (
     <>
-      <h3 className="text-2xl font-bold text-amber-800 mb-4 font-serif">Hadith of the Day</h3>
+      <h3 className="text-2xl font-bold text-amber-800 mb-4 font-serif">Hadith</h3>
       
       <div className="mb-4">
-        <p className="text-lg font-semibold text-amber-800 mb-1">Hadith</p>
         <p className="text-base text-amber-900/90 leading-relaxed">{currentHadith.text}</p>
       </div>
       
