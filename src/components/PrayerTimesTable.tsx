@@ -1,3 +1,4 @@
+
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
@@ -117,8 +118,8 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
               ${index < items.length - 1 ? 'mb-1 sm:mb-2 pb-1 border-b border-amber-100' : ''} 
               ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
-              <span className={`${isActive ? 'text-white' : 'text-amber-900'} text-base sm:text-lg font-medium`}>{item.label}:</span>
-              <span className={`font-bold ${isActive ? 'text-white' : 'text-amber-950'} text-xl sm:text-2xl clock-text`}>{item.time}</span>
+              <span className="text-amber-900 text-base sm:text-lg font-medium">{item.label}:</span>
+              <span className="font-bold text-amber-950 text-xl sm:text-2xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
