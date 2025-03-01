@@ -12,6 +12,7 @@ const Index = () => {
   const [hadith, setHadith] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isTV, setIsTV] = useState(false);
+  const [midnightReloadSet, setMidnightReloadSet] = useState(false);
 
   useEffect(() => {
     // Check if the device is likely a TV (Firestick, etc.)
@@ -78,6 +79,29 @@ const Index = () => {
     return Math.floor(diff / oneDay);
   };
 
+  // Set up midnight page reload - only once
+  useEffect(() => {
+    if (!midnightReloadSet) {
+      const setupMidnightReload = () => {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0); // Set to next midnight (00:00:00)
+        
+        const timeUntilMidnight = midnight.getTime() - now.getTime();
+        console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
+        
+        setTimeout(() => {
+          console.log("Midnight reached - reloading page to refresh prayer times");
+          window.location.reload();
+        }, timeUntilMidnight);
+      };
+      
+      setupMidnightReload();
+      setMidnightReloadSet(true);
+    }
+  }, [midnightReloadSet]);
+
+  // Load data and setup subscriptions
   useEffect(() => {
     loadData();
 
@@ -114,24 +138,7 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Set up midnight page reload
-    const setupMidnightReload = () => {
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(24, 0, 0, 0); // Set to next midnight (00:00:00)
-      
-      const timeUntilMidnight = midnight.getTime() - now.getTime();
-      console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
-      
-      setTimeout(() => {
-        console.log("Midnight reached - reloading page to refresh prayer times");
-        window.location.reload();
-      }, timeUntilMidnight);
-    };
-    
-    setupMidnightReload();
-    
-    // Auto refresh prayer times status every minute
+    // Auto refresh prayer times status every minute (without full page reload)
     const interval = setInterval(() => {
       console.log("Checking prayer times status...");
       loadData(); // Reload data to update active/next prayer

@@ -150,23 +150,12 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         console.log("Showing phone reminder for 30 seconds");
         setShowPhoneReminder(true);
         
-        // After 30 seconds (30000ms), check if all hadiths have been shown before restarting cycle
+        // After 30 seconds (30000ms), move to next hadith
         phoneReminderTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
           console.log("Phone reminder timeout completed, moving to next hadith");
-          
-          // Calculate if we've shown all hadiths at least once
-          const nextIndex = (currentHadithIndex + 1) % activeHadiths.length;
-          const willCompleteFullCycle = nextIndex === 0;
-          
           moveToNextHadith();
-          
-          // Check if we need to restart the cycle or continue
-          if (willCompleteFullCycle) {
-            console.log("We've shown all hadiths at least once, completing cycle");
-          }
-          
           startCycle(); // Continue the cycle with the next hadith
         }, 30000);
       }, 120000);
@@ -187,7 +176,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         phoneReminderTimerRef.current = null;
       }
     };
-  }, [activeHadiths, currentHadithIndex]); // Re-run when either activeHadiths or currentHadithIndex changes
+  }, [activeHadiths]); // Only re-run when activeHadiths changes
   
   // Render the hadith content
   const renderHadith = () => (
