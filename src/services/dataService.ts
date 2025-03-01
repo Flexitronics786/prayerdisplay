@@ -1,4 +1,3 @@
-
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,58 +15,122 @@ const defaultPrayerTimes: PrayerTime[] = [
   { id: '5', name: 'Isha', time: '19:45' }
 ];
 
-// Helper function to mark the active prayer time based on current time
-const markActivePrayer = (prayerTimes: PrayerTime[]): PrayerTime[] => {
+// Helper function to mark the active prayer time based on current time with updated rules
+const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPrayerTime): PrayerTime[] => {
   const currentTime = getCurrentTime24h();
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
   
-  // First, set all to inactive
+  // Reset all to inactive
   const updatedTimes = prayerTimes.map(prayer => ({
     ...prayer,
     isActive: false,
     isNext: false
   }));
   
-  // Sort times chronologically
-  const sortedTimes = [...updatedTimes].sort((a, b) => {
-    return a.time.localeCompare(b.time);
-  });
+  // Find indices for each prayer time
+  const fajrIndex = updatedTimes.findIndex(p => p.name === 'Fajr');
+  const sunriseIndex = updatedTimes.findIndex(p => p.name === 'Sunrise');
+  const dhuhrIndex = updatedTimes.findIndex(p => p.name === 'Dhuhr' || p.name === 'Zuhr');
+  const asrIndex = updatedTimes.findIndex(p => p.name === 'Asr');
+  const maghribIndex = updatedTimes.findIndex(p => p.name === 'Maghrib');
+  const ishaIndex = updatedTimes.findIndex(p => p.name === 'Isha');
   
-  // Find current and next prayer
-  let foundActive = false;
-  let foundNext = false;
+  // Get prayer times
+  const fajrTime = fajrIndex !== -1 ? updatedTimes[fajrIndex].time : '';
+  const sunriseTime = sunriseIndex !== -1 ? updatedTimes[sunriseIndex].time : '';
+  const dhuhrTime = dhuhrIndex !== -1 ? updatedTimes[dhuhrIndex].time : '';
+  const asrTime = asrIndex !== -1 ? updatedTimes[asrIndex].time : '';
+  const maghribTime = maghribIndex !== -1 ? updatedTimes[maghribIndex].time : '';
+  const ishaTime = ishaIndex !== -1 ? updatedTimes[ishaIndex].time : '';
   
-  for (let i = 0; i < sortedTimes.length; i++) {
-    const prayer = sortedTimes[i];
-    
-    if (!foundActive && !isTimeBefore(currentTime, prayer.time)) {
-      // This prayer has already started but hasn't been surpassed by the next one
-      if (i === sortedTimes.length - 1 || isTimeBefore(currentTime, sortedTimes[i+1].time)) {
-        // Mark as active
-        const index = updatedTimes.findIndex(p => p.id === prayer.id);
-        if (index !== -1) {
-          updatedTimes[index].isActive = true;
-        }
-        foundActive = true;
-      }
-    } else if (!foundNext && isTimeBefore(currentTime, prayer.time)) {
-      // This is the next prayer
-      const index = updatedTimes.findIndex(p => p.id === prayer.id);
-      if (index !== -1) {
-        updatedTimes[index].isNext = true;
-      }
-      foundNext = true;
-    }
-    
-    if (foundActive && foundNext) break;
+  let asrStartTime = '';
+  let maghribStartTime = '';
+  let fajrStartTimeNextDay = '';
+  
+  if (detailedTimes) {
+    asrStartTime = detailedTimes.asr_start || '';
+    maghribStartTime = detailedTimes.maghrib_iftar || '';
+    fajrStartTimeNextDay = detailedTimes.fajr_jamat || '';
   }
   
-  // Edge case: if no active prayer found (before first prayer of the day)
-  // Mark the first prayer as next
-  if (!foundActive && !foundNext && sortedTimes.length > 0) {
-    const index = updatedTimes.findIndex(p => p.id === sortedTimes[0].id);
-    if (index !== -1) {
-      updatedTimes[index].isNext = true;
+  // Calculate one hour after Maghrib
+  let oneHourAfterMaghrib = '';
+  if (maghribTime) {
+    const [mHours, mMinutes] = maghribTime.split(':').map(Number);
+    let newHour = mHours + 1;
+    if (newHour >= 24) newHour -= 24;
+    oneHourAfterMaghrib = `${newHour.toString().padStart(2, '0')}:${mMinutes.toString().padStart(2, '0')}`;
+  }
+  
+  // Determine current prayer based on rules
+  // Rule 1: Fajr is active from its start until Sunrise
+  if (fajrIndex !== -1 && sunriseIndex !== -1 && 
+      !isTimeBefore(currentTime, fajrTime) && 
+      isTimeBefore(currentTime, sunriseTime)) {
+    updatedTimes[fajrIndex].isActive = true;
+  }
+  
+  // Rule 2: Dhuhr is active from its start until Asr starts
+  if (dhuhrIndex !== -1 && 
+      !isTimeBefore(currentTime, dhuhrTime) && 
+      (asrStartTime ? isTimeBefore(currentTime, asrStartTime) : isTimeBefore(currentTime, asrTime))) {
+    updatedTimes[dhuhrIndex].isActive = true;
+  }
+  
+  // Rule 3: Asr is active from its start until Maghrib starts
+  if (asrIndex !== -1 && 
+      !isTimeBefore(currentTime, asrTime) && 
+      isTimeBefore(currentTime, maghribTime)) {
+    updatedTimes[asrIndex].isActive = true;
+  }
+  
+  // Rule 4: Maghrib is active from its start until 1 hour after
+  if (maghribIndex !== -1 && 
+      !isTimeBefore(currentTime, maghribTime) && 
+      isTimeBefore(currentTime, oneHourAfterMaghrib)) {
+    updatedTimes[maghribIndex].isActive = true;
+  }
+  
+  // Rule 5: Isha is active from its start until Fajr starts (next day)
+  if (ishaIndex !== -1 && !isTimeBefore(currentTime, ishaTime)) {
+    // If it's after Isha time and before midnight
+    updatedTimes[ishaIndex].isActive = true;
+  } else if (ishaIndex !== -1 && currentHour < 12) {
+    // If it's after midnight but before Fajr (using midnight to noon as approximate)
+    if (fajrTime && isTimeBefore(currentTime, fajrTime)) {
+      updatedTimes[ishaIndex].isActive = true;
     }
+  }
+  
+  // Determine next prayer
+  let nextPrayerFound = false;
+  
+  // Create an array of prayers in chronological order for the day
+  const orderedPrayers = [
+    { index: fajrIndex, time: fajrTime },
+    { index: sunriseIndex, time: sunriseTime }, // Not a prayer but a time marker
+    { index: dhuhrIndex, time: dhuhrTime },
+    { index: asrIndex, time: asrTime },
+    { index: maghribIndex, time: maghribTime },
+    { index: ishaIndex, time: ishaTime }
+  ].filter(p => p.index !== -1);
+  
+  // Find the next prayer that hasn't started yet
+  for (const prayer of orderedPrayers) {
+    if (isTimeBefore(currentTime, prayer.time)) {
+      if (prayer.index !== sunriseIndex) { // Skip sunrise as "next prayer"
+        updatedTimes[prayer.index].isNext = true;
+        nextPrayerFound = true;
+        break;
+      }
+    }
+  }
+  
+  // If no next prayer found and it's after Isha, next prayer is Fajr tomorrow
+  if (!nextPrayerFound && fajrIndex !== -1) {
+    updatedTimes[fajrIndex].isNext = true;
   }
   
   return updatedTimes;
@@ -781,278 +844,4 @@ const parseCSV = (text: string): string[][] => {
     let currentValue = '';
     
     for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuote = !inQuote;
-      } else if (char === ',' && !inQuote) {
-        values.push(currentValue);
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
-    }
-    
-    // Add the last value
-    values.push(currentValue);
-    
-    return values;
-  }).filter(row => row.length > 0 && row.some(cell => cell.trim().length > 0));
-};
-
-const formatDate = (dateStr: string): string => {
-  // Try to parse various date formats
-  let date;
-  
-  // Check if it's already in YYYY-MM-DD format
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return dateStr;
-  }
-  
-  // Try DD/MM/YYYY format
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-    const parts = dateStr.split('/');
-    date = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`);
-  } else {
-    // Try to parse as a general date string
-    date = new Date(dateStr);
-  }
-  
-  if (isNaN(date.getTime())) {
-    throw new Error(`Invalid date format: ${dateStr}`);
-  }
-  
-  // Format as YYYY-MM-DD
-  return date.toISOString().split('T')[0];
-};
-
-const formatTime = (timeStr: string): string => {
-  // If already in HH:MM format (with or without seconds), return as is
-  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(timeStr)) {
-    // Ensure hours are two digits
-    const parts = timeStr.split(':');
-    return `${parts[0].padStart(2, '0')}:${parts[1]}${parts[2] ? `:${parts[2]}` : ':00'}`;
-  }
-  
-  // Try to parse AM/PM format
-  const amPmMatch = timeStr.match(/(\d{1,2}):?(\d{2})?\s*(am|pm|AM|PM)/i);
-  if (amPmMatch) {
-    let hours = parseInt(amPmMatch[1], 10);
-    const minutes = amPmMatch[2] ? parseInt(amPmMatch[2], 10) : 0;
-    const isPm = amPmMatch[3].toLowerCase() === 'pm';
-    
-    if (isPm && hours < 12) hours += 12;
-    if (!isPm && hours === 12) hours = 0;
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-  }
-  
-  // If it's just a number, assume it's hours
-  if (/^\d{1,2}$/.test(timeStr)) {
-    return `${timeStr.padStart(2, '0')}:00:00`;
-  }
-  
-  // If we couldn't parse it, return as is
-  return timeStr;
-};
-
-const validateRequiredFields = (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): string[] => {
-  const missingFields: string[] = [];
-  
-  if (!entry.date) missingFields.push('date');
-  if (!entry.day) missingFields.push('day');
-  if (!entry.fajr_jamat) missingFields.push('fajr_jamat');
-  if (!entry.maghrib_iftar) missingFields.push('maghrib_iftar');
-  
-  return missingFields;
-};
-
-const updateLocalStorageWithImportedEntry = (entry: DetailedPrayerTime): void => {
-  const savedTimes = localStorage.getItem('local-prayer-times');
-  const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
-  
-  // Find and update or add
-  let found = false;
-  const updatedTimes = localTimes.map((item: DetailedPrayerTime) => {
-    if (item.date === entry.date) {
-      found = true;
-      return entry;
-    }
-    return item;
-  });
-  
-  if (!found) {
-    updatedTimes.push(entry);
-  }
-  
-  localStorage.setItem('local-prayer-times', JSON.stringify(updatedTimes));
-};
-
-// New function to import data from Google Sheets
-export const importPrayerTimesFromSheet = async (
-  sheetId: string, 
-  tabName: string = 'Sheet1',
-  hasHeaderRow: boolean = true,
-  isPublic: boolean = true
-): Promise<{ success: boolean; count: number; error?: string }> => {
-  try {
-    // Construct the Google Sheets API URL
-    // For public sheets, we can use the CSV export feature
-    let url;
-    if (isPublic) {
-      url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}`;
-    } else {
-      // For non-public sheets, we would need a different approach that involves authentication
-      return { 
-        success: false, 
-        count: 0, 
-        error: "Non-public sheets are not supported. Please make your sheet public or use another method." 
-      };
-    }
-
-    console.log("Fetching Google Sheet from URL:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sheet: ${response.status} ${response.statusText}`);
-    }
-    
-    const csvText = await response.text();
-    const rows = parseCSV(csvText);
-    
-    if (rows.length === 0) {
-      return { success: false, count: 0, error: "No data found in the sheet" };
-    }
-    
-    // Skip header row if specified
-    const dataRows = hasHeaderRow ? rows.slice(1) : rows;
-    
-    if (dataRows.length === 0) {
-      return { success: false, count: 0, error: "No data rows found after header" };
-    }
-    
-    console.log(`Processing ${dataRows.length} rows from Google Sheet`);
-    
-    // Process each row and insert into local storage directly, skipping Supabase due to RLS errors
-    const importedEntries: DetailedPrayerTime[] = [];
-    const errors: string[] = [];
-    
-    // Get current local storage entries
-    const savedTimes = localStorage.getItem('local-prayer-times');
-    const localTimes = savedTimes ? JSON.parse(savedTimes) : [];
-    const existingDates = new Set(localTimes.map((item: DetailedPrayerTime) => item.date));
-    
-    for (let i = 0; i < dataRows.length; i++) {
-      const row = dataRows[i];
-      
-      // Check if row has enough columns
-      if (row.length < 13) {
-        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)} doesn't have enough columns (${row.length}/13)`);
-        continue;
-      }
-      
-      try {
-        // Map columns to prayer time fields
-        const entry: Omit<DetailedPrayerTime, 'id' | 'created_at'> = {
-          date: formatDate(row[0]),
-          day: row[1],
-          sehri_end: formatTime(row[2]),
-          fajr_jamat: formatTime(row[3]),
-          sunrise: formatTime(row[4]),
-          zuhr_start: formatTime(row[5]),
-          zuhr_jamat: formatTime(row[6]),
-          asr_start: formatTime(row[7]),
-          asr_jamat: formatTime(row[8]),
-          maghrib_iftar: formatTime(row[9]),
-          isha_start: formatTime(row[10]),
-          isha_first_jamat: formatTime(row[11]),
-          isha_second_jamat: formatTime(row[12])
-        };
-        
-        // Validate required fields
-        const missingFields = validateRequiredFields(entry);
-        if (missingFields.length > 0) {
-          errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)} is missing required fields: ${missingFields.join(', ')}`);
-          continue;
-        }
-        
-        // First try to insert into Supabase - but catch and continue if RLS errors occur
-        try {
-          const { data, error } = await supabase
-            .from('prayer_times')
-            .upsert({ ...entry }, { onConflict: 'date' })
-            .select()
-            .single();
-            
-          if (error) {
-            // If it's the RLS error we're trying to work around, continue with local storage
-            if (error.message.includes('infinite recursion detected in policy')) {
-              console.warn(`RLS error for row ${i}, falling back to local storage:`, error.message);
-              // We'll handle this with local storage below
-            } else {
-              console.error(`Error upserting row ${i}:`, error);
-              errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${error.message}`);
-              continue;
-            }
-          } else if (data) {
-            importedEntries.push(data as DetailedPrayerTime);
-            
-            // Also update local storage for redundancy
-            updateLocalStorageWithImportedEntry(data as DetailedPrayerTime);
-            continue; // Skip to next row since we successfully added to Supabase
-          }
-        } catch (supabaseError) {
-          console.warn(`Supabase error for row ${i}, falling back to local storage:`, supabaseError);
-          // We'll handle this with local storage below
-        }
-        
-        // If we reach here, we need to create a local storage entry
-        const localEntry: DetailedPrayerTime = {
-          id: `temp-${Date.now()}-${i}`, // Add index to make unique
-          ...entry
-        };
-        
-        // Check if we already have this date in local storage
-        if (existingDates.has(localEntry.date)) {
-          // Update the existing entry
-          const updatedLocalTimes = localTimes.map((item: DetailedPrayerTime) => 
-            item.date === localEntry.date ? { ...item, ...localEntry, id: item.id } : item
-          );
-          localTimes.length = 0; // Clear the array
-          localTimes.push(...updatedLocalTimes); // Replace with updated items
-        } else {
-          // Add new entry
-          localTimes.push(localEntry);
-          existingDates.add(localEntry.date);
-        }
-        
-        importedEntries.push(localEntry);
-      } catch (rowError) {
-        console.error(`Error processing row ${i}:`, rowError);
-        errors.push(`Row ${i + (hasHeaderRow ? 2 : 1)}: ${rowError instanceof Error ? rowError.message : String(rowError)}`);
-      }
-    }
-    
-    // Save all changes to local storage
-    localStorage.setItem('local-prayer-times', JSON.stringify(localTimes));
-    
-    // Trigger a storage event so other tabs/components know to refresh
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'local-prayer-times'
-    }));
-    
-    // Return results
-    return {
-      success: true,
-      count: importedEntries.length,
-      error: errors.length > 0 ? `Imported ${importedEntries.length} entries with ${errors.length} errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? ' (and more)' : ''}` : undefined
-    };
-  } catch (error) {
-    console.error("Error importing prayer times from sheet:", error);
-    return { 
-      success: false, 
-      count: 0, 
-      error: error instanceof Error ? error.message : String(error)
-    };
-  }
-};
+      const char = line[i

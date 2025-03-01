@@ -50,8 +50,14 @@ export const convertTo12Hour = (time24h: string): string => {
 };
 
 export const isTimeBefore = (time1: string, time2: string): boolean => {
-  const [hours1, minutes1] = time1.split(':').map(Number);
-  const [hours2, minutes2] = time2.split(':').map(Number);
+  if (!time1 || !time2) return false;
+  
+  // Ensure we have just HH:MM format
+  const t1 = time1.split(':').slice(0, 2).join(':');
+  const t2 = time2.split(':').slice(0, 2).join(':');
+  
+  const [hours1, minutes1] = t1.split(':').map(Number);
+  const [hours2, minutes2] = t2.split(':').map(Number);
   
   if (hours1 < hours2) {
     return true;

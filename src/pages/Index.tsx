@@ -105,9 +105,11 @@ const Index = () => {
     
     setupMidnightReload();
     
+    // Auto refresh prayer times status every minute
     const interval = setInterval(() => {
       console.log("Checking prayer times status...");
-    }, 60000);
+      loadData(); // Reload data to update active/next prayer
+    }, 60000); // Every minute
     
     return () => {
       clearInterval(interval);

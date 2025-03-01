@@ -37,49 +37,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     
     let isActive = prayers.some(p => p.isActive);
     let isNext = prayers.some(p => p.isNext);
-
-    if (detailedTimes && isActive) {
-      const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      
-      if (name === "Fajr" && detailedTimes.sunrise && currentTime >= detailedTimes.sunrise) {
-        isActive = false;
-      } else if (name === "Zuhr" && detailedTimes.asr_start && currentTime >= detailedTimes.asr_start) {
-        isActive = false;
-      } else if (name === "Asr" && detailedTimes.maghrib_iftar && currentTime >= detailedTimes.maghrib_iftar) {
-        isActive = false;
-      } else if (name === "Maghrib" && detailedTimes.maghrib_iftar) {
-        const maghribParts = detailedTimes.maghrib_iftar.split(':');
-        if (maghribParts.length >= 2) {
-          const maghribHour = parseInt(maghribParts[0], 10);
-          const maghribMinute = parseInt(maghribParts[1], 10);
-          
-          let oneHourLaterHour = maghribHour + 1;
-          if (oneHourLaterHour >= 24) oneHourLaterHour -= 24;
-          
-          const oneHourLater = `${oneHourLaterHour.toString().padStart(2, '0')}:${maghribMinute.toString().padStart(2, '0')}`;
-          
-          if (currentTime >= oneHourLater) {
-            isActive = false;
-          }
-        }
-      } else if (name === "Isha" && detailedTimes.fajr_jamat) {
-        const nextDayFajr = detailedTimes.fajr_jamat;
-        
-        const hour = now.getHours();
-        if (hour < 12) {
-          const fajrParts = nextDayFajr.split(':');
-          if (fajrParts.length >= 2) {
-            const fajrHour = parseInt(fajrParts[0], 10);
-            const fajrMinute = parseInt(fajrParts[1], 10);
-            
-            if (hour > fajrHour || (hour === fajrHour && now.getMinutes() >= fajrMinute)) {
-              isActive = false;
-            }
-          }
-        }
-      }
-    }
     
     return {
       isActive,
