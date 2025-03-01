@@ -1,3 +1,4 @@
+
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -512,20 +513,23 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
 // New function to delete all prayer times from database and local storage
 export const deleteAllPrayerTimes = async (): Promise<boolean> => {
   try {
+    console.log("Starting to delete all prayer times...");
+    
+    // First clear local storage
+    localStorage.removeItem('local-prayer-times');
+    localStorage.removeItem(PRAYER_TIMES_KEY);
+    
     // Delete all data from Supabase prayer_times table
+    // Using .eq('id', 'id') will delete every row as all rows have an id
     const { error } = await supabase
       .from('prayer_times')
       .delete()
-      .gt('id', '0'); // This is a safer way to delete all rows
+      .gte('id', '00000000-0000-0000-0000-000000000000');
     
     if (error) {
       console.error("Supabase error deleting all prayer times:", error);
       throw error;
     }
-    
-    // Also clear local storage
-    localStorage.removeItem('local-prayer-times');
-    localStorage.removeItem(PRAYER_TIMES_KEY);
     
     // Trigger a storage event so other tabs/components know to refresh
     window.dispatchEvent(new StorageEvent('storage', {
