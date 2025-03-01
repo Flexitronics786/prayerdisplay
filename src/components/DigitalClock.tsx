@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 
-const DigitalClock = () => {
+const DigitalClock = ({ showDate = true }: { showDate?: boolean }) => {
   const [time, setTime] = useState(new Date());
   const [date, setDate] = useState<string>("");
 
@@ -53,9 +53,9 @@ const DigitalClock = () => {
   };
 
   return (
-    <div className="text-center">
-      <div className="text-4xl font-bold text-amber-800 clock-text">{formatTime(time)}</div>
-      <div className="text-2xl md:text-3xl text-amber-700">{date}</div>
+    <div className="text-center h-full flex flex-col justify-center">
+      <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-amber-800 clock-text">{formatTime(time)}</div>
+      {showDate && <div className="text-2xl md:text-3xl text-amber-700">{date}</div>}
     </div>
   );
 };

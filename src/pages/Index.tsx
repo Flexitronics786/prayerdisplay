@@ -5,12 +5,14 @@ import PrayerTimesTable from "@/components/PrayerTimesTable";
 import { fetchPrayerTimes } from "@/services/dataService";
 import { PrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDate } from "@/utils/dateUtils";
 
 const Index = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTV, setIsTV] = useState(false);
   const [midnightReloadSet, setMidnightReloadSet] = useState(false);
+  const [currentDate, setCurrentDate] = useState(formatDate());
 
   useEffect(() => {
     // Check if the device is likely a TV (Firestick, etc.)
@@ -35,6 +37,15 @@ const Index = () => {
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    // Update date every minute
+    const dateInterval = setInterval(() => {
+      setCurrentDate(formatDate());
+    }, 60000);
+    
+    return () => clearInterval(dateInterval);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -134,15 +145,26 @@ const Index = () => {
           <div className="w-full">
             <header className={`${isTV ? 'mb-2' : 'mb-4'}`}>
               <div className="gold-border p-2 sm:p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
-                <div className="text-center">
-                  <h1 className={`${isTV ? 'text-4xl' : 'text-2xl sm:text-3xl md:text-5xl'} font-bold gold-gradient-text mb-1 font-serif`}>
-                    JAMIA MASJID BILAL
-                  </h1>
-                  <h2 className={`${isTV ? 'text-xl' : 'text-base sm:text-xl'} text-amber-700 mb-1`}>
-                    MINHAJ-UL-QURAN INT. DUNDEE
-                  </h2>
-                  <div className="h-0.5 w-24 sm:w-48 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-1"></div>
-                  <DigitalClock />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
+                  <div className="text-left md:pl-4 order-2 md:order-1">
+                    <div className="text-lg sm:text-xl md:text-2xl text-amber-700">
+                      {currentDate}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center order-1 md:order-2">
+                    <h1 className={`${isTV ? 'text-4xl' : 'text-2xl sm:text-3xl md:text-4xl'} font-bold gold-gradient-text mb-1 font-serif`}>
+                      JAMIA MASJID BILAL
+                    </h1>
+                    <h2 className={`${isTV ? 'text-xl' : 'text-base sm:text-xl'} text-amber-700 mb-1`}>
+                      MINHAJ-UL-QURAN INT. DUNDEE
+                    </h2>
+                    <div className="h-0.5 w-24 sm:w-48 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full"></div>
+                  </div>
+                  
+                  <div className="order-3 md:pr-4">
+                    <DigitalClock showDate={false} />
+                  </div>
                 </div>
               </div>
             </header>
