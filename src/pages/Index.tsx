@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -133,9 +134,9 @@ const Index = () => {
     <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
       
-      <div className="max-w-7xl mx-auto h-full">
-        <div className="grid grid-cols-1 gap-4">
-          <div className="w-full">
+      <div className="max-w-7xl mx-auto h-full flex flex-col">
+        <div className="grid grid-cols-1 gap-4 flex-grow">
+          <div className="w-full flex flex-col">
             <header className={`${isTV ? 'mb-2' : 'mb-4'}`}>
               <div className="gold-border p-2 sm:p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
@@ -161,7 +162,9 @@ const Index = () => {
                 </div>
               </div>
             </header>
-            <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
+            <div className="flex-grow">
+              <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
+            </div>
             
             <PhoneReminder isTVMode={isTV} />
           </div>
