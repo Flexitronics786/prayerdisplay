@@ -88,6 +88,23 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Set up midnight page reload
+    const setupMidnightReload = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0); // Set to next midnight (00:00:00)
+      
+      const timeUntilMidnight = midnight.getTime() - now.getTime();
+      console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
+      
+      setTimeout(() => {
+        console.log("Midnight reached - reloading page to refresh prayer times");
+        window.location.reload();
+      }, timeUntilMidnight);
+    };
+    
+    setupMidnightReload();
+    
     const interval = setInterval(() => {
       console.log("Checking prayer times status...");
     }, 60000);
