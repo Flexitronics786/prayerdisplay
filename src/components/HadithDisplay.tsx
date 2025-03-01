@@ -18,8 +18,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   
   // References to track component mount status and timers
   const isMounted = useRef(true);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const reminderTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Load all active hadiths on component mount
   useEffect(() => {
@@ -64,71 +63,87 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     };
   };
   
-  // Setup cycling system - completely rewritten
-  useEffect(() => {
-    // Initialize with provided hadith
-    setDisplayedHadith(hadith);
-    console.log(`Initial hadith displayed: ${hadith.id}`);
+  // Move to the next hadith in the collection
+  const moveToNextHadith = () => {
+    if (activeHadiths.length <= 1) {
+      console.log("Only one hadith available, not cycling");
+      return;
+    }
     
-    // Function to move to next hadith
-    const moveToNextHadith = () => {
-      if (activeHadiths.length <= 1) {
-        console.log("Only one hadith available, not cycling");
-        return;
-      }
+    setCurrentHadithIndex(prevIndex => {
+      // Calculate next index with proper wrapping
+      const nextIndex = (prevIndex + 1) % activeHadiths.length;
+      console.log(`Moving to next hadith: index ${prevIndex} → ${nextIndex}`);
       
-      // Calculate next index
-      const nextIndex = (currentHadithIndex + 1) % activeHadiths.length;
-      console.log(`Moving to next hadith: index ${currentHadithIndex} → ${nextIndex}`);
-      
-      // Update state with next hadith
-      setCurrentHadithIndex(nextIndex);
+      // Update displayed hadith
       const nextHadith = convertToHadith(activeHadiths[nextIndex]);
       setDisplayedHadith(nextHadith);
+      console.log(`Next hadith displayed: ${nextHadith.id}`);
       
-      console.log(`Next hadith: ${nextHadith.id} - ${nextHadith.text.substring(0, 30)}...`);
-    };
+      return nextIndex;
+    });
+  };
+  
+  // Setup cycling system
+  useEffect(() => {
+    if (activeHadiths.length === 0) return;
     
-    // Function to start a new cycle
-    const startNewCycle = () => {
-      // Clear any existing timers
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (reminderTimerRef.current) clearTimeout(reminderTimerRef.current);
+    // Initialize with the current hadith
+    const initialHadith = activeHadiths[currentHadithIndex] 
+      ? convertToHadith(activeHadiths[currentHadithIndex]) 
+      : hadith;
+    
+    setDisplayedHadith(initialHadith);
+    console.log(`Initial hadith displayed: ${initialHadith.id}`);
+    
+    // Clear any existing timer
+    if (cycleTimerRef.current) {
+      clearTimeout(cycleTimerRef.current);
+    }
+    
+    let isFirstCycle = true;
+    
+    // Function to start a cycle
+    const startCycle = () => {
+      // First show the hadith for 2 minutes
+      setShowPhoneReminder(false);
       
-      // First show hadith for 2 minutes (120000 ms)
-      console.log("Starting new cycle - showing hadith for 2 minutes");
+      if (!isFirstCycle) {
+        // Move to the next hadith (but not on the first cycle)
+        moveToNextHadith();
+      } else {
+        isFirstCycle = false;
+      }
       
-      // After 2 minutes, show the phone reminder
-      timerRef.current = setTimeout(() => {
+      console.log("Showing hadith for 2 minutes");
+      
+      // After 2 minutes, show the phone reminder for 30 seconds
+      cycleTimerRef.current = setTimeout(() => {
         if (!isMounted.current) return;
         
         setShowPhoneReminder(true);
         console.log("Showing phone reminder for 30 seconds");
         
-        // After 30 seconds of showing the reminder, move to next hadith
-        reminderTimerRef.current = setTimeout(() => {
+        // After 30 seconds, start the cycle again
+        cycleTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
-          setShowPhoneReminder(false);
-          moveToNextHadith();
-          console.log("Phone reminder done, moved to next hadith");
-          
-          // Start the cycle again
-          startNewCycle();
-        }, 30000); // 30 seconds
-      }, 120000); // 2 minutes
+          startCycle();
+        }, 30000); // 30 seconds for phone reminder
+      }, 120000); // 2 minutes for hadith
     };
     
     // Start the initial cycle
-    startNewCycle();
+    startCycle();
     
-    // Clean up all timers when unmounting or when dependencies change
+    // Clean up on unmount
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (reminderTimerRef.current) clearTimeout(reminderTimerRef.current);
+      if (cycleTimerRef.current) {
+        clearTimeout(cycleTimerRef.current);
+      }
       console.log("Cleaned up hadith cycling timers");
     };
-  }, [hadith, activeHadiths, currentHadithIndex]);
+  }, [hadith, activeHadiths]); // Only re-run when hadith or activeHadiths change
   
   // Render the hadith content
   const renderHadith = () => (
