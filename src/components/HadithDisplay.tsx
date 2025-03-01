@@ -15,6 +15,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const [allHadiths, setAllHadiths] = useState<HadithCollectionItem[]>([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
+  const [reminderCount, setReminderCount] = useState(0);
   
   // Load all active hadiths from collection
   useEffect(() => {
@@ -50,34 +51,41 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     setCurrentHadith(hadith);
     
     const cycleContent = () => {
-      // Toggle between phone reminder and hadiths
       if (showPhoneReminder) {
-        // Switch to hadith display
+        // After showing reminder, go back to hadith
         setShowPhoneReminder(false);
         
-        // If we have hadiths from collection, use those
-        if (allHadiths.length > 0) {
-          const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
-          setCurrentHadithIndex(nextIndex);
-          setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
-        } else {
-          // Fallback to the original hadith
-          setCurrentHadith(hadith);
+        // If we've shown the reminder 3 times, switch to a new hadith
+        if (reminderCount >= 3) {
+          // Reset reminder count
+          setReminderCount(0);
+          
+          // Change to next hadith
+          if (allHadiths.length > 0) {
+            const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
+            setCurrentHadithIndex(nextIndex);
+            setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
+          } else {
+            // Fallback to the original hadith
+            setCurrentHadith(hadith);
+          }
         }
       } else {
         // Switch to phone reminder
         setShowPhoneReminder(true);
+        setReminderCount(prevCount => prevCount + 1);
       }
     };
     
-    // Cycle every 30 seconds (phone reminder), and every ~5-7 minutes (hadith)
-    // This creates an average cycle of around 5-7 minutes for each hadith
+    // Phone reminder shows for 30 seconds
+    // Hadith shows for approximately 2 minutes between reminders
+    // After 3 reminders (about 7 minutes total), we switch to a new hadith
     const interval = setInterval(() => {
       cycleContent();
-    }, showPhoneReminder ? 30000 : Math.floor(Math.random() * (420000 - 300000) + 300000)); // 5-7 minutes for hadith, 30s for reminder
+    }, showPhoneReminder ? 30000 : 120000); // 30s for reminder, 2min for hadith
     
     return () => clearInterval(interval);
-  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex]);
+  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex, reminderCount]);
   
   const renderHadith = () => (
     <>
