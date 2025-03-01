@@ -122,7 +122,11 @@
   @apply relative bg-amber-100/80 text-amber-800;
 }
 
-.active-prayer::before, .next-prayer::before {
+.active-prayer::before {
+  content: none;
+}
+
+.next-prayer::before {
   content: "";
   @apply absolute left-0 top-0 h-full w-2 bg-amber-500;
 }
