@@ -1,4 +1,3 @@
-<lov-code>
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -845,4 +844,130 @@ const parseCSV = (text: string): string[][] => {
     let currentValue = '';
     
     for (let i = 0; i < line.length; i++) {
-      const char =
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuote = !inQuote;
+      } else if (char === ',' && !inQuote) {
+        values.push(currentValue);
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+    
+    // Add the last value
+    values.push(currentValue);
+    return values;
+  });
+};
+
+// Helper to process rows and columns from CSV data to create prayer time entries
+const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'created_at'>[] => {
+  // Skip header row
+  const dataRows = csvData.slice(1);
+  
+  return dataRows.map(row => {
+    // Create prayer time entry from CSV row
+    // Mapping depends on the exact CSV format - adjust column indices as needed
+    return {
+      date: row[0], // Assume date is in the first column
+      day: row[1], // Assume day is in the second column
+      sehri_end: row[2] || '',
+      fajr_jamat: row[3] || '',
+      sunrise: row[4] || '',
+      zuhr_start: row[5] || '',
+      zuhr_jamat: row[6] || '',
+      asr_start: row[7] || '',
+      asr_jamat: row[8] || '',
+      maghrib_iftar: row[9] || '',
+      isha_start: row[10] || '',
+      isha_first_jamat: row[11] || '',
+      isha_second_jamat: row[12] || ''
+    };
+  });
+};
+
+// Function to import prayer times from CSV file
+export const importFromCSV = async (csvText: string): Promise<boolean> => {
+  try {
+    const parsed = parseCSV(csvText);
+    console.log("Parsed CSV data:", parsed);
+    
+    if (parsed.length < 2) {
+      console.error("CSV file contains insufficient data");
+      return false;
+    }
+    
+    const prayerTimes = processCSVData(parsed);
+    console.log("Processed prayer times:", prayerTimes);
+    
+    // Try to add all entries to the database
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const entry of prayerTimes) {
+      try {
+        await addPrayerTimeEntry(entry);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to add entry for date ${entry.date}:`, error);
+        failCount++;
+      }
+    }
+    
+    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
+    return successCount > 0;
+  } catch (error) {
+    console.error("Error importing from CSV:", error);
+    return false;
+  }
+};
+
+// Function to import prayer times from Google Sheet
+export const importPrayerTimesFromSheet = async (sheetUrl: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    if (!sheetUrl) {
+      return { success: false, message: "Please provide a valid Google Sheet URL" };
+    }
+    
+    // Extract sheet ID and convert to CSV download URL
+    // Format: https://docs.google.com/spreadsheets/d/SHEET_ID/edit#gid=0
+    const matches = sheetUrl.match(/\/d\/(.*?)\/edit/);
+    if (!matches || !matches[1]) {
+      return { success: false, message: "Invalid Google Sheet URL format" };
+    }
+    
+    const sheetId = matches[1];
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    
+    console.log("Attempting to fetch CSV from:", csvUrl);
+    
+    // Fetch the sheet data as CSV
+    const response = await fetch(csvUrl);
+    if (!response.ok) {
+      return { 
+        success: false, 
+        message: `Failed to fetch sheet: ${response.status} ${response.statusText}. Make sure the sheet is public.` 
+      };
+    }
+    
+    const csvText = await response.text();
+    if (!csvText || csvText.trim().length === 0) {
+      return { success: false, message: "Sheet contains no data" };
+    }
+    
+    console.log("CSV data retrieved, importing...");
+    const importSuccess = await importFromCSV(csvText);
+    
+    if (importSuccess) {
+      return { success: true, message: "Prayer times imported successfully" };
+    } else {
+      return { success: false, message: "Failed to import prayer times from sheet" };
+    }
+  } catch (error) {
+    console.error("Error importing from Google Sheet:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, message: `Error: ${errorMessage}` };
+  }
+};
