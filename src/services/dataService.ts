@@ -1,3 +1,4 @@
+<lov-code>
 import { PrayerTime, DetailedPrayerTime, DailyHadith, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -844,82 +845,4 @@ const parseCSV = (text: string): string[][] => {
     let currentValue = '';
     
     for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuote = !inQuote;
-      } else if (char === ',' && !inQuote) {
-        values.push(currentValue);
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
-    }
-    
-    // Add the last value
-    values.push(currentValue);
-    return values;
-  });
-};
-
-// Helper to process rows and columns from CSV data to create prayer time entries
-export const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'created_at'>[] => {
-  // Skip header row
-  const dataRows = csvData.slice(1);
-  
-  return dataRows.map(row => {
-    // Create prayer time entry from CSV row
-    // Mapping depends on the exact CSV format - adjust column indices as needed
-    return {
-      date: row[0], // Assume date is in the first column
-      day: row[1], // Assume day is in the second column
-      sehri_end: row[2] || '',
-      fajr_jamat: row[3] || '',
-      sunrise: row[4] || '',
-      zuhr_start: row[5] || '',
-      zuhr_jamat: row[6] || '',
-      asr_start: row[7] || '',
-      asr_jamat: row[8] || '',
-      maghrib_iftar: row[9] || '',
-      isha_start: row[10] || '',
-      isha_first_jamat: row[11] || '',
-      isha_second_jamat: row[12] || ''
-    };
-  });
-};
-
-// Function to import prayer times from CSV file
-export const importFromCSV = async (csvText: string): Promise<boolean> => {
-  try {
-    const parsed = parseCSV(csvText);
-    console.log("Parsed CSV data:", parsed);
-    
-    if (parsed.length < 2) {
-      console.error("CSV file contains insufficient data");
-      return false;
-    }
-    
-    const prayerTimes = processCSVData(parsed);
-    console.log("Processed prayer times:", prayerTimes);
-    
-    // Try to add all entries to the database
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const entry of prayerTimes) {
-      try {
-        await addPrayerTimeEntry(entry);
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to add entry for date ${entry.date}:`, error);
-        failCount++;
-      }
-    }
-    
-    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
-    return successCount > 0;
-  } catch (error) {
-    console.error("Error importing from CSV:", error);
-    return false;
-  }
-};
+      const char =
