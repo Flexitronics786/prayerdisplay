@@ -1,0 +1,121 @@
+
+/* TV Display Mode */
+.tv-display {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  padding: 16px !important;
+}
+
+.tv-display .prayer-card {
+  height: calc((100vh - 220px) / 2);
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-display .hadith-container {
+  height: calc(100vh - 130px);
+  overflow: hidden;
+}
+
+.tv-display .prayer-tile-header {
+  padding: 8px 0;
+}
+
+.tv-display .gold-border {
+  margin-bottom: 10px;
+}
+
+.tv-display h3.text-xl {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.tv-display .clock-text {
+  font-size: 36px !important;
+  line-height: 1.1 !important;
+}
+
+/* Phone reminder specific TV styles */
+.tv-display .tv-phone-reminder {
+  padding: 4px 8px;
+}
+
+/* Smart TV optimizations (Firestick etc.) */
+@media screen and (min-width: 1280px) and (max-height: 900px), 
+       screen and (min-width: 1920px) {
+  .tv-display {
+    padding: 20px !important;
+  }
+  
+  .tv-display .prayer-card {
+    @apply rounded-xl;
+    height: calc((100vh - 240px) / 2);
+  }
+  
+  .tv-display .hadith-container {
+    max-height: calc(100vh - 160px);
+  }
+  
+  .tv-display .prayer-tile-header h3 {
+    font-size: 1.5rem;
+    line-height: 1.75rem;
+  }
+  
+  .tv-display .clock-text {
+    font-size: 2.8rem !important;
+    line-height: 1.1 !important;
+  }
+  
+  .tv-display .text-sm {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+
+  /* Make the phone reminder more compact on TV */
+  .tv-display .tv-phone-reminder {
+    margin-bottom: 10px;
+    padding: 4px 8px;
+  }
+  
+  /* Make hadith text more readable on TV */
+  .tv-display .hadith-text {
+    font-size: 1.1rem;
+    line-height: 1.5rem;
+  }
+  
+  .tv-display .hadith-source {
+    font-size: 0.9rem;
+  }
+}
+
+/* TV Display Optimizations */
+@media screen and (min-width: 1280px) and (max-height: 900px), 
+       screen and (min-width: 1920px) {
+  body {
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+  
+  #root {
+    height: 100vh;
+    width: 100vw;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  /* Better font rendering for TV */
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Make sure all content is visible on TV displays */
+  .tv-display .hadith-container {
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
+  }
+}

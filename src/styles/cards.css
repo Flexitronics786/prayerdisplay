@@ -1,0 +1,96 @@
+
+.gold-card {
+  @apply bg-gradient-to-b from-amber-200/90 to-amber-100/90 backdrop-blur-sm border border-amber-300/50 shadow-md;
+}
+
+.prayer-card {
+  @apply bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm border border-amber-200/50 shadow-md;
+}
+
+.blue-card {
+  @apply bg-gradient-to-b from-blue-700/90 to-blue-600/90 backdrop-blur-sm border border-blue-500/50 shadow-md text-white;
+}
+
+.green-card {
+  @apply bg-gradient-to-b from-emerald-700/90 to-emerald-600/90 backdrop-blur-sm border border-emerald-500/50 shadow-md text-white;
+}
+
+.teal-card {
+  @apply bg-gradient-to-b from-teal-700/90 to-teal-600/90 backdrop-blur-sm border border-teal-500/50 shadow-md text-white;
+}
+
+.red-card {
+  @apply bg-gradient-to-b from-rose-700/90 to-rose-600/90 backdrop-blur-sm border border-rose-500/50 shadow-md text-white;
+}
+
+.purple-card {
+  @apply bg-gradient-to-b from-purple-700/90 to-purple-600/90 backdrop-blur-sm border border-purple-500/50 shadow-md text-white;
+}
+
+.active-prayer {
+  @apply relative bg-amber-200 text-amber-900 shadow-lg border-8 border-red-500;
+}
+
+.next-prayer {
+  @apply relative bg-amber-100/80 text-amber-800;
+}
+
+.active-prayer::before {
+  content: none;
+}
+
+.next-prayer::before {
+  content: none;
+}
+
+.prayer-transition {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+.gold-border {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.gold-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, #e6b422, #ffd700, #e6b422, #ffd700);
+  padding: 4px;
+  -webkit-mask: 
+     linear-gradient(#fff 0 0) content-box, 
+     linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.prayer-tile-header {
+  @apply py-3 text-center border-b;
+}
+
+.fajr-header {
+  @apply bg-emerald-700 text-white border-emerald-500;
+}
+
+.zuhr-header {
+  @apply bg-amber-600 text-white border-amber-500;
+}
+
+.asr-header {
+  @apply bg-blue-700 text-white border-blue-600;
+}
+
+.maghrib-header {
+  @apply bg-[#4bc2ce] text-white border-[#4bc2ce]/80;
+}
+
+.isha-header {
+  @apply bg-[#ffbb99] text-white border-[#ffbb99]/80;
+}
+
+.jummah-header {
+  @apply bg-[#617792] text-white border-[#617792]/80;
+}
