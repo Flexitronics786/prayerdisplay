@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Hadith, PrayerTime } from "@/types";
-import { Smartphone } from "lucide-react";
+import { Smartphone, BellRing } from "lucide-react";
 import { fetchHadithCollection } from "@/services/dataService";
 import { HadithCollectionItem } from "@/types";
 
@@ -104,12 +104,38 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   );
   
   const renderPhoneReminder = () => (
-    <div className="flex flex-col h-full justify-center items-center py-8">
-      <Smartphone className="h-12 w-12 text-amber-600 mb-4" />
-      <h3 className="text-2xl font-bold text-amber-800 mb-3 font-serif text-center">Reminder</h3>
-      <p className="text-lg text-amber-700 text-center">
-        Please turn off your mobile phones while in the mosque as a sign of respect.
-      </p>
+    <div className="flex flex-col h-full justify-center items-center py-6 animate-pulse-soft">
+      <div className="bg-gradient-to-b from-amber-500/90 to-amber-400/90 p-5 rounded-full mb-5 shadow-lg">
+        <Smartphone className="h-12 w-12 text-white" />
+      </div>
+      
+      <h3 className="text-2xl font-bold text-amber-800 mb-3 font-serif text-center bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 bg-clip-text text-transparent">
+        Mobile Phone Reminder
+      </h3>
+      
+      <div className="relative">
+        <div className="absolute -right-10 -top-8 animate-pulse">
+          <BellRing className="h-7 w-7 text-amber-500" />
+        </div>
+        
+        <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
+          <p className="text-lg text-amber-800 text-center leading-relaxed">
+            Please turn off your mobile phone while in the mosque as a sign of respect.
+          </p>
+        </div>
+      </div>
+      
+      <div className="mt-5 flex space-x-4">
+        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20">
+          <Smartphone className="h-5 w-5 text-amber-700" />
+        </div>
+        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20 rotate-45">
+          <Smartphone className="h-5 w-5 text-amber-700" />
+        </div>
+        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20 -rotate-45">
+          <Smartphone className="h-5 w-5 text-amber-700" />
+        </div>
+      </div>
     </div>
   );
   

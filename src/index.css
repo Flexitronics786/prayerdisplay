@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
 
 @tailwind base;
@@ -175,3 +176,20 @@
 .jummah-header {
   @apply bg-[#617792] text-white border-[#617792]/80;
 }
+
+/* Animation for phone reminder */
+@keyframes pulse-soft {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.9; 
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
