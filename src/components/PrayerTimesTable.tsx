@@ -10,6 +10,27 @@ interface PrayerTimesTableProps {
 
 const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
+  const [isTV, setIsTV] = useState(false);
+
+  useEffect(() => {
+    const checkIfTV = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isSilkBrowser = userAgent.includes('silk');
+      const isFireTV = userAgent.includes('firetv') || userAgent.includes('fire tv');
+      const isLargeScreen = window.innerWidth >= 1280 && window.innerHeight >= 720;
+      
+      return (isSilkBrowser || isFireTV || isLargeScreen);
+    };
+    
+    setIsTV(checkIfTV());
+    
+    const handleResize = () => {
+      setIsTV(checkIfTV());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     const loadDetailedTimes = async () => {
@@ -76,7 +97,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           isNext ? 'next-prayer' : ''}`}
       >
         <div className={`prayer-tile-header ${headerClass}`}>
-          <h3 className="text-lg sm:text-xl font-bold">
+          <h3 className={`text-lg sm:text-xl font-bold ${isTV ? 'text-xl' : ''}`}>
             {title}
             {isActive && (
               <span className="ml-2 inline-block px-1.5 py-0.5 text-2xs sm:text-xs rounded-full bg-white/30 text-white">
@@ -221,7 +242,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
         <h3 className="text-xl sm:text-2xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mobile-prayer-grid">
+      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3' : 'mobile-prayer-grid'}`}>
         {renderPrayerTile(
           "Fajr", 
           fajrDetails.isActive, 
