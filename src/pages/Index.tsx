@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
 import PhoneReminder from "@/components/PhoneReminder";
@@ -15,6 +15,7 @@ const Index = () => {
   const [midnightReloadSet, setMidnightReloadSet] = useState(false);
   const [currentDate, setCurrentDate] = useState(formatDate());
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
+  const dataLoadingRef = useRef(false); // Add ref to track loading state
 
   useEffect(() => {
     const checkIfTV = () => {
@@ -48,7 +49,14 @@ const Index = () => {
   }, []);
 
   const loadData = useCallback(async () => {
+    // Prevent concurrent loading operations
+    if (dataLoadingRef.current) {
+      console.log("Already loading data, skipping this request");
+      return;
+    }
+    
     try {
+      dataLoadingRef.current = true;
       setIsLoading(true);
       console.log("Loading prayer times...");
       const times = await fetchPrayerTimes();
@@ -58,6 +66,7 @@ const Index = () => {
       console.error("Error loading data:", error);
     } finally {
       setIsLoading(false);
+      dataLoadingRef.current = false;
     }
   }, []);
 
@@ -179,7 +188,7 @@ const Index = () => {
     };
   }, [loadData, nextCheckTimer]);
 
-  if (isLoading) {
+  if (isLoading && prayerTimes.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-amber-100 to-amber-50">
         <div className="text-amber-800 text-xl animate-pulse">Loading...</div>
