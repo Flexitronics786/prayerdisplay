@@ -12,7 +12,6 @@ interface HadithDisplayProps {
 
 const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => {
   const [showPhoneReminder, setShowPhoneReminder] = useState(false);
-  const [countdown, setCountdown] = useState<string>("");
   const [allHadiths, setAllHadiths] = useState<HadithCollectionItem[]>([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
@@ -80,71 +79,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     return () => clearInterval(interval);
   }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex]);
   
-  // Update countdown timer every second
-  useEffect(() => {
-    if (!nextPrayer) return;
-    
-    const updateCountdown = () => {
-      const now = new Date();
-      
-      // Determine which time to use based on prayer name
-      let timeToUse = '';
-      
-      // Handle special cases based on prayer name
-      switch (nextPrayer.name.toLowerCase()) {
-        case 'fajr':
-          timeToUse = nextPrayer.time; // Use Fajr Jamat time as is
-          break;
-        case 'sunrise':
-          timeToUse = nextPrayer.time; // Use Sunrise time as is
-          break;
-        case 'zuhr':
-          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Zuhr start time if available
-          break;
-        case 'asr':
-          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Asr start time if available
-          break;
-        case 'maghrib':
-          timeToUse = nextPrayer.time; // Use Maghrib/Iftar time as is
-          break;
-        case 'isha':
-          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use Isha start time if available
-          break;
-        case 'jummah':
-          timeToUse = nextPrayer.startTime || nextPrayer.time; // Use start time for Jummah/Khutbah
-          break;
-        default:
-          timeToUse = nextPrayer.time; // Fallback to the provided time
-      }
-      
-      const [hours, minutes] = timeToUse.split(':').map(Number);
-      
-      // Create a date object for the next prayer time
-      const prayerTime = new Date();
-      prayerTime.setHours(hours, minutes, 0);
-      
-      // If the prayer time is in the past, it's for tomorrow
-      if (prayerTime < now) {
-        prayerTime.setDate(prayerTime.getDate() + 1);
-      }
-      
-      // Calculate time difference
-      const diff = prayerTime.getTime() - now.getTime();
-      
-      // Convert to hours, minutes, seconds
-      const hoursLeft = Math.floor(diff / (1000 * 60 * 60));
-      const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secondsLeft = Math.floor((diff % (1000 * 60)) / 1000);
-      
-      setCountdown(`${hoursLeft}h ${minutesLeft}m ${secondsLeft}s`);
-    };
-    
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 1000);
-    
-    return () => clearInterval(timer);
-  }, [nextPrayer]);
-  
   const renderHadith = () => (
     <>
       <h3 className="text-2xl font-bold text-amber-800 mb-4 font-serif">Hadith of the Day</h3>
@@ -158,15 +92,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
         <p className="text-sm text-amber-900/80">{currentHadith.source}</p>
       </div>
-
-      {nextPrayer && (
-        <div className="mt-4 pt-3 border-t border-amber-200">
-          <div className="text-center p-2 bg-amber-100/60 rounded-lg">
-            <p className="text-amber-800 font-medium">{nextPrayer.name} starts in</p>
-            <p className="text-xl font-bold text-amber-900">{countdown}</p>
-          </div>
-        </div>
-      )}
     </>
   );
   
@@ -174,18 +99,9 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     <div className="flex flex-col h-full justify-center items-center py-8">
       <Smartphone className="h-12 w-12 text-amber-600 mb-4" />
       <h3 className="text-2xl font-bold text-amber-800 mb-3 font-serif text-center">Reminder</h3>
-      <p className="text-lg text-amber-700 text-center mb-6">
+      <p className="text-lg text-amber-700 text-center">
         Please turn off your mobile phones while in the mosque as a sign of respect.
       </p>
-      
-      {nextPrayer && (
-        <div className="mt-auto">
-          <div className="text-center p-3 bg-amber-100/60 rounded-lg">
-            <p className="text-amber-800 font-medium">{nextPrayer.name} starts in</p>
-            <p className="text-2xl font-bold text-amber-900">{countdown}</p>
-          </div>
-        </div>
-      )}
     </div>
   );
   
