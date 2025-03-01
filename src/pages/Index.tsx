@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -16,7 +15,6 @@ const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
 
   useEffect(() => {
-    // Check if the device is likely a TV (Firestick, etc.)
     const checkIfTV = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isSilkBrowser = userAgent.includes('silk');
@@ -24,14 +22,12 @@ const Index = () => {
       const isLargeScreen = window.innerWidth >= 1280 && 
                           (window.innerHeight < 900 || window.innerWidth >= 1920);
       
-      // Consider it TV if it's Silk browser, FireTV, or has TV-like dimensions
       return (isSilkBrowser || isFireTV || isLargeScreen);
     };
     
     setIsTV(checkIfTV());
     console.log("Is TV display:", checkIfTV());
     
-    // Recheck on resize in case orientation changes
     const handleResize = () => {
       setIsTV(checkIfTV());
     };
@@ -41,7 +37,6 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
-    // Update date every minute
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
     }, 60000);
@@ -61,7 +56,7 @@ const Index = () => {
       setIsLoading(false);
     }
   }, []);
-  
+
   const getDayOfYear = (date: Date): number => {
     const start = new Date(date.getFullYear(), 0, 0);
     const diff = date.getTime() - start.getTime();
@@ -69,13 +64,12 @@ const Index = () => {
     return Math.floor(diff / oneDay);
   };
 
-  // Set up midnight page reload - only once
   useEffect(() => {
     if (!midnightReloadSet) {
       const setupMidnightReload = () => {
         const now = new Date();
         const midnight = new Date(now);
-        midnight.setHours(24, 0, 0, 0); // Set to next midnight (00:00:00)
+        midnight.setHours(24, 0, 0, 0);
         
         const timeUntilMidnight = midnight.getTime() - now.getTime();
         console.log(`Page will reload at midnight in ${timeUntilMidnight / 1000 / 60} minutes`);
@@ -91,7 +85,6 @@ const Index = () => {
     }
   }, [midnightReloadSet]);
 
-  // Load data and setup subscriptions
   useEffect(() => {
     loadData();
 
@@ -116,11 +109,10 @@ const Index = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Auto refresh prayer times status every minute (without full page reload)
     const interval = setInterval(() => {
       console.log("Checking prayer times status...");
-      loadData(); // Reload data to update active/next prayer
-    }, 60000); // Every minute
+      loadData();
+    }, 60000);
     
     return () => {
       clearInterval(interval);
@@ -170,12 +162,11 @@ const Index = () => {
               </div>
             </header>
             <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
+            
+            <PhoneReminder isTVMode={isTV} />
           </div>
         </div>
       </div>
-      
-      {/* Add phone reminder */}
-      <PhoneReminder isTVMode={isTV} />
     </div>
   );
 };
