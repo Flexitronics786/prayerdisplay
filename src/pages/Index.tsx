@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import DigitalClock from "@/components/DigitalClock";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
+import PhoneReminder from "@/components/PhoneReminder";
 import { fetchPrayerTimes } from "@/services/dataService";
 import { PrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -172,6 +173,9 @@ const Index = () => {
           </div>
         </div>
       </div>
+      
+      {/* Add phone reminder */}
+      <PhoneReminder isTVMode={isTV} />
     </div>
   );
 };
