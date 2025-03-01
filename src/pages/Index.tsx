@@ -19,13 +19,15 @@ const Index = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isSilkBrowser = userAgent.includes('silk');
       const isFireTV = userAgent.includes('firetv') || userAgent.includes('fire tv');
-      const isLargeScreen = window.innerWidth >= 1280 && window.innerHeight >= 720;
+      const isLargeScreen = window.innerWidth >= 1280 && 
+                          (window.innerHeight < 900 || window.innerWidth >= 1920);
       
       // Consider it TV if it's Silk browser, FireTV, or has TV-like dimensions
       return (isSilkBrowser || isFireTV || isLargeScreen);
     };
     
     setIsTV(checkIfTV());
+    console.log("Is TV display:", checkIfTV());
     
     // Recheck on resize in case orientation changes
     const handleResize = () => {
@@ -159,30 +161,30 @@ const Index = () => {
   }
 
   return (
-    <div className={`min-h-screen relative overflow-hidden py-2 px-3 ${isTV ? 'tv-display' : ''} bg-gradient-to-b from-amber-100 to-amber-50`}>
+    <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
       
-      <div className="max-w-7xl mx-auto">
-        <div className={`grid ${isTV ? 'grid-cols-12 gap-4' : 'grid-cols-1 lg:grid-cols-12 gap-4'}`}>
+      <div className="max-w-7xl mx-auto h-full">
+        <div className={`grid ${isTV ? 'grid-cols-12 gap-4 h-full' : 'grid-cols-1 lg:grid-cols-12 gap-4'}`}>
           <div className={isTV ? 'col-span-8' : 'lg:col-span-8'}>
-            <header className="mb-4">
-              <div className="gold-border p-3 sm:p-4 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
+            <header className={`${isTV ? 'mb-2' : 'mb-4'}`}>
+              <div className="gold-border p-2 sm:p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
                 <div className="text-center">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold gold-gradient-text mb-1 font-serif">
+                  <h1 className={`${isTV ? 'text-3xl' : 'text-2xl sm:text-3xl md:text-4xl'} font-bold gold-gradient-text mb-1 font-serif`}>
                     JAMIA MASJID BILAL
                   </h1>
-                  <h2 className="text-base sm:text-lg text-amber-700 mb-2">
+                  <h2 className="text-base sm:text-lg text-amber-700 mb-1">
                     MINHAJ-UL-QURAN INT. DUNDEE
                   </h2>
-                  <div className="h-0.5 w-24 sm:w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-2"></div>
+                  <div className="h-0.5 w-24 sm:w-32 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full mb-1"></div>
                   <DigitalClock />
                 </div>
               </div>
             </header>
-            <PrayerTimesTable prayerTimes={prayerTimes} compactView={true} />
+            <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
           </div>
           
-          <div className={isTV ? 'col-span-4' : 'lg:col-span-4 mt-2 lg:mt-0'}>
+          <div className={isTV ? 'col-span-4 flex flex-col' : 'lg:col-span-4 mt-2 lg:mt-0'}>
             {hadith && <HadithDisplay hadith={hadith} nextPrayer={getNextPrayer()} />}
           </div>
         </div>

@@ -21,6 +21,12 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const cycleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const phoneReminderTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Check if we're in TV display mode
+  const isTV = window.innerWidth >= 1280 && 
+               (window.innerHeight < 900 || window.innerWidth >= 1920 || 
+                navigator.userAgent.toLowerCase().includes('silk') || 
+                navigator.userAgent.toLowerCase().includes('firetv'));
+  
   // Load all active hadiths on component mount
   useEffect(() => {
     const loadHadiths = async () => {
@@ -147,32 +153,36 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   // Render the hadith content
   const renderHadith = () => (
     <>
-      <h3 className="text-xl sm:text-2xl font-bold text-amber-800 mb-3 sm:mb-4 font-serif">Hadith</h3>
+      <h3 className="text-xl sm:text-2xl font-bold text-amber-800 mb-2 sm:mb-3 font-serif">Hadith</h3>
       
-      <div className="mb-3 sm:mb-4">
-        <p className="text-sm sm:text-base text-amber-900/90 leading-relaxed">{displayedHadith.text}</p>
+      <div className="mb-2 sm:mb-3 flex-grow overflow-hidden">
+        <p className={`${isTV ? 'hadith-text' : 'text-sm sm:text-base'} text-amber-900/90 leading-relaxed`}>
+          {displayedHadith.text}
+        </p>
       </div>
       
-      <div>
-        <p className="text-sm sm:text-base font-semibold text-amber-800 mb-1">Reference</p>
-        <p className="text-xs sm:text-sm text-amber-900/80">{displayedHadith.source}</p>
+      <div className="mt-auto">
+        <p className="text-sm font-semibold text-amber-800 mb-1">Reference</p>
+        <p className={`${isTV ? 'hadith-source' : 'text-xs sm:text-sm'} text-amber-900/80`}>
+          {displayedHadith.source}
+        </p>
       </div>
     </>
   );
   
   // Render the phone reminder content
   const renderPhoneReminder = () => (
-    <div className="flex flex-col h-full justify-center items-center py-4 sm:py-6 animate-pulse-soft">
-      <div className="bg-gradient-to-b from-amber-500/90 to-amber-400/90 p-4 sm:p-5 rounded-full mb-4 sm:mb-5 shadow-lg">
-        <Smartphone className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
+    <div className="flex flex-col h-full justify-center items-center py-4 sm:py-5 animate-pulse-soft">
+      <div className="bg-gradient-to-b from-amber-500/90 to-amber-400/90 p-4 rounded-full mb-4 shadow-lg">
+        <Smartphone className={`${isTV ? 'h-12 w-12' : 'h-8 w-8 sm:h-10 sm:w-10'} text-white`} />
       </div>
       
-      <h3 className="text-xl sm:text-2xl font-bold text-amber-800 mb-2 sm:mb-3 font-serif text-center bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 bg-clip-text text-transparent">
+      <h3 className={`${isTV ? 'text-2xl' : 'text-xl sm:text-2xl'} font-bold text-amber-800 mb-2 font-serif text-center bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 bg-clip-text text-transparent`}>
         Mobile Phone Reminder
       </h3>
       
       <div className="bg-gradient-to-r from-amber-100 to-amber-200 p-3 sm:p-4 rounded-xl shadow-md border border-amber-300/50 max-w-xs">
-        <p className="text-base sm:text-lg text-amber-800 text-center leading-relaxed">
+        <p className={`${isTV ? 'text-lg' : 'text-base sm:text-lg'} text-amber-800 text-center leading-relaxed`}>
           Please turn off your mobile phone while in the mosque as a sign of respect.
         </p>
       </div>
@@ -180,7 +190,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   );
   
   return (
-    <div className="gold-border prayer-card rounded-xl p-3 sm:p-4 h-full animate-fade-in">
+    <div className={`gold-border prayer-card rounded-xl p-3 sm:p-4 h-full animate-fade-in ${isTV ? 'hadith-container' : ''}`}>
       {showPhoneReminder ? renderPhoneReminder() : renderHadith()}
     </div>
   );

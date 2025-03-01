@@ -78,4 +78,27 @@
     padding: 0;
     overflow: hidden;
   }
+  
+  /* Better font rendering for TV */
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Make sure all content is visible on TV displays */
+  .tv-display .hadith-container {
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
+  }
+}
+
+/* Animation for fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in;
 }
