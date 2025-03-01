@@ -82,30 +82,9 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         <p className="text-base text-amber-900/90 leading-relaxed">{currentHadith.text}</p>
       </div>
       
-      <div className="mb-4">
+      <div>
         <p className="text-base font-semibold text-amber-800 mb-1">Reference</p>
         <p className="text-sm text-amber-900/80">{currentHadith.source}</p>
-      </div>
-      
-      <div className="mt-auto pt-4">
-        <div className="islamic-arch-border relative h-16 w-full overflow-hidden">
-          <div className="absolute inset-0 flex">
-            <div className="w-1/3 h-16">
-              <div className="absolute bottom-0 right-0 w-full h-16 border-t-[3px] border-r-[3px] rounded-tr-[40px] border-amber-600/40"></div>
-            </div>
-            <div className="w-1/3 h-16 relative">
-              <div className="absolute bottom-0 left-0 right-0 h-16 flex items-end justify-center">
-                <div className="w-full h-16 border-t-[3px] border-amber-600/40"></div>
-                <div className="absolute bottom-0 left-0 right-0 h-12 overflow-hidden">
-                  <div className="w-full h-24 rounded-t-[100px] border-t-[3px] border-l-[3px] border-r-[3px] border-amber-600/40"></div>
-                </div>
-              </div>
-            </div>
-            <div className="w-1/3 h-16">
-              <div className="absolute bottom-0 left-0 w-full h-16 border-t-[3px] border-l-[3px] rounded-tl-[40px] border-amber-600/40"></div>
-            </div>
-          </div>
-        </div>
       </div>
     </>
   );
