@@ -42,8 +42,18 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     };
   };
   
+  // Set initial hadith and begin cycling
   useEffect(() => {
     setCurrentHadith(hadith);
+    
+    // Set up initial index for cycling
+    if (allHadiths.length > 0) {
+      // Find the index of the current hadith in the collection
+      const initialIndex = allHadiths.findIndex(h => h.id === hadith.id);
+      if (initialIndex !== -1) {
+        setCurrentHadithIndex(initialIndex);
+      }
+    }
     
     const cycleContent = () => {
       if (showPhoneReminder) {
@@ -51,14 +61,18 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         
         // Cycle to next hadith immediately after phone reminder ends
         if (allHadiths.length > 0) {
+          // Move to the next hadith index
           const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
+          console.log(`Cycling to next hadith: index ${currentHadithIndex} → ${nextIndex}`);
           setCurrentHadithIndex(nextIndex);
           setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
         } else {
+          // Fallback to original hadith if no collection available
           setCurrentHadith(hadith);
         }
       } else {
         setShowPhoneReminder(true);
+        console.log('Showing phone reminder');
       }
     };
     
