@@ -15,7 +15,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const [allHadiths, setAllHadiths] = useState<HadithCollectionItem[]>([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [currentHadith, setCurrentHadith] = useState<Hadith>(hadith);
-  const [reminderCount, setReminderCount] = useState(0);
   
   useEffect(() => {
     const loadAllHadiths = async () => {
@@ -50,20 +49,16 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
       if (showPhoneReminder) {
         setShowPhoneReminder(false);
         
-        if (reminderCount >= 3) {
-          setReminderCount(0);
-          
-          if (allHadiths.length > 0) {
-            const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
-            setCurrentHadithIndex(nextIndex);
-            setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
-          } else {
-            setCurrentHadith(hadith);
-          }
+        // Cycle to next hadith immediately after phone reminder ends
+        if (allHadiths.length > 0) {
+          const nextIndex = (currentHadithIndex + 1) % allHadiths.length;
+          setCurrentHadithIndex(nextIndex);
+          setCurrentHadith(convertToHadith(allHadiths[nextIndex]));
+        } else {
+          setCurrentHadith(hadith);
         }
       } else {
         setShowPhoneReminder(true);
-        setReminderCount(prevCount => prevCount + 1);
       }
     };
     
@@ -72,7 +67,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
     }, showPhoneReminder ? 30000 : 120000);
     
     return () => clearInterval(interval);
-  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex, reminderCount]);
+  }, [hadith, showPhoneReminder, allHadiths, currentHadithIndex]);
   
   const renderHadith = () => (
     <>
