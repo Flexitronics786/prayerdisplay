@@ -1,3 +1,4 @@
+
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
@@ -93,19 +94,19 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   ) => {
     return (
       <div className={`prayer-card rounded-xl overflow-hidden prayer-transition 
-        ${isActive ? 'active-prayer' : 
+        ${isActive ? 'active-prayer border-amber-500 border-2' : 
           isNext ? 'next-prayer' : ''}`}
       >
         <div className={`prayer-tile-header ${headerClass}`}>
-          <h3 className={`text-lg sm:text-xl font-bold ${isTV ? 'text-xl' : ''}`}>
+          <h3 className={`text-xl sm:text-2xl font-bold ${isTV ? 'text-2xl' : ''}`}>
             {title}
             {isActive && (
-              <span className="ml-2 inline-block px-1.5 py-0.5 text-2xs sm:text-xs rounded-full bg-white/30 text-white">
+              <span className="ml-2 inline-block px-1.5 py-0.5 text-xs sm:text-sm rounded-full bg-white/30 text-white">
                 Current
               </span>
             )}
             {isNext && (
-              <span className="ml-2 inline-block px-1.5 py-0.5 text-2xs sm:text-xs rounded-full bg-white/20 text-white/90">
+              <span className="ml-2 inline-block px-1.5 py-0.5 text-xs sm:text-sm rounded-full bg-white/20 text-white/90">
                 Next
               </span>
             )}
@@ -117,8 +118,8 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
               ${index < items.length - 1 ? 'mb-1 sm:mb-2 pb-1 border-b border-amber-100' : ''} 
               ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
-              <span className="text-amber-900 text-sm sm:text-base font-medium">{item.label}:</span>
-              <span className="font-bold text-amber-950 text-lg sm:text-xl clock-text">{item.time}</span>
+              <span className="text-amber-900 text-base sm:text-lg font-medium">{item.label}:</span>
+              <span className="font-bold text-amber-950 text-xl sm:text-2xl clock-text">{item.time}</span>
             </div>
           ))}
         </div>
@@ -239,7 +240,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   return (
     <div className="animate-scale-in">
       <div className="mb-2 sm:mb-3">
-        <h3 className="text-xl sm:text-2xl font-bold text-amber-800 font-serif">Prayer Times</h3>
+        <h3 className="text-2xl sm:text-3xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
       <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3' : 'mobile-prayer-grid'}`}>

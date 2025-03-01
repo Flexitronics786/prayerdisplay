@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
 
 @tailwind base;
@@ -115,7 +116,7 @@
 }
 
 .active-prayer {
-  @apply relative bg-amber-300/50 text-amber-900;
+  @apply relative bg-amber-200 text-amber-900 shadow-lg ring-4 ring-amber-400/50;
 }
 
 .next-prayer {
@@ -124,7 +125,7 @@
 
 .active-prayer::before, .next-prayer::before {
   content: "";
-  @apply absolute left-0 top-0 h-full w-1 bg-amber-500;
+  @apply absolute left-0 top-0 h-full w-2 bg-amber-500;
 }
 
 .prayer-transition {
