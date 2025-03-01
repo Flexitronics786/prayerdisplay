@@ -87,17 +87,24 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         <p className="text-sm text-amber-900/80">{currentHadith.source}</p>
       </div>
       
-      <div className="mt-auto pt-2">
-        <div className="islamic-pattern-decorative opacity-30 mx-auto">
-          <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g opacity="0.8">
-              <path d="M60 10L80 30L60 50L40 30L60 10Z" fill="#D4A017" fillOpacity="0.2"/>
-              <path d="M60 15L75 30L60 45L45 30L60 15Z" stroke="#D4A017" strokeOpacity="0.4" strokeWidth="1"/>
-              <path d="M60 20L70 30L60 40L50 30L60 20Z" stroke="#D4A017" strokeOpacity="0.6" strokeWidth="1"/>
-              <circle cx="60" cy="30" r="5" stroke="#D4A017" strokeOpacity="0.7" strokeWidth="1"/>
-              <circle cx="60" cy="30" r="2" fill="#D4A017" fillOpacity="0.3"/>
-            </g>
-          </svg>
+      <div className="mt-auto pt-4">
+        <div className="islamic-arch-border relative h-16 w-full overflow-hidden">
+          <div className="absolute inset-0 flex">
+            <div className="w-1/3 h-16">
+              <div className="absolute bottom-0 right-0 w-full h-16 border-t-[3px] border-r-[3px] rounded-tr-[40px] border-amber-600/40"></div>
+            </div>
+            <div className="w-1/3 h-16 relative">
+              <div className="absolute bottom-0 left-0 right-0 h-16 flex items-end justify-center">
+                <div className="w-full h-16 border-t-[3px] border-amber-600/40"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-12 overflow-hidden">
+                  <div className="w-full h-24 rounded-t-[100px] border-t-[3px] border-l-[3px] border-r-[3px] border-amber-600/40"></div>
+                </div>
+              </div>
+            </div>
+            <div className="w-1/3 h-16">
+              <div className="absolute bottom-0 left-0 w-full h-16 border-t-[3px] border-l-[3px] rounded-tl-[40px] border-amber-600/40"></div>
+            </div>
+          </div>
         </div>
       </div>
     </>
