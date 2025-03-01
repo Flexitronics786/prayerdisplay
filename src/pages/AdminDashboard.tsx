@@ -134,7 +134,7 @@ const AdminDashboard = () => {
           </div>
         )}
         
-        {/* Single tab for Prayer Times Table */}
+        {/* Prayer Times Table */}
         <div className="w-full mb-6">
           <h2 className="text-2xl font-bold text-amber-800 mb-4">Prayer Times Management</h2>
           
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
                   className="flex items-center gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
-                  {isDeletingData ? "Deleting..." : "Delete All Data"}
+                  {isDeletingData ? "Deleting..." : "Delete All Prayer Times"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
