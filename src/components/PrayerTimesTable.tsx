@@ -1,8 +1,8 @@
-
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
 import { useState, useEffect } from "react";
+import { useTVDisplay } from "@/hooks/useTVDisplay";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
@@ -11,27 +11,7 @@ interface PrayerTimesTableProps {
 
 const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
-  const [isTV, setIsTV] = useState(false);
-
-  useEffect(() => {
-    const checkIfTV = () => {
-      const userAgent = navigator.userAgent.toLowerCase();
-      const isSilkBrowser = userAgent.includes('silk');
-      const isFireTV = userAgent.includes('firetv') || userAgent.includes('fire tv');
-      const isLargeScreen = window.innerWidth >= 1280 && window.innerHeight >= 720;
-      
-      return (isSilkBrowser || isFireTV || isLargeScreen);
-    };
-    
-    setIsTV(checkIfTV());
-    
-    const handleResize = () => {
-      setIsTV(checkIfTV());
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const isTV = useTVDisplay();
 
   useEffect(() => {
     const loadDetailedTimes = async () => {
@@ -109,7 +89,9 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
               ${index === 1 && title === "Fajr" ? 'pt-1' : ''}
             `}>
               <span className="text-amber-900 text-base sm:text-lg font-bold">{item.label}:</span>
-              <span className="font-bold text-amber-950 text-xl sm:text-2xl clock-text">{item.time}</span>
+              <span className={`font-bold text-amber-950 text-xl sm:text-2xl clock-text ${isTV ? 'tv-time-text' : ''}`}>
+                {item.time}
+              </span>
             </div>
           ))}
         </div>
@@ -233,7 +215,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
         <h3 className="text-2xl sm:text-3xl font-bold text-amber-800 font-serif">Prayer Times</h3>
       </div>
 
-      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3' : 'mobile-prayer-grid'}`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3 tv-prayer-grid' : 'mobile-prayer-grid'}`}>
         {renderPrayerTile(
           "Fajr", 
           fajrDetails.isActive, 

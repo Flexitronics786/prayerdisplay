@@ -37,6 +37,28 @@
   line-height: 1.1 !important;
 }
 
+/* TV time text specific fixes - prevents cutoff on LG TVs */
+.tv-time-text {
+  font-size: 32px !important;
+  line-height: 1.2 !important;
+  padding-right: 5px !important;
+}
+
+/* LG TV specific fixes */
+.tv-prayer-grid {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.tv-display .prayer-card {
+  overflow: visible !important;
+  border-width: 2px !important;
+}
+
+.tv-display .active-prayer {
+  border-width: 4px !important;
+}
+
 /* Phone reminder specific TV styles */
 .tv-display .tv-phone-reminder {
   padding: 4px 8px;
@@ -66,6 +88,14 @@
   .tv-display .clock-text {
     font-size: 2.8rem !important;
     line-height: 1.1 !important;
+  }
+  
+  /* Specific fixes for LG and other WebOS TVs */
+  .tv-display .tv-time-text {
+    font-size: 2.5rem !important;
+    line-height: 1.2 !important;
+    padding-right: 8px !important; 
+    display: inline-block;
   }
   
   .tv-display .text-sm {
