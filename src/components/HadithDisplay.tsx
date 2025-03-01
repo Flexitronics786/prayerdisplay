@@ -15,6 +15,7 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
   const [activeHadiths, setActiveHadiths] = useState<HadithCollectionItem[]>([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   const [displayedHadith, setDisplayedHadith] = useState<Hadith>(hadith);
+  const [cycleCount, setCycleCount] = useState(0);
   
   // References to track component mount status and timers
   const isMounted = useRef(true);
@@ -98,11 +99,17 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
       setDisplayedHadith(nextHadith);
       console.log(`Next hadith displayed: ${nextHadith.id}`);
       
+      // Track if we've completed a full cycle
+      if (nextIndex === 0) {
+        setCycleCount(prev => prev + 1);
+        console.log("Completed full cycle through all hadiths");
+      }
+      
       return nextIndex;
     });
   };
   
-  // Setup cycling system - Completely rewritten to fix the timing issues
+  // Setup cycling system
   useEffect(() => {
     // Only set up cycling if we have active hadiths
     if (activeHadiths.length === 0) return;
@@ -143,13 +150,24 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
         console.log("Showing phone reminder for 30 seconds");
         setShowPhoneReminder(true);
         
-        // After 30 seconds (30000ms), move to next hadith and restart cycle
+        // After 30 seconds (30000ms), check if all hadiths have been shown before restarting cycle
         phoneReminderTimerRef.current = setTimeout(() => {
           if (!isMounted.current) return;
           
           console.log("Phone reminder timeout completed, moving to next hadith");
+          
+          // Calculate if we've shown all hadiths at least once
+          const nextIndex = (currentHadithIndex + 1) % activeHadiths.length;
+          const willCompleteFullCycle = nextIndex === 0;
+          
           moveToNextHadith();
-          startCycle(); // Restart the cycle with the next hadith
+          
+          // Check if we need to restart the cycle or continue
+          if (willCompleteFullCycle) {
+            console.log("We've shown all hadiths at least once, completing cycle");
+          }
+          
+          startCycle(); // Continue the cycle with the next hadith
         }, 30000);
       }, 120000);
     };
