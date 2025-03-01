@@ -115,7 +115,7 @@
 }
 
 .active-prayer {
-  @apply relative bg-amber-200 text-amber-900 shadow-lg ring-4 ring-amber-400/50 border-8 border-red-500;
+  @apply relative bg-amber-200 text-amber-900 shadow-lg border-8 border-red-500;
 }
 
 .next-prayer {
@@ -127,8 +127,7 @@
 }
 
 .next-prayer::before {
-  content: "";
-  @apply absolute left-0 top-0 h-full w-2 bg-amber-500;
+  content: none;
 }
 
 .prayer-transition {

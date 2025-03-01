@@ -99,16 +99,6 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
         <div className={`prayer-tile-header ${headerClass}`}>
           <h3 className={`text-xl sm:text-2xl font-bold ${isTV ? 'text-2xl' : ''}`}>
             {title}
-            {isActive && (
-              <span className="ml-2 inline-block px-1.5 py-0.5 text-xs sm:text-sm rounded-full bg-white/30 text-white">
-                Current
-              </span>
-            )}
-            {isNext && (
-              <span className="ml-2 inline-block px-1.5 py-0.5 text-xs sm:text-sm rounded-full bg-white/20 text-white/90">
-                Next
-              </span>
-            )}
           </h3>
         </div>
         <div className="px-2 sm:px-4 py-2">
