@@ -124,18 +124,6 @@ const HadithDisplay: React.FC<HadithDisplayProps> = ({ hadith, nextPrayer }) => 
           </p>
         </div>
       </div>
-      
-      <div className="mt-5 flex space-x-4">
-        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20">
-          <Smartphone className="h-5 w-5 text-amber-700" />
-        </div>
-        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20 rotate-45">
-          <Smartphone className="h-5 w-5 text-amber-700" />
-        </div>
-        <div className="bg-amber-800/10 p-3 rounded-lg border border-amber-700/20 -rotate-45">
-          <Smartphone className="h-5 w-5 text-amber-700" />
-        </div>
-      </div>
     </div>
   );
   
