@@ -1,3 +1,4 @@
+
 import { PrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
 import { fetchAllPrayerTimes } from "@/services/dataService";
@@ -208,6 +209,12 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
 
   const today = new Date();
   const isFriday = today.getDay() === 5;
+  
+  // Check if the date is after March 2025 for Isha Jamat display
+  const isAfterMarch2025 = () => {
+    const march2025 = new Date(2025, 2, 1); // March is month 2 (0-indexed)
+    return today > march2025;
+  };
 
   return (
     <div className="animate-scale-in">
@@ -288,6 +295,17 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
           "Isha", 
           ishaDetails.isActive, 
           ishaDetails.isNext,
+          isAfterMarch2025() ? 
+          [
+            { 
+              label: "Start", 
+              time: getIshaStart()
+            },
+            { 
+              label: "Jamat", 
+              time: getIshaFirstJamat()
+            }
+          ] :
           [
             { 
               label: "Start", 
