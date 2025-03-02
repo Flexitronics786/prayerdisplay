@@ -597,6 +597,77 @@ const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'c
   });
 };
 
+// Function to import prayer times from CSV file
+export const importFromCSV = async (csvText: string): Promise<{
+  success: boolean;
+  count: number;
+  error?: string;
+}> => {
+  try {
+    const parsed = parseCSV(csvText);
+    console.log("Parsed CSV data:", parsed);
+    
+    if (parsed.length < 2) {
+      return {
+        success: false,
+        count: 0,
+        error: "CSV file contains insufficient data"
+      };
+    }
+    
+    const prayerTimes = processCSVData(parsed);
+    console.log("Processed prayer times:", prayerTimes);
+    
+    // Try to add all entries to the database
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const entry of prayerTimes) {
+      try {
+        // Skip entries with missing required data
+        if (!entry.date || !entry.day) {
+          failCount++;
+          continue;
+        }
+        
+        await addPrayerTimeEntry(entry);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to add entry for date ${entry.date}:`, error);
+        failCount++;
+      }
+    }
+    
+    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
+    
+    if (successCount === 0 && failCount > 0) {
+      return {
+        success: false,
+        count: 0,
+        error: `Failed to import any prayer times. ${failCount} entries had errors.`
+      };
+    }
+    
+    let warningMessage = '';
+    if (failCount > 0) {
+      warningMessage = `Note: ${failCount} entries failed to import.`;
+    }
+    
+    return {
+      success: true,
+      count: successCount,
+      error: warningMessage.length > 0 ? warningMessage : undefined
+    };
+  } catch (error) {
+    console.error("Error importing from CSV:", error);
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : "Unknown error during import"
+    };
+  }
+};
+
 // Function to import prayer times from Google Sheet
 export const importPrayerTimesFromSheet = async (
   sheetId: string,
