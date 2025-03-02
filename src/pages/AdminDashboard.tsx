@@ -8,6 +8,7 @@ import PrayerTimesTableEditor from "@/components/admin/PrayerTimesTableEditor";
 import { PrayerTime, User } from "@/types";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQueryClient } from "@tanstack/react-query";
 
 const AdminDashboard = () => {
@@ -94,23 +95,25 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden bg-amber-50">
+    <div className="h-screen flex flex-col overflow-hidden bg-amber-50">
       <div className="pattern-overlay"></div>
-      <div className="max-w-7xl mx-auto">
-        <AdminNavbar onLogout={handleLogout} />
-        
-        {currentUser && (
-          <div className="mb-4 text-sm text-amber-700">
-            Logged in as: {currentUser.email}
+      <AdminNavbar onLogout={handleLogout} />
+      
+      <ScrollArea className="flex-1 p-6">
+        <div className="max-w-7xl mx-auto">
+          {currentUser && (
+            <div className="mb-4 text-sm text-amber-700">
+              Logged in as: {currentUser.email}
+            </div>
+          )}
+          
+          {/* Prayer Times Table */}
+          <div className="w-full mb-6">
+            <h2 className="text-2xl font-bold text-amber-800 mb-4">Prayer Times Management</h2>
+            <PrayerTimesTableEditor />
           </div>
-        )}
-        
-        {/* Prayer Times Table */}
-        <div className="w-full mb-6">
-          <h2 className="text-2xl font-bold text-amber-800 mb-4">Prayer Times Management</h2>
-          <PrayerTimesTableEditor />
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 };
