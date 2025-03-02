@@ -58,98 +58,96 @@ export const PrayerTimesTable = ({
   };
   
   return (
-    <div className="rounded-md border bg-white">
-      <div className="overflow-x-auto">
-        <div className="max-h-[500px] overflow-y-auto">
-          <Table>
-            <TableHeader className="sticky top-0 z-10">
-              <TableRow className="bg-amber-50">
-                <TableHead className="w-[180px]">Date</TableHead>
-                <TableHead>Sehri</TableHead>
-                <TableHead>Fajr</TableHead>
-                <TableHead>Sunrise</TableHead>
-                <TableHead>Zuhr</TableHead>
-                <TableHead>Asr</TableHead>
-                <TableHead>Maghrib</TableHead>
-                <TableHead>Isha</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+    <div className="rounded-md border bg-white max-h-[600px] overflow-auto">
+      <div className="relative">
+        <Table>
+          <TableHeader className="sticky top-0 z-10">
+            <TableRow className="bg-amber-50">
+              <TableHead className="w-[180px]">Date</TableHead>
+              <TableHead>Sehri</TableHead>
+              <TableHead>Fajr</TableHead>
+              <TableHead>Sunrise</TableHead>
+              <TableHead>Zuhr</TableHead>
+              <TableHead>Asr</TableHead>
+              <TableHead>Maghrib</TableHead>
+              <TableHead>Isha</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {prayerTimes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  No prayer times found. Add some using the button above.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {prayerTimes.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                    No prayer times found. Add some using the button above.
+            ) : (
+              prayerTimes.map((entry) => (
+                <TableRow key={entry.id} className="hover:bg-amber-50/50">
+                  <TableCell className="font-medium">
+                    <div>{formatDate(entry.date)}</div>
+                    <div className="text-xs text-muted-foreground">{entry.day}</div>
+                  </TableCell>
+                  <TableCell>{entry.sehri_end?.slice(0, 5) || "-"}</TableCell>
+                  <TableCell>{entry.fajr_jamat?.slice(0, 5) || "-"}</TableCell>
+                  <TableCell>{entry.sunrise?.slice(0, 5) || "-"}</TableCell>
+                  <TableCell>
+                    {entry.zuhr_start?.slice(0, 5) ? (
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Start: {entry.zuhr_start.slice(0, 5)}</div>
+                        <div>Jamat: {entry.zuhr_jamat?.slice(0, 5) || "-"}</div>
+                      </div>
+                    ) : (
+                      entry.zuhr_jamat?.slice(0, 5) || "-"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {entry.asr_start?.slice(0, 5) ? (
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Start: {entry.asr_start.slice(0, 5)}</div>
+                        <div>Jamat: {entry.asr_jamat?.slice(0, 5) || "-"}</div>
+                      </div>
+                    ) : (
+                      entry.asr_jamat?.slice(0, 5) || "-"
+                    )}
+                  </TableCell>
+                  <TableCell>{entry.maghrib_iftar?.slice(0, 5) || "-"}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {entry.isha_start?.slice(0, 5) && (
+                        <div className="text-xs text-muted-foreground">Start: {entry.isha_start.slice(0, 5)}</div>
+                      )}
+                      <div>1st: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
+                      {entry.isha_second_jamat?.slice(0, 5) && (
+                        <div>2nd: {entry.isha_second_jamat.slice(0, 5)}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit(entry)}
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(entry.id)}
+                        title="Delete"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ) : (
-                prayerTimes.map((entry) => (
-                  <TableRow key={entry.id} className="hover:bg-amber-50/50">
-                    <TableCell className="font-medium">
-                      <div>{formatDate(entry.date)}</div>
-                      <div className="text-xs text-muted-foreground">{entry.day}</div>
-                    </TableCell>
-                    <TableCell>{entry.sehri_end?.slice(0, 5) || "-"}</TableCell>
-                    <TableCell>{entry.fajr_jamat?.slice(0, 5) || "-"}</TableCell>
-                    <TableCell>{entry.sunrise?.slice(0, 5) || "-"}</TableCell>
-                    <TableCell>
-                      {entry.zuhr_start?.slice(0, 5) ? (
-                        <div className="space-y-1">
-                          <div className="text-xs text-muted-foreground">Start: {entry.zuhr_start.slice(0, 5)}</div>
-                          <div>Jamat: {entry.zuhr_jamat?.slice(0, 5) || "-"}</div>
-                        </div>
-                      ) : (
-                        entry.zuhr_jamat?.slice(0, 5) || "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {entry.asr_start?.slice(0, 5) ? (
-                        <div className="space-y-1">
-                          <div className="text-xs text-muted-foreground">Start: {entry.asr_start.slice(0, 5)}</div>
-                          <div>Jamat: {entry.asr_jamat?.slice(0, 5) || "-"}</div>
-                        </div>
-                      ) : (
-                        entry.asr_jamat?.slice(0, 5) || "-"
-                      )}
-                    </TableCell>
-                    <TableCell>{entry.maghrib_iftar?.slice(0, 5) || "-"}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {entry.isha_start?.slice(0, 5) && (
-                          <div className="text-xs text-muted-foreground">Start: {entry.isha_start.slice(0, 5)}</div>
-                        )}
-                        <div>1st: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
-                        {entry.isha_second_jamat?.slice(0, 5) && (
-                          <div>2nd: {entry.isha_second_jamat.slice(0, 5)}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onEdit(entry)}
-                          title="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(entry.id)}
-                          title="Delete"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

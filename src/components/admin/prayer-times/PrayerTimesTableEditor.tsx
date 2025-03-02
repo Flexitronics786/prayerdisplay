@@ -2,18 +2,20 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPrayerTimes } from "@/services/dataService";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ImportPrayerTimesDialog } from "./ImportPrayerTimesDialog";
 import { AddEditPrayerTimeDialog } from "./AddEditPrayerTimeDialog";
 import { PrayerTimesTable } from "./PrayerTimesTable";
 import { DetailedPrayerTime } from "@/types";
+import { DeleteAllPrayerTimesDialog } from "./DeleteAllPrayerTimesDialog";
 
 const PrayerTimesTableEditor = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Omit<DetailedPrayerTime, 'id' | 'created_at'>>({
     date: new Date().toISOString().split('T')[0],
@@ -123,6 +125,20 @@ const PrayerTimesTableEditor = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
         <h2 className="text-xl font-semibold text-amber-800">Prayer Times Table</h2>
         <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
+            onClick={() => setIsDeleteAllDialogOpen(true)}
+          >
+            <Trash className="h-4 w-4" />
+            Delete All Data
+          </Button>
+          
+          <DeleteAllPrayerTimesDialog
+            isOpen={isDeleteAllDialogOpen}
+            onOpenChange={setIsDeleteAllDialogOpen}
+          />
+
           <ImportPrayerTimesDialog
             isOpen={isImportDialogOpen}
             onOpenChange={setIsImportDialogOpen}
