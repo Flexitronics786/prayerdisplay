@@ -57,17 +57,6 @@ export const PrayerTimesTable = ({
     }
   };
   
-  // Check if the date is after March 2025 for Isha Jamat display
-  const isAfterMarch2025 = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const march2025 = new Date(2025, 2, 1); // March is month 2 (0-indexed)
-      return date >= march2025;
-    } catch (e) {
-      return false;
-    }
-  };
-  
   return (
     <div className="rounded-md border bg-white">
       <div className="overflow-x-auto">
@@ -129,15 +118,9 @@ export const PrayerTimesTable = ({
                         {entry.isha_start?.slice(0, 5) && (
                           <div className="text-xs text-muted-foreground">Start: {entry.isha_start.slice(0, 5)}</div>
                         )}
-                        {isAfterMarch2025(entry.date) ? (
-                          <div>Jamat: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
-                        ) : (
-                          <>
-                            <div>1st: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
-                            {entry.isha_second_jamat?.slice(0, 5) && (
-                              <div>2nd: {entry.isha_second_jamat.slice(0, 5)}</div>
-                            )}
-                          </>
+                        <div>1st: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
+                        {entry.isha_second_jamat?.slice(0, 5) && (
+                          <div>2nd: {entry.isha_second_jamat.slice(0, 5)}</div>
                         )}
                       </div>
                     </TableCell>
