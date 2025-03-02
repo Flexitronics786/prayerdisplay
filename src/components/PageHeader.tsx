@@ -9,7 +9,7 @@ interface PageHeaderProps {
 
 const PageHeader = ({ currentDate, isTV }: PageHeaderProps) => {
   return (
-    <header className={`${isTV ? 'mb-2' : 'mb-4'}`}>
+    <header className={`${isTV ? 'mb-1' : 'mb-4'}`}>
       <div className="gold-border p-2 sm:p-3 bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-center">
           <div className="text-left md:pl-4 order-2 md:order-1">
@@ -19,10 +19,10 @@ const PageHeader = ({ currentDate, isTV }: PageHeaderProps) => {
           </div>
           
           <div className="text-center order-1 md:order-2">
-            <h1 className={`${isTV ? 'text-4xl' : 'text-2xl sm:text-3xl md:text-4xl'} font-bold gold-gradient-text mb-1 font-serif`}>
+            <h1 className={`${isTV ? 'text-3xl' : 'text-2xl sm:text-3xl md:text-4xl'} font-bold gold-gradient-text mb-1 font-serif`}>
               MINHAJ-UL-QURAN INT. DUNDEE
             </h1>
-            <h2 className={`${isTV ? 'text-xl' : 'text-base sm:text-xl'} text-amber-700 mb-1`}>
+            <h2 className={`${isTV ? 'text-lg' : 'text-base sm:text-xl'} text-amber-700 mb-1`}>
               JAMIA MASJID BILAL
             </h2>
             <div className="h-0.5 w-24 sm:w-48 bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 mx-auto rounded-full"></div>

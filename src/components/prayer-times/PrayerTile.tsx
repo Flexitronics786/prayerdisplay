@@ -29,18 +29,18 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
           {title}
         </h3>
       </div>
-      <div className="px-2 sm:px-4 py-2">
+      <div className="px-2 sm:px-4 py-1">
         {items.map((item, index) => (
           <div
             key={index}
             className={`flex justify-between items-center 
-              ${index < items.length - 1 ? "mb-1 sm:mb-2 pb-1 border-b border-amber-100" : ""} 
+              ${index < items.length - 1 ? "mb-1 pb-1 border-b border-amber-100" : ""} 
               ${index === 1 && title === "Fajr" ? "pt-1" : ""}
             `}
           >
-            <span className="text-amber-900 text-base sm:text-lg font-bold">{item.label}:</span>
+            <span className="text-amber-900 text-sm sm:text-base font-bold">{item.label}:</span>
             <span
-              className={`font-bold text-amber-950 text-xl sm:text-2xl clock-text ${
+              className={`font-bold text-amber-950 text-lg sm:text-xl clock-text ${
                 isTV ? "tv-time-text" : ""
               }`}
             >
