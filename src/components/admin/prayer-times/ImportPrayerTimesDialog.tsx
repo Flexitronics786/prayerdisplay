@@ -37,7 +37,7 @@ export const ImportPrayerTimesDialog = ({
   const queryClient = useQueryClient();
   
   const [importData, setImportData] = useState({
-    sheetId: '',
+    sheetUrl: '',
     tabName: 'Sheet1',
     hasHeaderRow: true,
     isPublic: true
@@ -52,18 +52,45 @@ export const ImportPrayerTimesDialog = ({
     setImportData(prev => ({ ...prev, [name]: value === 'true' }));
   };
   
+  const extractSheetId = (url: string): string => {
+    // Extract Sheet ID from various Google Sheets URL formats
+    if (!url) return '';
+    
+    // Handles URLs like: https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    
+    // If not a URL, treat as direct ID
+    if (!url.includes('/') && !url.includes('\\')) {
+      return url.trim();
+    }
+    
+    return '';
+  };
+  
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      if (!importData.sheetId) {
-        toast.error("Please enter a Google Sheet ID");
+      if (!importData.sheetUrl) {
+        toast.error("Please enter a Google Sheet URL or ID");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const sheetId = extractSheetId(importData.sheetUrl);
+      
+      if (!sheetId) {
+        toast.error("Could not extract a valid Sheet ID from the provided URL");
+        setIsSubmitting(false);
         return;
       }
       
       const result = await importPrayerTimesFromSheet(
-        importData.sheetId,
+        sheetId,
         importData.tabName,
         importData.hasHeaderRow,
         importData.isPublic
@@ -99,23 +126,23 @@ export const ImportPrayerTimesDialog = ({
         <DialogHeader>
           <DialogTitle>Import Prayer Times from Google Sheets</DialogTitle>
           <DialogDescription>
-            Enter the ID of a Google Sheet to import prayer times data.
+            Enter the URL of a Google Sheet to import prayer times data.
             The sheet must be publicly accessible and have the correct column format.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleImport} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="sheetId">Google Sheet ID</Label>
+            <Label htmlFor="sheetUrl">Google Sheet URL</Label>
             <Input
-              id="sheetId"
-              name="sheetId"
-              value={importData.sheetId}
+              id="sheetUrl"
+              name="sheetUrl"
+              value={importData.sheetUrl}
               onChange={handleInputChange}
-              placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+              placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit"
               required
             />
             <p className="text-xs text-muted-foreground">
-              The ID is the part of the URL between /d/ and /edit
+              Paste the full URL or just the Sheet ID from the address bar
             </p>
           </div>
           

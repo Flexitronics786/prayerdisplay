@@ -2,10 +2,9 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPrayerTimes } from "@/services/dataService";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { DeleteAllPrayerTimesDialog } from "./DeleteAllPrayerTimesDialog";
 import { ImportPrayerTimesDialog } from "./ImportPrayerTimesDialog";
 import { AddEditPrayerTimeDialog } from "./AddEditPrayerTimeDialog";
 import { PrayerTimesTable } from "./PrayerTimesTable";
@@ -15,7 +14,6 @@ const PrayerTimesTableEditor = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Omit<DetailedPrayerTime, 'id' | 'created_at'>>({
     date: new Date().toISOString().split('T')[0],
@@ -125,15 +123,19 @@ const PrayerTimesTableEditor = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
         <h2 className="text-xl font-semibold text-amber-800">Prayer Times Table</h2>
         <div className="flex flex-wrap gap-2">
-          <DeleteAllPrayerTimesDialog 
-            isOpen={isDeleteDialogOpen} 
-            onOpenChange={setIsDeleteDialogOpen} 
-          />
-          
           <ImportPrayerTimesDialog
             isOpen={isImportDialogOpen}
             onOpenChange={setIsImportDialogOpen}
           />
+          
+          <Button 
+            variant="default" 
+            className="flex items-center gap-2"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Add Prayer Time
+          </Button>
           
           <AddEditPrayerTimeDialog
             isOpen={isAddDialogOpen}

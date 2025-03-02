@@ -48,12 +48,6 @@ export const DeleteAllPrayerTimesDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button variant="destructive" className="flex items-center gap-2">
-          <Trash2 className="h-4 w-4" />
-          Delete All Data
-        </Button>
-      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete All Prayer Times Data</DialogTitle>
