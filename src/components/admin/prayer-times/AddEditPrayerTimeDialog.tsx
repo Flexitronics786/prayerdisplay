@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Loader2, Plus, Save, Calendar, Clock } from "lucide-react";
 import { addPrayerTimeEntry, updatePrayerTimeEntry } from "@/services/dataService";
@@ -15,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface AddEditPrayerTimeDialogProps {
@@ -86,12 +84,6 @@ export const AddEditPrayerTimeDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Prayer Time
-        </Button>
-      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingId ? "Edit Prayer Time" : "Add New Prayer Time"}</DialogTitle>

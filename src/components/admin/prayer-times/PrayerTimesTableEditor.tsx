@@ -139,11 +139,6 @@ const PrayerTimesTableEditor = () => {
             onOpenChange={setIsDeleteAllDialogOpen}
           />
 
-          <ImportPrayerTimesDialog
-            isOpen={isImportDialogOpen}
-            onOpenChange={setIsImportDialogOpen}
-          />
-          
           <Button 
             variant="default" 
             className="flex items-center gap-2"
@@ -152,6 +147,11 @@ const PrayerTimesTableEditor = () => {
             <Plus className="h-4 w-4" />
             Add Prayer Time
           </Button>
+          
+          <ImportPrayerTimesDialog
+            isOpen={isImportDialogOpen}
+            onOpenChange={setIsImportDialogOpen}
+          />
           
           <AddEditPrayerTimeDialog
             isOpen={isAddDialogOpen}
