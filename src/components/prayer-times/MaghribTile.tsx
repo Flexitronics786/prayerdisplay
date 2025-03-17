@@ -15,7 +15,7 @@ export const MaghribTile: React.FC<MaghribTileProps> = ({ prayerTimes, detailedT
   return (
     <PrayerTile
       title="Maghrib"
-      arabicTitle="المغرب"
+      arabicTitle="مغرب"
       isActive={maghribDetails.isActive}
       isNext={maghribDetails.isNext}
       items={[

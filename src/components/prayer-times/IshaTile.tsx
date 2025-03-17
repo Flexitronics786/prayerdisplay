@@ -30,7 +30,7 @@ export const IshaTile: React.FC<IshaTileProps> = ({ prayerTimes, detailedTimes }
   return (
     <PrayerTile
       title="Isha"
-      arabicTitle="العشاء"
+      arabicTitle="عشاء"
       isActive={ishaDetails.isActive}
       isNext={ishaDetails.isNext}
       items={timeItems}
