@@ -15,6 +15,7 @@ export const AsrTile: React.FC<AsrTileProps> = ({ prayerTimes, detailedTimes }) 
   return (
     <PrayerTile
       title="Asr"
+      arabicTitle="العصر"
       isActive={asrDetails.isActive}
       isNext={asrDetails.isNext}
       items={[

@@ -13,6 +13,7 @@ export const JummahTile: React.FC<JummahTileProps> = ({ prayerTimes, detailedTim
   return (
     <PrayerTile
       title="Jummah"
+      arabicTitle="الجمعة"
       isActive={false}
       isNext={false}
       items={[

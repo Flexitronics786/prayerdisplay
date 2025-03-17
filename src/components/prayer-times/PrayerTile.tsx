@@ -4,6 +4,7 @@ import { useTVDisplay } from "@/hooks/useTVDisplay";
 
 interface PrayerTileProps {
   title: string;
+  arabicTitle?: string;
   isActive: boolean;
   isNext: boolean;
   items: { label: string; time: string }[];
@@ -12,6 +13,7 @@ interface PrayerTileProps {
 
 export const PrayerTile: React.FC<PrayerTileProps> = ({
   title,
+  arabicTitle,
   isActive,
   isNext,
   items,
@@ -28,6 +30,11 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
         <h3 className={`text-xl sm:text-2xl font-bold ${isTV ? "text-xl" : ""}`}>
           {title}
         </h3>
+        {arabicTitle && (
+          <div className={`text-sm sm:text-base mt-0.5 ${isTV ? "text-sm" : ""}`}>
+            {arabicTitle}
+          </div>
+        )}
       </div>
       <div className="px-2 sm:px-4 py-2">
         {items.map((item, index) => (

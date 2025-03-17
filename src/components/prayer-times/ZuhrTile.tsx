@@ -15,6 +15,7 @@ export const ZuhrTile: React.FC<ZuhrTileProps> = ({ prayerTimes, detailedTimes }
   return (
     <PrayerTile
       title="Zuhr"
+      arabicTitle="الظهر"
       isActive={zuhrDetails.isActive}
       isNext={zuhrDetails.isNext}
       items={[

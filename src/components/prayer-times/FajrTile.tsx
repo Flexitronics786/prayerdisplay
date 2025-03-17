@@ -15,6 +15,7 @@ export const FajrTile: React.FC<FajrTileProps> = ({ prayerTimes, detailedTimes }
   return (
     <PrayerTile
       title="Fajr"
+      arabicTitle="الفجر"
       isActive={fajrDetails.isActive}
       isNext={fajrDetails.isNext}
       items={[
