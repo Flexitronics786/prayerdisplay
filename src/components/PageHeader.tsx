@@ -19,7 +19,7 @@ const PageHeader = ({ currentDate, isTV }: PageHeaderProps) => {
           </div>
           
           <div className="text-center order-1 md:order-2">
-            <h1 className={`${isTV ? 'text-4xl' : 'text-2xl sm:text-3xl md:text-4xl'} font-bold gold-gradient-text mb-1 font-serif`}>
+            <h1 className={`${isTV ? 'text-3xl' : 'text-xl sm:text-2xl md:text-3xl'} font-bold gold-gradient-text mb-1 font-serif`}>
               MINHAJ-UL-QURAN INT. DUNDEE
             </h1>
             <h2 className={`${isTV ? 'text-xl' : 'text-base sm:text-xl'} text-amber-700 mb-1`}>
