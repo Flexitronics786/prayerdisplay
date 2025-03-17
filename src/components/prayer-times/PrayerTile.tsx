@@ -25,7 +25,7 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
         ${isActive ? "active-prayer" : isNext ? "next-prayer" : ""}`}
     >
       <div className={`prayer-tile-header ${headerClass}`}>
-        <h3 className={`text-xl sm:text-2xl font-bold ${isTV ? "text-2xl" : ""}`}>
+        <h3 className={`text-xl sm:text-2xl font-bold ${isTV ? "text-xl" : ""}`}>
           {title}
         </h3>
       </div>
