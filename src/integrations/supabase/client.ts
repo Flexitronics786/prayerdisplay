@@ -13,15 +13,36 @@ export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
   {
-    global: {
-      headers: {
-        // This bypasses RLS for all requests (when properly configured on the server)
-        'x-skip-rls': 'true'
-      }
-    },
     auth: {
       autoRefreshToken: true,
       persistSession: true
+    },
+    global: {
+      headers: { 'x-skip-rls': 'true' }
+    },
+    db: {
+      schema: 'public'
+    },
+    realtime: {
+      timeout: 30000, // Increase timeout to 30 seconds
+      params: {
+        eventsPerSecond: 10
+      }
     }
   }
 );
+
+// Add a helper function to check connection status
+export const checkSupabaseConnection = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('prayer_times')
+      .select('id', { count: 'exact', head: true })
+      .limit(1);
+    
+    return !error;
+  } catch (err) {
+    console.error("Supabase connection check failed:", err);
+    return false;
+  }
+};
