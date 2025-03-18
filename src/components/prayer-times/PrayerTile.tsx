@@ -28,11 +28,11 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
     >
       <div className={`prayer-tile-header ${headerClass}`}>
         <div className="flex justify-between items-center px-2">
-          <h3 className={`text-xl sm:text-2xl font-extrabold text-black ${isTV ? "text-xl" : ""}`}>
+          <h3 className={`text-2xl sm:text-3xl font-extrabold text-black ${isTV ? "text-3xl" : ""}`}>
             {title}
           </h3>
           {arabicTitle && (
-            <div className={`text-xl sm:text-3xl mt-0.5 font-bold text-black ${isTV ? "text-2xl" : ""}`}>
+            <div className={`text-2xl sm:text-4xl mt-0.5 font-bold text-black ${isTV ? "text-4xl" : ""}`}>
               {arabicTitle}
             </div>
           )}
