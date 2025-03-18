@@ -9,60 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      prayer_times: {
-        Row: {
-          asr_jamat: string
-          asr_start: string
-          created_at: string | null
-          date: string
-          day: string
-          fajr_jamat: string
-          id: string
-          isha_first_jamat: string
-          isha_second_jamat: string
-          isha_start: string
-          maghrib_iftar: string
-          sehri_end: string
-          sunrise: string
-          zuhr_jamat: string
-          zuhr_start: string
-        }
-        Insert: {
-          asr_jamat: string
-          asr_start: string
-          created_at?: string | null
-          date: string
-          day: string
-          fajr_jamat: string
-          id?: string
-          isha_first_jamat: string
-          isha_second_jamat: string
-          isha_start: string
-          maghrib_iftar: string
-          sehri_end: string
-          sunrise: string
-          zuhr_jamat: string
-          zuhr_start: string
-        }
-        Update: {
-          asr_jamat?: string
-          asr_start?: string
-          created_at?: string | null
-          date?: string
-          day?: string
-          fajr_jamat?: string
-          id?: string
-          isha_first_jamat?: string
-          isha_second_jamat?: string
-          isha_start?: string
-          maghrib_iftar?: string
-          sehri_end?: string
-          sunrise?: string
-          zuhr_jamat?: string
-          zuhr_start?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string | null

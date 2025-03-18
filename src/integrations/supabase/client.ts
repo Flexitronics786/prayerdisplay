@@ -29,17 +29,6 @@ export const supabase = createClient<Database>(
       params: {
         eventsPerSecond: 10
       }
-    },
-    // Add additional client options
-    fetch: (url, options) => {
-      const timeout = 30000; // 30-second timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-      }).finally(() => clearTimeout(timeoutId));
     }
   }
 );
@@ -53,8 +42,7 @@ export const checkSupabaseConnection = async (): Promise<boolean> => {
     const { error } = await supabase
       .from('prayer_times')
       .select('id', { count: 'exact', head: true })
-      .limit(1)
-      .timeout(10000);
+      .limit(1);
     
     const endTime = Date.now();
     console.log(`Connection check completed in ${endTime - startTime}ms`);

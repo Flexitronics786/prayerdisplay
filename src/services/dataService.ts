@@ -145,7 +145,8 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
-      .eq('date', today);
+      .eq('date', today)
+      .single();
 
     // Check if we have data for today
     if (error) {
@@ -153,7 +154,7 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
       throw error;
     }
     
-    if (!data || data.length === 0) {
+    if (!data) {
       console.log('No prayer times found for today in database');
       // Fall back to default times if no data found for today
       console.log("Using default prayer times");
@@ -161,8 +162,8 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     }
 
     // Map Supabase data to PrayerTime format
-    console.log("Fetched prayer times from database:", data[0]);
-    const formattedTimes = mapToDisplayFormat(data[0]);
+    console.log("Fetched prayer times from database:", data);
+    const formattedTimes = mapToDisplayFormat(data as unknown as DetailedPrayerTime);
     return markActivePrayer(formattedTimes);
   } catch (error) {
     console.error('Error fetching prayer times:', error);
@@ -224,7 +225,7 @@ export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
     }
     
     console.log("Successfully fetched prayer times from database:", data.length);
-    return data as DetailedPrayerTime[];
+    return data as unknown as DetailedPrayerTime[];
   } catch (error) {
     console.error('Error fetching all prayer times:', error);
     toast.error("Failed to fetch prayer times from database");
@@ -248,10 +249,10 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
       throw testError;
     }
     
-    // Add to Supabase
+    // Add to Supabase - fix type casting
     const { data, error } = await supabase
       .from('prayer_times')
-      .insert(entry)
+      .insert(entry as any)
       .select()
       .single();
 
@@ -261,7 +262,7 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
     }
 
     console.log("Successfully added prayer time entry to Supabase:", data);
-    return data as DetailedPrayerTime;
+    return data as unknown as DetailedPrayerTime;
   } catch (error) {
     console.error('Error in addPrayerTimeEntry:', error);
     toast.error("Failed to save prayer time to database");
@@ -278,11 +279,11 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
       return null;
     }
     
-    // Update in Supabase
+    // Update in Supabase - fix type casting
     const { data, error } = await supabase
       .from('prayer_times')
-      .update(entry)
-      .eq('id', id)
+      .update(entry as any)
+      .eq('id', id as any)
       .select()
       .single();
 
@@ -291,7 +292,7 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
       throw error;
     }
 
-    return data as DetailedPrayerTime;
+    return data as unknown as DetailedPrayerTime;
   } catch (error) {
     console.error('Error updating prayer time entry:', error);
     toast.error("Failed to update prayer time in database");
@@ -308,11 +309,11 @@ export const deletePrayerTimeEntry = async (id: string): Promise<boolean> => {
       return false;
     }
     
-    // Delete from Supabase
+    // Delete from Supabase - fix type casting
     const { error } = await supabase
       .from('prayer_times')
       .delete()
-      .eq('id', id);
+      .eq('id', id as any);
 
     if (error) {
       console.error("Supabase error deleting prayer time:", error);
@@ -337,7 +338,7 @@ export const deleteAllPrayerTimes = async (): Promise<boolean> => {
     const { error } = await supabase
       .from('prayer_times')
       .delete()
-      .gte('id', '00000000-0000-0000-0000-000000000000');
+      .gte('id', '00000000-0000-0000-0000-000000000000' as any);
     
     if (error) {
       console.error("Supabase error deleting all prayer times:", error);
