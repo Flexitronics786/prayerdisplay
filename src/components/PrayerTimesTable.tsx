@@ -3,6 +3,7 @@ import { PrayerTime } from "@/types";
 import { fetchAllPrayerTimes } from "@/services/dataService";
 import { useState, useEffect } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
+import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
 import { AsrTile } from "./prayer-times/AsrTile";
@@ -18,6 +19,9 @@ interface PrayerTimesTableProps {
 const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
   const isTV = useTVDisplay();
+
+  // Use our new hook for prayer time alerts
+  usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
     const loadDetailedTimes = async () => {
