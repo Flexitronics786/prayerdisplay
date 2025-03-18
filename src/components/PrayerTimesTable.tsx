@@ -43,7 +43,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   return (
     <div className="animate-scale-in">
       <div className="mb-2 sm:mb-3">
-        <h3 className="text-2xl sm:text-3xl font-bold text-amber-800 font-serif">Prayer Times</h3>
+        <h3 className="text-2xl sm:text-3xl font-bold text-black font-serif">Prayer Times</h3>
       </div>
 
       <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3 tv-prayer-grid' : 'mobile-prayer-grid'}`}>

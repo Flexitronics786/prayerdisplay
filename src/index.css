@@ -4,3 +4,16 @@
 @import './styles/cards.css';
 @import './styles/tv-mode.css';
 @import './styles/responsive.css';
+
+/* Global text color adjustment */
+.prayer-tile-header h3,
+.prayer-tile-header div,
+.prayer-card span,
+.prayer-card span.clock-text,
+.prayer-card span.tv-time-text {
+  color: #000000 !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #000000;
+}
