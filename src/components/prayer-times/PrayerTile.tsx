@@ -27,14 +27,16 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
         ${isActive ? "active-prayer" : isNext ? "next-prayer" : ""}`}
     >
       <div className={`prayer-tile-header ${headerClass}`}>
-        <h3 className={`text-xl sm:text-2xl font-extrabold text-black ${isTV ? "text-xl" : ""}`}>
-          {title}
-        </h3>
-        {arabicTitle && (
-          <div className={`text-sm sm:text-base mt-0.5 font-bold text-black ${isTV ? "text-sm" : ""}`}>
-            {arabicTitle}
-          </div>
-        )}
+        <div className="flex justify-between items-center px-2">
+          <h3 className={`text-xl sm:text-2xl font-extrabold text-black ${isTV ? "text-xl" : ""}`}>
+            {title}
+          </h3>
+          {arabicTitle && (
+            <div className={`text-xl sm:text-3xl mt-0.5 font-bold text-black ${isTV ? "text-2xl" : ""}`}>
+              {arabicTitle}
+            </div>
+          )}
+        </div>
       </div>
       <div className="px-2 sm:px-4 py-2">
         {items.map((item, index) => (
