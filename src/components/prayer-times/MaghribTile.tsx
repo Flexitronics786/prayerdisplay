@@ -20,7 +20,7 @@ export const MaghribTile: React.FC<MaghribTileProps> = ({ prayerTimes, detailedT
       isNext={maghribDetails.isNext}
       items={[
         {
-          label: "Start",
+          label: "Iftar",
           time: getMaghribTime(detailedTimes, prayerTimes)
         }
       ]}

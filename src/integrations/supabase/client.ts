@@ -22,23 +22,6 @@ export const supabase = createClient<Database>(
     auth: {
       autoRefreshToken: true,
       persistSession: true
-    },
-    realtime: {
-      // Enable realtime subscriptions
-      params: {
-        eventsPerSecond: 10
-      }
     }
   }
 );
-
-// Helper function to check if we can connect to Supabase
-export const testSupabaseConnection = async (): Promise<boolean> => {
-  try {
-    const { error } = await supabase.from('prayer_times').select('count', { count: 'exact', head: true });
-    return !error;
-  } catch (e) {
-    console.error('Error testing Supabase connection:', e);
-    return false;
-  }
-};

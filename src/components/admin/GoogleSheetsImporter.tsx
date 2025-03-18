@@ -21,8 +21,7 @@ import {
 } from "@/components/ui/select";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertCircle } from 'lucide-react';
-import { testSupabaseConnection } from "@/integrations/supabase/client";
+import { Loader2, Upload } from 'lucide-react';
 
 interface GoogleSheetsImporterProps {
   onImportComplete?: () => void;
@@ -34,26 +33,6 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
   const [hasHeaderRow, setHasHeaderRow] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
-
-  // Check Supabase connection on component mount
-  const checkConnection = async () => {
-    setIsCheckingConnection(true);
-    try {
-      const isConnected = await testSupabaseConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
-      if (!isConnected) {
-        toast.warning("Cannot connect to database. Data might only be saved locally.");
-      }
-    } catch (error) {
-      console.error("Error checking connection:", error);
-      setConnectionStatus('disconnected');
-      toast.warning("Cannot connect to database. Data might only be saved locally.");
-    } finally {
-      setIsCheckingConnection(false);
-    }
-  };
 
   const handleImport = async () => {
     if (!sheetId.trim()) {
@@ -62,17 +41,6 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
     }
 
     setIsImporting(true);
-
-    // Check connection before import
-    try {
-      const isConnected = await testSupabaseConnection();
-      if (!isConnected) {
-        toast.warning("Cannot connect to database. Import will continue but data might only be saved locally.");
-      }
-    } catch (error) {
-      console.error("Connection check failed:", error);
-      toast.warning("Connection check failed. Import will continue but data might only be saved locally.");
-    }
 
     try {
       const result = await importPrayerTimesFromSheet(
@@ -111,17 +79,6 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {connectionStatus === 'disconnected' && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
-              <p className="text-sm text-yellow-700">
-                Database connection unavailable. Data will be saved locally only until connection is restored.
-              </p>
-            </div>
-          </div>
-        )}
-
         <div className="space-y-2">
           <Label htmlFor="sheetId">Google Sheet ID</Label>
           <Input
@@ -176,25 +133,6 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
             </SelectContent>
           </Select>
         </div>
-
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={checkConnection}
-          disabled={isCheckingConnection}
-          className="mt-2"
-        >
-          {isCheckingConnection ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Checking connection...
-            </>
-          ) : (
-            <>
-              Check database connection
-            </>
-          )}
-        </Button>
       </CardContent>
       <CardFooter>
         <Button onClick={handleImport} disabled={isImporting} className="w-full">
