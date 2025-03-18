@@ -670,7 +670,7 @@ const processCSVData = (csvData: string[][]): Omit<DetailedPrayerTime, 'id' | 'c
   });
 };
 
-// Function to import prayer times from CSV file
+// Function to import prayer times from CSV data
 export const importFromCSV = async (csvText: string): Promise<{
   success: boolean;
   count: number;
@@ -694,6 +694,7 @@ export const importFromCSV = async (csvText: string): Promise<{
     // Try to add all entries to the database
     let successCount = 0;
     let failCount = 0;
+    let supabaseSuccessCount = 0;
     
     for (const entry of prayerTimes) {
       try {
@@ -703,7 +704,10 @@ export const importFromCSV = async (csvText: string): Promise<{
           continue;
         }
         
-        await addPrayerTimeEntry(entry);
+        const result = await addPrayerTimeEntry(entry);
+        if (result && !result.id.toString().startsWith('temp-')) {
+          supabaseSuccessCount++;
+        }
         successCount++;
       } catch (error) {
         console.error(`Failed to add entry for date ${entry.date}:`, error);
@@ -711,7 +715,7 @@ export const importFromCSV = async (csvText: string): Promise<{
       }
     }
     
-    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
+    console.log(`Import completed: ${successCount} entries added (${supabaseSuccessCount} to Supabase), ${failCount} failed`);
     
     if (successCount === 0 && failCount > 0) {
       return {
@@ -724,6 +728,10 @@ export const importFromCSV = async (csvText: string): Promise<{
     let warningMessage = '';
     if (failCount > 0) {
       warningMessage = `Note: ${failCount} entries failed to import.`;
+    }
+    
+    if (supabaseSuccessCount === 0 && successCount > 0) {
+      warningMessage += ` Warning: All entries were only saved locally. Check your internet connection and try again.`;
     }
     
     return {
@@ -819,14 +827,10 @@ export const importPrayerTimesFromSheet = async (
     }
     
     console.log("CSV data retrieved, importing...");
-    return await importFromCSV(csvText);
-  } catch (error) {
-    console.error("Error importing from Google Sheet:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return { 
-      success: false,
-      count: 0,
-      error: `Error: ${errorMessage}`
-    };
-  }
-};
+    
+    // Clear existing cache before import
+    clearPrayerTimesCache();
+    
+    // Try to establish a test connection to Supabase before proceeding
+    try {
+      const {

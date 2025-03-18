@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Loader2, Upload } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Loader2, Upload, AlertCircle } from "lucide-react";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { testSupabaseConnection } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ImportPrayerTimesDialogProps {
   isOpen: boolean;
@@ -34,6 +36,8 @@ export const ImportPrayerTimesDialog = ({
   onOpenChange 
 }: ImportPrayerTimesDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown');
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const queryClient = useQueryClient();
   
   const [importData, setImportData] = useState({
@@ -42,6 +46,30 @@ export const ImportPrayerTimesDialog = ({
     hasHeaderRow: true,
     isPublic: true
   });
+  
+  // Check connection when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      checkConnection();
+    }
+  }, [isOpen]);
+  
+  const checkConnection = async () => {
+    setIsCheckingConnection(true);
+    try {
+      const isConnected = await testSupabaseConnection();
+      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+      if (!isConnected) {
+        toast.warning("Cannot connect to database. Data might only be saved locally.");
+      }
+    } catch (error) {
+      console.error("Error checking connection:", error);
+      setConnectionStatus('disconnected');
+      toast.warning("Cannot connect to database. Data might only be saved locally.");
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -89,6 +117,12 @@ export const ImportPrayerTimesDialog = ({
         return;
       }
       
+      // Double-check connection before import
+      const isConnected = await testSupabaseConnection();
+      if (!isConnected) {
+        toast.warning("Cannot connect to database. Import will continue but data might only be saved locally.");
+      }
+      
       const result = await importPrayerTimesFromSheet(
         sheetId,
         importData.tabName,
@@ -131,6 +165,15 @@ export const ImportPrayerTimesDialog = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleImport} className="space-y-4">
+          {connectionStatus === 'disconnected' && (
+            <Alert variant="warning" className="bg-yellow-50 border-yellow-300">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-700">
+                Database connection unavailable. Data will be saved locally only until connection is restored.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="sheetUrl">Google Sheet URL</Label>
             <Input
@@ -188,6 +231,26 @@ export const ImportPrayerTimesDialog = ({
               </SelectContent>
             </Select>
           </div>
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            onClick={checkConnection}
+            disabled={isCheckingConnection}
+            className="mt-2"
+          >
+            {isCheckingConnection ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking connection...
+              </>
+            ) : (
+              <>
+                Check database connection
+              </>
+            )}
+          </Button>
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
