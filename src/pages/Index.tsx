@@ -5,6 +5,7 @@ import PrayerTimesTable from "@/components/PrayerTimesTable";
 import PhoneReminder from "@/components/PhoneReminder";
 import PageHeader from "@/components/PageHeader";
 import LoadingScreen from "@/components/LoadingScreen";
+import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
@@ -30,6 +31,7 @@ const Index = () => {
   return (
     <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
+      <KeepAwake />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">
         <div className="grid grid-cols-1 gap-4 flex-grow">
