@@ -3,6 +3,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { fetchPrayerTimes } from "@/services/dataService";
 import { PrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { useTVDisplay } from "./useTVDisplay";
 
 export const usePrayerTimesData = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
@@ -10,6 +11,7 @@ export const usePrayerTimesData = () => {
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
   const dataLoadingRef = useRef(false);
   const lastLoadTimeRef = useRef<number>(0);
+  const isTV = useTVDisplay();
 
   const loadData = useCallback(async (force = false) => {
     // Prevent multiple simultaneous requests
@@ -19,11 +21,11 @@ export const usePrayerTimesData = () => {
     }
     
     // Throttle requests to prevent excessive reloading
-    // Only reload if it's been at least 5 seconds since the last load
-    // unless force=true
+    // TV displays have more aggressive refresh (2 seconds instead of 5)
+    const throttleTime = isTV ? 2000 : 5000;
     const now = Date.now();
-    if (!force && now - lastLoadTimeRef.current < 5000) {
-      console.log("Throttling data load, last load was less than 5 seconds ago");
+    if (!force && now - lastLoadTimeRef.current < throttleTime) {
+      console.log(`Throttling data load, last load was less than ${throttleTime/1000} seconds ago`);
       return;
     }
     
@@ -31,7 +33,16 @@ export const usePrayerTimesData = () => {
       dataLoadingRef.current = true;
       setIsLoading(true);
       console.log("Loading prayer times from server...");
-      const times = await fetchPrayerTimes();
+      
+      // Clear cache if it's a forced refresh and we're on TV
+      if (force && isTV) {
+        console.log("TV mode: Clearing prayer times cache before loading");
+        localStorage.removeItem('mosque-prayer-times');
+        const today = new Date().toISOString().split('T')[0];
+        localStorage.removeItem(`prayer-times-cache-${today}`);
+      }
+      
+      const times = await fetchPrayerTimes(force);
       console.log("Successfully loaded prayer times:", times);
       setPrayerTimes(times);
       lastLoadTimeRef.current = Date.now();
@@ -42,7 +53,7 @@ export const usePrayerTimesData = () => {
       setIsLoading(false);
       dataLoadingRef.current = false;
     }
-  }, []);
+  }, [isTV]);
 
   const scheduleNextCheck = useCallback((prayers: PrayerTime[]) => {
     if (nextCheckTimer) {
@@ -89,18 +100,22 @@ export const usePrayerTimesData = () => {
     // Initial data load with force=true to ensure fresh data
     loadData(true);
 
-    // Set up a regular refresh interval (every 3 minutes as a fallback)
-    // Reduced from 10 to 3 minutes for more frequent updates, especially for TV displays
-    const regularRefreshInterval = setInterval(() => {
-      console.log("Regular refresh interval triggered");
-      loadData(true);
-    }, 3 * 60 * 1000);
+    // Set up a regular refresh interval (more frequent for TV displays)
+    const refreshInterval = setInterval(() => {
+      console.log(`Regular refresh interval triggered (${isTV ? 'TV' : 'normal'} mode)`);
+      loadData(isTV); // force=true for TV displays
+    }, isTV ? 2 * 60 * 1000 : 3 * 60 * 1000); // 2 minutes for TV, 3 minutes otherwise
 
-    // Hard refresh to ensure data consistency every hour
+    // Hard refresh to ensure data consistency
     const hourlyRefreshInterval = setInterval(() => {
       console.log("Hourly hard refresh triggered");
-      // Force a reload of the page to ensure all state is fresh
-      window.location.reload();
+      if (isTV) {
+        // Force a reload of the page for TV displays to clear any memory issues
+        window.location.reload();
+      } else {
+        // Just reload data for non-TV displays
+        loadData(true);
+      }
     }, 60 * 60 * 1000);
 
     // Subscribe to changes on the prayer_times table
@@ -140,13 +155,13 @@ export const usePrayerTimesData = () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
-      clearInterval(regularRefreshInterval);
+      clearInterval(refreshInterval);
       clearInterval(hourlyRefreshInterval);
       clearTimeout(loadingCheckTimeout);
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [loadData, prayerTimes.length, isLoading]);
+  }, [loadData, prayerTimes.length, isLoading, isTV]);
 
   return { prayerTimes, isLoading, loadData };
 };

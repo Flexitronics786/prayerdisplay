@@ -13,16 +13,18 @@ import { JummahTile } from "./prayer-times/JummahTile";
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
   compactView?: boolean;
+  lastRefreshTime?: number;
 }
 
-const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
+const PrayerTimesTable = ({ prayerTimes, compactView = false, lastRefreshTime = 0 }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
   const isTV = useTVDisplay();
   
   const loadDetailedTimes = useCallback(async () => {
     try {
       console.log("Loading detailed prayer times...");
-      const times = await fetchAllPrayerTimes();
+      // Force fresh data fetch every time for TV displays
+      const times = await fetchAllPrayerTimes(isTV);
       const today = new Date().toISOString().split('T')[0];
       const todayTimes = times.find(t => t.date === today);
       
@@ -35,22 +37,22 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
     } catch (error) {
       console.error("Error loading detailed prayer times:", error);
     }
-  }, []);
+  }, [isTV]);
 
   useEffect(() => {
     loadDetailedTimes();
     
-    // Set up a refresh interval for TV displays (every 5 minutes)
+    // Set up a refresh interval for TV displays (every 3 minutes)
     const refreshInterval = isTV ? 
       setInterval(() => {
         console.log("TV refresh interval triggered for detailed times");
         loadDetailedTimes();
-      }, 5 * 60 * 1000) : null;
+      }, 3 * 60 * 1000) : null;
       
     return () => {
       if (refreshInterval) clearInterval(refreshInterval);
     };
-  }, [loadDetailedTimes, isTV]);
+  }, [loadDetailedTimes, isTV, lastRefreshTime]);
   
   // Reload detailed times when prayer times change
   useEffect(() => {

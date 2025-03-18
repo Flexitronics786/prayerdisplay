@@ -9,24 +9,33 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
+import { toast } from "sonner";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
   const isTV = useTVDisplay();
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, loadData } = usePrayerTimesData();
+  const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
 
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
     }, 60000);
     
-    // Force a refresh every 15 minutes for TV displays
+    // Force a more aggressive refresh for TV displays
     const refreshInterval = isTV ? 
       setInterval(() => {
-        console.log("TV periodic refresh triggered");
+        console.log("TV periodic refresh triggered at", new Date().toISOString());
+        // Clear localStorage cache to force fresh data
+        if (isTV) {
+          localStorage.removeItem('mosque-prayer-times');
+          const cacheKey = `prayer-times-cache-${new Date().toISOString().split('T')[0]}`;
+          localStorage.removeItem(cacheKey);
+        }
         loadData(true);
-      }, 15 * 60 * 1000) : null;
+        setLastRefreshTime(Date.now());
+      }, 5 * 60 * 1000) : null; // Refresh every 5 minutes for TV
     
     return () => {
       clearInterval(dateInterval);
@@ -36,17 +45,46 @@ const Index = () => {
 
   // Add a manual reload function for debugging
   useEffect(() => {
+    // Initial load with forced refresh for TV displays
+    if (isTV) {
+      console.log("Initial TV mode load with forced refresh");
+      setTimeout(() => {
+        loadData(true);
+      }, 1000);
+    }
+    
     // Expose reload function globally for debugging
     (window as any).reloadPrayerTimes = () => {
       console.log("Manual reload triggered");
+      
+      // Clear any cached prayer times
+      localStorage.removeItem('mosque-prayer-times');
+      const today = new Date().toISOString().split('T')[0];
+      const cacheKey = `prayer-times-cache-${today}`;
+      localStorage.removeItem(cacheKey);
+      
       loadData(true);
+      toast.success("Prayer times manually refreshed");
+      setLastRefreshTime(Date.now());
     };
     
     // Attach to unload event to clean up
     return () => {
       delete (window as any).reloadPrayerTimes;
     };
-  }, [loadData]);
+  }, [loadData, isTV]);
+
+  // Force a full page reload every 30 minutes for TV displays to clear any memory issues
+  useEffect(() => {
+    if (!isTV) return;
+    
+    const fullReloadInterval = setInterval(() => {
+      console.log("Performing full page reload for TV display");
+      window.location.reload();
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => clearInterval(fullReloadInterval);
+  }, [isTV]);
 
   if (isLoading && prayerTimes.length === 0) {
     return <LoadingScreen />;
@@ -65,7 +103,11 @@ const Index = () => {
             <PageHeader currentDate={currentDate} isTV={isTV} />
             
             <div className="flex-grow">
-              <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
+              <PrayerTimesTable 
+                prayerTimes={prayerTimes} 
+                compactView={isTV} 
+                lastRefreshTime={lastRefreshTime}
+              />
             </div>
             
             <PhoneReminder isTVMode={isTV} />

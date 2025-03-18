@@ -135,52 +135,109 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   return updatedTimes;
 };
 
-export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
+export const fetchPrayerTimes = async (forceRefresh = false): Promise<PrayerTime[]> => {
   try {
-    // Try to get today's prayer times from Supabase
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const cacheKey = `prayer-times-cache-${today}`;
+    
+    // Check cache first unless forceRefresh is true
+    if (!forceRefresh) {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const cacheTime = parsed.timestamp || 0;
+        const now = Date.now();
+        // Use cache if it's less than 5 minutes old
+        if (now - cacheTime < 5 * 60 * 1000) {
+          console.log("Using cached prayer times data (< 5 min old)");
+          return markActivePrayer(parsed.data);
+        }
+      }
+    }
+    
+    // Try to get today's prayer times from Supabase
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
       .eq('date', today);
 
     // Check if we have data for today
-    if (error || !data || data.length === 0) {
-      console.log('Falling back to localStorage', error);
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('No data found in Supabase for today, checking local storage');
       
       // Try to get from local fallback storage
       const localTimes = localStorage.getItem('local-prayer-times');
       if (localTimes) {
-        const parsedTimes = JSON.parse(localTimes);
-        // Find today's entry from local storage
-        const todayEntry = parsedTimes.find((entry: any) => entry.date === today);
-        if (todayEntry) {
-          console.log("Using locally stored prayer time for today:", todayEntry);
-          return markActivePrayer(mapToDisplayFormat(todayEntry));
+        try {
+          const parsedTimes = JSON.parse(localTimes);
+          // Find today's entry from local storage
+          const todayEntry = parsedTimes.find((entry: any) => entry.date === today);
+          if (todayEntry) {
+            console.log("Using locally stored prayer time for today:", todayEntry);
+            const formattedTimes = markActivePrayer(mapToDisplayFormat(todayEntry));
+            
+            // Cache the result
+            localStorage.setItem(cacheKey, JSON.stringify({
+              data: formattedTimes,
+              timestamp: Date.now()
+            }));
+            
+            return formattedTimes;
+          }
+        } catch (parseError) {
+          console.error("Error parsing local times:", parseError);
         }
       }
       
       // Fall back to localStorage if no data found for today
       const saved = localStorage.getItem(PRAYER_TIMES_KEY);
-      const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
-      return markActivePrayer(prayerTimes);
+      if (!saved) {
+        console.log("No saved prayer times found, using defaults");
+        return markActivePrayer(defaultPrayerTimes);
+      }
+      
+      try {
+        const prayerTimes = JSON.parse(saved);
+        console.log("Using saved prayer times from key:", PRAYER_TIMES_KEY);
+        return markActivePrayer(prayerTimes);
+      } catch (parseError) {
+        console.error("Error parsing saved prayer times:", parseError);
+        return markActivePrayer(defaultPrayerTimes);
+      }
     }
 
     // Map Supabase data to PrayerTime format
-    console.log("Fetched prayer times from database");
+    console.log("Fetched prayer times from database for today:", data[0]);
     const formattedTimes = mapToDisplayFormat(data[0]);
-    return markActivePrayer(formattedTimes);
+    const markedTimes = markActivePrayer(formattedTimes);
+    
+    // Cache the result
+    localStorage.setItem(cacheKey, JSON.stringify({
+      data: markedTimes,
+      timestamp: Date.now()
+    }));
+    
+    return markedTimes;
   } catch (error) {
     console.error('Error fetching prayer times:', error);
     
     // Try to get data from local storage as fallback
-    const storedTimes = localStorage.getItem('local-prayer-times');
+    const storedTimes = localStorage.getItem(PRAYER_TIMES_KEY);
     if (storedTimes) {
-      console.log("Using cached prayer times from local storage");
-      return JSON.parse(storedTimes);
+      try {
+        console.log("Using cached prayer times from local storage");
+        return markActivePrayer(JSON.parse(storedTimes));
+      } catch (parseError) {
+        console.error("Error parsing stored times:", parseError);
+      }
     }
     
-    throw error;
+    return markActivePrayer(defaultPrayerTimes);
   }
 };
 
@@ -220,8 +277,15 @@ const getDefaultHadith = (): Hadith => {
 };
 
 // Functions for the detailed prayer times table
-export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
+export const fetchAllPrayerTimes = async (forceRefresh = false): Promise<DetailedPrayerTime[]> => {
   try {
+    // Clear any cache if forceRefresh is true
+    if (forceRefresh) {
+      console.log("Force refreshing prayer times data from server");
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.removeItem(`prayer-times-cache-${today}`);
+    }
+    
     // First try to fetch from Supabase
     const { data, error } = await supabase
       .from('prayer_times')
@@ -230,39 +294,56 @@ export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
 
     let prayerTimes: DetailedPrayerTime[] = [];
     
-    if (error || !data || data.length === 0) {
-      console.error('Error or no data from Supabase:', error);
-    } else {
+    if (error) {
+      console.error('Error fetching from Supabase:', error);
+    } else if (data && data.length > 0) {
+      console.log(`Successfully fetched ${data.length} prayer times from Supabase`);
       prayerTimes = data as DetailedPrayerTime[];
+    } else {
+      console.log('No data found in Supabase');
     }
 
     // Also check local storage for any offline entries
     const localTimes = localStorage.getItem('local-prayer-times');
     if (localTimes) {
-      const parsedLocalTimes = JSON.parse(localTimes) as DetailedPrayerTime[];
-      // Merge with any data from Supabase, removing duplicates based on date
-      const existingDates = new Set(prayerTimes.map(entry => entry.date));
-      
-      for (const localEntry of parsedLocalTimes) {
-        // Only add if we don't already have an entry for this date
-        if (!existingDates.has(localEntry.date)) {
-          prayerTimes.push(localEntry);
-          existingDates.add(localEntry.date);
+      console.log("Found local prayer times data in storage");
+      try {
+        const parsedLocalTimes = JSON.parse(localTimes) as DetailedPrayerTime[];
+        // Merge with any data from Supabase, removing duplicates based on date
+        const existingDates = new Set(prayerTimes.map(entry => entry.date));
+        
+        for (const localEntry of parsedLocalTimes) {
+          // Only add if we don't already have an entry for this date
+          if (!existingDates.has(localEntry.date)) {
+            prayerTimes.push(localEntry);
+            existingDates.add(localEntry.date);
+          }
         }
+      } catch (parseError) {
+        console.error("Error parsing local prayer times:", parseError);
       }
     }
     
     // Sort by date
-    return prayerTimes.sort((a, b) => 
+    const sortedTimes = prayerTimes.sort((a, b) => 
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
+    
+    console.log(`Returning ${sortedTimes.length} prayer times entries (sorted by date)`);
+    return sortedTimes;
   } catch (error) {
     console.error('Error fetching all prayer times:', error);
     
     // Fallback to local storage completely
     const localTimes = localStorage.getItem('local-prayer-times');
     if (localTimes) {
-      return JSON.parse(localTimes) as DetailedPrayerTime[];
+      try {
+        const parsed = JSON.parse(localTimes) as DetailedPrayerTime[];
+        console.log(`Fallback: returning ${parsed.length} cached prayer times`);
+        return parsed;
+      } catch (parseError) {
+        console.error("Error parsing cached prayer times:", parseError);
+      }
     }
     
     return [];
