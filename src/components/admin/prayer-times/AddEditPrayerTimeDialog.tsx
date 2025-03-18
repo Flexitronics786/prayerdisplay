@@ -54,8 +54,14 @@ export const AddEditPrayerTimeDialog = ({
         return;
       }
       
+      // Set isha_second_jamat to an empty string
+      const updatedFormData = {
+        ...formData,
+        isha_second_jamat: ''
+      };
+      
       if (editingId) {
-        const result = await updatePrayerTimeEntry(editingId, formData);
+        const result = await updatePrayerTimeEntry(editingId, updatedFormData);
         if (result) {
           toast.success("Prayer time updated successfully");
           onOpenChange(false);
@@ -65,7 +71,7 @@ export const AddEditPrayerTimeDialog = ({
           toast.error("Failed to update prayer time");
         }
       } else {
-        const result = await addPrayerTimeEntry(formData);
+        const result = await addPrayerTimeEntry(updatedFormData);
         if (result) {
           toast.success("Prayer time added successfully");
           onOpenChange(false);
@@ -241,7 +247,7 @@ export const AddEditPrayerTimeDialog = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="maghrib_iftar">Maghrib/Iftar*</Label>
+              <Label htmlFor="maghrib_iftar">Maghrib Start*</Label>
               <div className="relative">
                 <Input
                   id="maghrib_iftar"
@@ -274,7 +280,7 @@ export const AddEditPrayerTimeDialog = ({
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="isha_first_jamat">Isha First Jamat*</Label>
+              <Label htmlFor="isha_first_jamat">Isha Jamat*</Label>
               <div className="relative">
                 <Input
                   id="isha_first_jamat"
@@ -290,20 +296,12 @@ export const AddEditPrayerTimeDialog = ({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="isha_second_jamat">Isha Second Jamat</Label>
-            <div className="relative">
-              <Input
-                id="isha_second_jamat"
-                name="isha_second_jamat"
-                type="time"
-                value={formData.isha_second_jamat}
-                onChange={handleInputChange}
-                className="pl-10"
-              />
-              <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
+          {/* Hidden field to keep isha_second_jamat in the form data but not displayed */}
+          <input 
+            type="hidden" 
+            name="isha_second_jamat" 
+            value="" 
+          />
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => {
