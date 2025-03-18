@@ -39,6 +39,7 @@ export const checkSupabaseConnection = async (): Promise<boolean> => {
     console.log("Testing Supabase connection...");
     const startTime = Date.now();
     
+    // Check the prayer_times table exists - use generic query format to avoid type issues
     const { error } = await supabase
       .from('prayer_times')
       .select('id', { count: 'exact', head: true })

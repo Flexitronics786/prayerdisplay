@@ -147,6 +147,7 @@ export const usePrayerTimesData = () => {
     loadData();
     checkConnection(true);
 
+    // Use type assertion for the subscription to avoid type errors
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', { 
