@@ -19,8 +19,9 @@ export const usePrayerTimesData = () => {
     try {
       dataLoadingRef.current = true;
       setIsLoading(true);
-      console.log("Loading prayer times...");
+      console.log("Loading prayer times from server...");
       const times = await fetchPrayerTimes();
+      console.log("Successfully loaded prayer times:", times);
       setPrayerTimes(times);
       scheduleNextCheck(times);
     } catch (error) {
@@ -73,20 +74,29 @@ export const usePrayerTimesData = () => {
   }, [loadData, nextCheckTimer]);
 
   useEffect(() => {
+    // Initial data load
     loadData();
 
+    // Set up a regular refresh interval (every 10 minutes) as a fallback
+    const regularRefreshInterval = setInterval(() => {
+      console.log("Regular refresh interval triggered");
+      loadData();
+    }, 10 * 60 * 1000);
+
+    // Subscribe to changes on the prayer_times table
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'prayer_times' 
-      }, () => {
-        console.log("Prayer times changed in database, reloading...");
+      }, (payload) => {
+        console.log("Prayer times changed in database, reloading...", payload);
         loadData();
       })
       .subscribe();
 
+    // Handle storage changes for multi-tab support
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
         console.log("Prayer times changed in local storage, reloading...");
@@ -100,6 +110,7 @@ export const usePrayerTimesData = () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
+      clearInterval(regularRefreshInterval);
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
