@@ -27,11 +27,11 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
         ${isActive ? "active-prayer" : isNext ? "next-prayer" : ""}`}
     >
       <div className={`prayer-tile-header ${headerClass}`}>
-        <h3 className={`text-xl sm:text-2xl font-extrabold ${isTV ? "text-xl" : ""}`}>
+        <h3 className={`text-xl sm:text-2xl font-extrabold text-amber-800 ${isTV ? "text-xl" : ""}`}>
           {title}
         </h3>
         {arabicTitle && (
-          <div className={`text-sm sm:text-base mt-0.5 font-bold ${isTV ? "text-sm" : ""}`}>
+          <div className={`text-sm sm:text-base mt-0.5 font-bold text-amber-800 ${isTV ? "text-sm" : ""}`}>
             {arabicTitle}
           </div>
         )}
