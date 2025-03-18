@@ -32,14 +32,6 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Clear local storage caches when needed
-export const clearPrayerTimesCache = () => {
-  localStorage.removeItem('local-prayer-times');
-  localStorage.removeItem('mosque-prayer-times');
-  localStorage.removeItem('prayer-times-last-refresh');
-  console.log('Prayer times cache cleared');
-};
-
 // Helper function to check if we can connect to Supabase
 export const testSupabaseConnection = async (): Promise<boolean> => {
   try {
