@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -23,7 +22,7 @@ export const usePrayerTimeAlerts = (
       try {
         const { data, error } = await supabase.storage
           .from('audio')
-          .createSignedUrl('alert-beep.mp3', 60 * 60 * 24); // 24 hour signed URL
+          .createSignedUrl('beep-125033.mp3', 60 * 60 * 24); // 24 hour signed URL
         
         if (error) {
           console.error("Error fetching audio URL:", error);
