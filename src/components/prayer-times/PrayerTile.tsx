@@ -45,9 +45,9 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
               ${index === 1 && title === "Fajr" ? "pt-1" : ""}
             `}
           >
-            <span className="text-amber-900 text-base sm:text-lg font-bold">{item.label}:</span>
+            <span className="text-black text-base sm:text-lg font-bold">{item.label}:</span>
             <span
-              className={`font-bold text-amber-950 text-xl sm:text-2xl clock-text ${
+              className={`font-bold text-black text-xl sm:text-2xl clock-text ${
                 isTV ? "tv-time-text" : ""
               }`}
             >
