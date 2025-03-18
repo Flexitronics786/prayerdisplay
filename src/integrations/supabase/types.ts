@@ -9,7 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      prayer_times: {
+        Row: {
+          asr_jamat: string | null
+          asr_start: string | null
+          created_at: string
+          date: string
+          day: string
+          fajr_jamat: string | null
+          id: string
+          isha_first_jamat: string | null
+          isha_second_jamat: string | null
+          isha_start: string | null
+          maghrib_iftar: string | null
+          sehri_end: string | null
+          sunrise: string | null
+          zuhr_jamat: string | null
+          zuhr_start: string | null
+        }
+        Insert: {
+          asr_jamat?: string | null
+          asr_start?: string | null
+          created_at?: string
+          date: string
+          day: string
+          fajr_jamat?: string | null
+          id?: string
+          isha_first_jamat?: string | null
+          isha_second_jamat?: string | null
+          isha_start?: string | null
+          maghrib_iftar?: string | null
+          sehri_end?: string | null
+          sunrise?: string | null
+          zuhr_jamat?: string | null
+          zuhr_start?: string | null
+        }
+        Update: {
+          asr_jamat?: string | null
+          asr_start?: string | null
+          created_at?: string
+          date?: string
+          day?: string
+          fajr_jamat?: string | null
+          id?: string
+          isha_first_jamat?: string | null
+          isha_second_jamat?: string | null
+          isha_start?: string | null
+          maghrib_iftar?: string | null
+          sehri_end?: string | null
+          sunrise?: string | null
+          zuhr_jamat?: string | null
+          zuhr_start?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
