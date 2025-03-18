@@ -1,6 +1,7 @@
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // This would be replaced with an actual API call to Supabase or Firebase
 const PRAYER_TIMES_KEY = 'mosque-prayer-times';
@@ -139,14 +140,21 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
   try {
     // Try to get today's prayer times from Supabase
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    console.log("Fetching prayer times for today:", today);
+    
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
       .eq('date', today);
 
     // Check if we have data for today
-    if (error || !data || data.length === 0) {
-      console.log('Falling back to localStorage', error);
+    if (error) {
+      console.error('Supabase error fetching prayer times:', error);
+      throw error;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('No prayer times found for today in database, checking local storage');
       
       // Try to get from local fallback storage
       const localTimes = localStorage.getItem('local-prayer-times');
@@ -160,14 +168,15 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
         }
       }
       
-      // Fall back to localStorage if no data found for today
+      // Fall back to default times if no data found for today
+      console.log("No data found for today, using default prayer times");
       const saved = localStorage.getItem(PRAYER_TIMES_KEY);
       const prayerTimes = saved ? JSON.parse(saved) : defaultPrayerTimes;
       return markActivePrayer(prayerTimes);
     }
 
     // Map Supabase data to PrayerTime format
-    console.log("Fetched prayer times from database");
+    console.log("Fetched prayer times from database:", data[0]);
     const formattedTimes = mapToDisplayFormat(data[0]);
     return markActivePrayer(formattedTimes);
   } catch (error) {
@@ -177,6 +186,14 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
     const storedTimes = localStorage.getItem('local-prayer-times');
     if (storedTimes) {
       console.log("Using cached prayer times from local storage");
+      const parsedTimes = JSON.parse(storedTimes);
+      const today = new Date().toISOString().split('T')[0];
+      const todayEntry = parsedTimes.find((entry: any) => entry.date === today);
+      
+      if (todayEntry) {
+        return markActivePrayer(mapToDisplayFormat(todayEntry));
+      }
+      
       return JSON.parse(storedTimes);
     }
     
@@ -222,40 +239,68 @@ const getDefaultHadith = (): Hadith => {
 // Functions for the detailed prayer times table
 export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
   try {
+    console.log("Fetching all prayer times from database...");
     // First try to fetch from Supabase
     const { data, error } = await supabase
       .from('prayer_times')
       .select('*')
       .order('date', { ascending: true });
 
-    let prayerTimes: DetailedPrayerTime[] = [];
-    
-    if (error || !data || data.length === 0) {
-      console.error('Error or no data from Supabase:', error);
-    } else {
-      prayerTimes = data as DetailedPrayerTime[];
+    if (error) {
+      console.error('Error fetching prayer times from Supabase:', error);
+      throw error;
     }
-
-    // Also check local storage for any offline entries
-    const localTimes = localStorage.getItem('local-prayer-times');
-    if (localTimes) {
-      const parsedLocalTimes = JSON.parse(localTimes) as DetailedPrayerTime[];
-      // Merge with any data from Supabase, removing duplicates based on date
-      const existingDates = new Set(prayerTimes.map(entry => entry.date));
+    
+    if (!data || data.length === 0) {
+      console.log("No prayer times found in database, checking local storage");
       
-      for (const localEntry of parsedLocalTimes) {
-        // Only add if we don't already have an entry for this date
-        if (!existingDates.has(localEntry.date)) {
-          prayerTimes.push(localEntry);
-          existingDates.add(localEntry.date);
+      // Check if we have data in local storage
+      const localTimes = localStorage.getItem('local-prayer-times');
+      if (localTimes) {
+        console.log("Found prayer times in local storage, trying to sync with database");
+        const parsedLocalTimes = JSON.parse(localTimes) as DetailedPrayerTime[];
+        
+        // Try to sync local data with database
+        for (const entry of parsedLocalTimes) {
+          try {
+            // Skip entries with temp IDs as they will be re-inserted
+            if (!entry.id.startsWith('temp-')) {
+              continue;
+            }
+            
+            const { id, created_at, ...entryWithoutId } = entry;
+            await addPrayerTimeEntry(entryWithoutId);
+            console.log("Synced local entry to database:", entry.date);
+          } catch (syncError) {
+            console.error("Failed to sync entry for date:", entry.date, syncError);
+          }
         }
+        
+        // Refetch from database after sync
+        const { data: syncedData, error: syncedError } = await supabase
+          .from('prayer_times')
+          .select('*')
+          .order('date', { ascending: true });
+          
+        if (!syncedError && syncedData && syncedData.length > 0) {
+          console.log("Successfully fetched synced prayer times:", syncedData.length);
+          return syncedData as DetailedPrayerTime[];
+        }
+        
+        console.log("Returning local prayer times:", parsedLocalTimes.length);
+        return parsedLocalTimes;
       }
+      
+      console.log("No prayer times found in local storage either");
+      return [];
     }
     
-    // Sort by date
-    return prayerTimes.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    console.log("Successfully fetched prayer times from database:", data.length);
+    
+    // Also update local storage for redundancy
+    localStorage.setItem('local-prayer-times', JSON.stringify(data));
+    
+    return data as DetailedPrayerTime[];
   } catch (error) {
     console.error('Error fetching all prayer times:', error);
     
@@ -271,7 +316,19 @@ export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
 
 export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 'created_at'>): Promise<DetailedPrayerTime | null> => {
   try {
-    console.log("Adding prayer time entry:", entry);
+    console.log("Adding prayer time entry to database:", entry);
+    
+    // Try to establish a test connection to Supabase before proceeding
+    try {
+      const { error: testError } = await supabase.from('prayer_times').select('id', { count: 'exact', head: true });
+      if (testError) {
+        console.error("Supabase connection test failed:", testError);
+        throw new Error(`Database connection error: ${testError.message}`);
+      }
+    } catch (testError) {
+      console.error("Failed to test Supabase connection:", testError);
+      throw testError;
+    }
     
     // Always try to add to Supabase first
     const { data, error } = await supabase
@@ -308,6 +365,7 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
     return data as DetailedPrayerTime;
   } catch (error) {
     console.error('Error in addPrayerTimeEntry:', error);
+    toast.error("Failed to save prayer time to database. Saved locally instead.");
     
     // Create a fallback entry with a temporary ID
     const fallbackEntry: DetailedPrayerTime = {
@@ -454,6 +512,7 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
     return updatedEntry;
   } catch (error) {
     console.error('Error updating prayer time entry:', error);
+    toast.error("Failed to update prayer time in database");
     return null;
   }
 };
@@ -618,9 +677,26 @@ export const importFromCSV = async (csvText: string): Promise<{
     const prayerTimes = processCSVData(parsed);
     console.log("Processed prayer times:", prayerTimes);
     
+    // Test Supabase connection before attempting to add entries
+    try {
+      const { error: testError } = await supabase.from('prayer_times').select('id', { count: 'exact', head: true });
+      if (testError) {
+        console.error("Supabase connection test failed during import:", testError);
+        throw new Error(`Database connection error: ${testError.message}`);
+      }
+    } catch (testError) {
+      console.error("Failed to test Supabase connection during import:", testError);
+      return {
+        success: false,
+        count: 0,
+        error: "Cannot connect to database. Please check your connection and try again."
+      };
+    }
+    
     // Try to add all entries to the database
     let successCount = 0;
     let failCount = 0;
+    let localOnlyCount = 0;
     
     for (const entry of prayerTimes) {
       try {
@@ -630,17 +706,25 @@ export const importFromCSV = async (csvText: string): Promise<{
           continue;
         }
         
-        await addPrayerTimeEntry(entry);
-        successCount++;
+        const result = await addPrayerTimeEntry(entry);
+        if (result) {
+          if (result.id.startsWith('temp-')) {
+            localOnlyCount++;
+          } else {
+            successCount++;
+          }
+        } else {
+          failCount++;
+        }
       } catch (error) {
         console.error(`Failed to add entry for date ${entry.date}:`, error);
         failCount++;
       }
     }
     
-    console.log(`Import completed: ${successCount} entries added, ${failCount} failed`);
+    console.log(`Import completed: ${successCount} entries added to DB, ${localOnlyCount} saved locally only, ${failCount} failed`);
     
-    if (successCount === 0 && failCount > 0) {
+    if (successCount === 0 && localOnlyCount === 0 && failCount > 0) {
       return {
         success: false,
         count: 0,
@@ -649,13 +733,16 @@ export const importFromCSV = async (csvText: string): Promise<{
     }
     
     let warningMessage = '';
+    if (localOnlyCount > 0) {
+      warningMessage = `${localOnlyCount} entries were saved locally but couldn't be added to the database.`;
+    }
     if (failCount > 0) {
-      warningMessage = `Note: ${failCount} entries failed to import.`;
+      warningMessage += ` ${failCount} entries failed to import.`;
     }
     
     return {
       success: true,
-      count: successCount,
+      count: successCount + localOnlyCount,
       error: warningMessage.length > 0 ? warningMessage : undefined
     };
   } catch (error) {
@@ -748,12 +835,4 @@ export const importPrayerTimesFromSheet = async (
     console.log("CSV data retrieved, importing...");
     return await importFromCSV(csvText);
   } catch (error) {
-    console.error("Error importing from Google Sheet:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return { 
-      success: false,
-      count: 0,
-      error: `Error: ${errorMessage}`
-    };
-  }
-};
+    console.error("Error importing from Google Sheet

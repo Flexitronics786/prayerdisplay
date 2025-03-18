@@ -23,6 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ImportPrayerTimesDialogProps {
   isOpen: boolean;
@@ -34,6 +40,8 @@ export const ImportPrayerTimesDialog = ({
   onOpenChange 
 }: ImportPrayerTimesDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error' | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
   const [importData, setImportData] = useState({
@@ -50,6 +58,30 @@ export const ImportPrayerTimesDialog = ({
   
   const handleImportSelectChange = (name: string, value: string) => {
     setImportData(prev => ({ ...prev, [name]: value === 'true' }));
+  };
+  
+  const checkDatabaseConnection = async () => {
+    setConnectionStatus('checking');
+    setConnectionError(null);
+    
+    try {
+      const { error } = await supabase.from('prayer_times').select('count(*)', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error("Database connection error:", error);
+        setConnectionStatus('error');
+        setConnectionError(error.message);
+        return false;
+      }
+      
+      setConnectionStatus('connected');
+      return true;
+    } catch (err) {
+      console.error("Failed to check database connection:", err);
+      setConnectionStatus('error');
+      setConnectionError(err instanceof Error ? err.message : "Unknown connection error");
+      return false;
+    }
   };
   
   const extractSheetId = (url: string): string => {
@@ -73,6 +105,13 @@ export const ImportPrayerTimesDialog = ({
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
+    // First check database connection
+    const isConnected = await checkDatabaseConnection();
+    
+    if (!isConnected) {
+      toast.error("Cannot connect to database. Prayer times will be saved locally only.");
+    }
     
     try {
       if (!importData.sheetUrl) {
@@ -99,7 +138,7 @@ export const ImportPrayerTimesDialog = ({
       if (result.success) {
         toast.success(`Successfully imported ${result.count} prayer times`);
         if (result.error) {
-          toast.warning(result.error);
+          toast.error(result.error);
         }
         onOpenChange(false);
         queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
@@ -130,6 +169,16 @@ export const ImportPrayerTimesDialog = ({
             The sheet must be publicly accessible and have the correct column format.
           </DialogDescription>
         </DialogHeader>
+        
+        {connectionStatus === 'error' && (
+          <Alert variant="destructive">
+            <AlertTitle>Database Connection Error</AlertTitle>
+            <AlertDescription>
+              {connectionError || "Could not connect to the database. Data will be saved locally only."}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handleImport} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="sheetUrl">Google Sheet URL</Label>
