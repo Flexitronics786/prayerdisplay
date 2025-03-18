@@ -22,6 +22,20 @@ export const supabase = createClient<Database>(
     auth: {
       autoRefreshToken: true,
       persistSession: true
+    },
+    realtime: {
+      // Enable realtime subscriptions
+      params: {
+        eventsPerSecond: 10
+      }
     }
   }
 );
+
+// Clear local storage caches when needed
+export const clearPrayerTimesCache = () => {
+  localStorage.removeItem('local-prayer-times');
+  localStorage.removeItem('mosque-prayer-times');
+  console.log('Prayer times cache cleared');
+};
+
