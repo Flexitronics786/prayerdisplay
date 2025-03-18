@@ -20,7 +20,7 @@ const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTable
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
   const isTV = useTVDisplay();
 
-  // Use our new hook for prayer time alerts
+  // Use our updated hook for prayer time alerts
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {

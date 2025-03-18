@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
-import { convertTo24Hour, getCurrentTime24h } from "@/utils/dateUtils";
+import { getCurrentTime24h } from "@/utils/dateUtils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Create a type for our supported prayer notifications
 type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha";
@@ -14,13 +15,36 @@ export const usePrayerTimeAlerts = (
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const checkedTimesRef = useRef<Set<string>>(new Set());
   const [lastCheckedMinute, setLastCheckedMinute] = useState<string>("");
+  const [audioUrl, setAudioUrl] = useState<string>("");
 
-  // Initialize audio element
+  // Initialize audio element and fetch the audio URL from Supabase
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      audioRef.current = new Audio("/alert-beep.mp3");
-      audioRef.current.volume = 0.7;
-    }
+    const fetchAudioUrl = async () => {
+      try {
+        const { data, error } = await supabase.storage
+          .from('audio')
+          .createSignedUrl('alert-beep.mp3', 60 * 60 * 24); // 24 hour signed URL
+        
+        if (error) {
+          console.error("Error fetching audio URL:", error);
+          return;
+        }
+        
+        if (data) {
+          setAudioUrl(data.signedUrl);
+          
+          // Create audio element once we have the URL
+          if (typeof window !== "undefined") {
+            audioRef.current = new Audio(data.signedUrl);
+            audioRef.current.volume = 0.7;
+          }
+        }
+      } catch (error) {
+        console.error("Error setting up audio:", error);
+      }
+    };
+
+    fetchAudioUrl();
     
     return () => {
       if (audioRef.current) {
@@ -52,7 +76,7 @@ export const usePrayerTimeAlerts = (
 
   // Check and play alerts
   useEffect(() => {
-    if (!detailedTimes) return;
+    if (!detailedTimes || !audioUrl) return;
     
     const checkTimes = () => {
       const currentTime24h = getCurrentTime24h();
@@ -104,7 +128,7 @@ export const usePrayerTimeAlerts = (
     const interval = setInterval(checkTimes, 10000);
     
     return () => clearInterval(interval);
-  }, [detailedTimes, lastCheckedMinute, prayerTimes]);
+  }, [detailedTimes, lastCheckedMinute, prayerTimes, audioUrl]);
 
   // Reset the checked times at midnight
   useEffect(() => {
