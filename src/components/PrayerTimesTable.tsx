@@ -1,7 +1,7 @@
 
 import { PrayerTime } from "@/types";
 import { fetchAllPrayerTimes } from "@/services/dataService";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
@@ -18,23 +18,46 @@ interface PrayerTimesTableProps {
 const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
   const [detailedTimes, setDetailedTimes] = useState<any>(null);
   const isTV = useTVDisplay();
+  
+  const loadDetailedTimes = useCallback(async () => {
+    try {
+      console.log("Loading detailed prayer times...");
+      const times = await fetchAllPrayerTimes();
+      const today = new Date().toISOString().split('T')[0];
+      const todayTimes = times.find(t => t.date === today);
+      
+      if (todayTimes) {
+        console.log("Detailed times loaded for today:", todayTimes);
+        setDetailedTimes(todayTimes);
+      } else {
+        console.log("No detailed times found for today:", today);
+      }
+    } catch (error) {
+      console.error("Error loading detailed prayer times:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadDetailedTimes = async () => {
-      try {
-        const times = await fetchAllPrayerTimes();
-        const today = new Date().toISOString().split('T')[0];
-        const todayTimes = times.find(t => t.date === today);
-        if (todayTimes) {
-          setDetailedTimes(todayTimes);
-        }
-      } catch (error) {
-        console.error("Error loading detailed prayer times:", error);
-      }
-    };
-
     loadDetailedTimes();
-  }, []);
+    
+    // Set up a refresh interval for TV displays (every 5 minutes)
+    const refreshInterval = isTV ? 
+      setInterval(() => {
+        console.log("TV refresh interval triggered for detailed times");
+        loadDetailedTimes();
+      }, 5 * 60 * 1000) : null;
+      
+    return () => {
+      if (refreshInterval) clearInterval(refreshInterval);
+    };
+  }, [loadDetailedTimes, isTV]);
+  
+  // Reload detailed times when prayer times change
+  useEffect(() => {
+    if (prayerTimes.length > 0) {
+      loadDetailedTimes();
+    }
+  }, [prayerTimes, loadDetailedTimes]);
 
   return (
     <div className="animate-scale-in">

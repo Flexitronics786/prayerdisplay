@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { formatDate } from "@/utils/dateUtils";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -13,15 +14,39 @@ const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
   const isTV = useTVDisplay();
   const midnightReloadSet = useMidnightRefresh();
-  const { prayerTimes, isLoading } = usePrayerTimesData();
+  const { prayerTimes, isLoading, loadData } = usePrayerTimesData();
 
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
     }, 60000);
     
-    return () => clearInterval(dateInterval);
-  }, []);
+    // Force a refresh every 15 minutes for TV displays
+    const refreshInterval = isTV ? 
+      setInterval(() => {
+        console.log("TV periodic refresh triggered");
+        loadData(true);
+      }, 15 * 60 * 1000) : null;
+    
+    return () => {
+      clearInterval(dateInterval);
+      if (refreshInterval) clearInterval(refreshInterval);
+    };
+  }, [isTV, loadData]);
+
+  // Add a manual reload function for debugging
+  useEffect(() => {
+    // Expose reload function globally for debugging
+    (window as any).reloadPrayerTimes = () => {
+      console.log("Manual reload triggered");
+      loadData(true);
+    };
+    
+    // Attach to unload event to clean up
+    return () => {
+      delete (window as any).reloadPrayerTimes;
+    };
+  }, [loadData]);
 
   if (isLoading && prayerTimes.length === 0) {
     return <LoadingScreen />;
