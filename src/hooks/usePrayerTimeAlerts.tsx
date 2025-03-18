@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -73,6 +74,33 @@ export const usePrayerTimeAlerts = (
     }
   };
 
+  // Function to play the alert sound for exactly 1 second
+  const playAlertSound = () => {
+    if (!audioRef.current) return;
+    
+    // Reset to the beginning and play
+    audioRef.current.currentTime = 0;
+    
+    // Play the sound
+    const playPromise = audioRef.current.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          // Set a timeout to stop the sound after 1 second
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.currentTime = 0;
+            }
+          }, 1000); // 1 second duration
+        })
+        .catch(err => {
+          console.error("Error playing alert sound:", err);
+        });
+    }
+  };
+
   // Check and play alerts
   useEffect(() => {
     if (!detailedTimes || !audioUrl) return;
@@ -107,11 +135,8 @@ export const usePrayerTimeAlerts = (
           // Mark this time as checked
           checkedTimesRef.current.add(timeKey);
           
-          // Play alert sound
-          if (audioRef.current) {
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(e => console.error("Error playing alert sound:", e));
-          }
+          // Play alert sound for 1 second
+          playAlertSound();
           
           // Show toast notification
           toast.success(`${prayer} ${prayer === "Maghrib" ? "start" : "Jamat"} time`, {
