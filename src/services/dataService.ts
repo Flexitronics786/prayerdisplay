@@ -833,4 +833,4 @@ export const importPrayerTimesFromSheet = async (
     
     // Try to establish a test connection to Supabase before proceeding
     try {
-      const {
+      const is
