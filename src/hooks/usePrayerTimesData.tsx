@@ -1,8 +1,7 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
-import { fetchPrayerTimes } from "@/services/dataService";
+import { fetchPrayerTimes, clearPrayerTimesCache } from "@/services/dataService";
 import { PrayerTime } from "@/types";
-import { supabase, clearPrayerTimesCache } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export const usePrayerTimesData = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);

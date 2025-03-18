@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { formatDate } from "@/utils/dateUtils";
 import PrayerTimesTable from "@/components/PrayerTimesTable";
@@ -9,7 +8,7 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
-import { clearPrayerTimesCache } from "@/integrations/supabase/client";
+import { clearPrayerTimesCache } from "@/services/dataService";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());

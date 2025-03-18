@@ -1,6 +1,5 @@
-
 import { PrayerTime } from "@/types";
-import { fetchAllPrayerTimes } from "@/services/dataService";
+import { fetchAllPrayerTimes, clearPrayerTimesCache } from "@/services/dataService";
 import { useState, useEffect } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { FajrTile } from "./prayer-times/FajrTile";
@@ -9,7 +8,6 @@ import { AsrTile } from "./prayer-times/AsrTile";
 import { MaghribTile } from "./prayer-times/MaghribTile";
 import { IshaTile } from "./prayer-times/IshaTile";
 import { JummahTile } from "./prayer-times/JummahTile";
-import { clearPrayerTimesCache } from "@/integrations/supabase/client";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];

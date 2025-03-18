@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Pencil, ClipboardEdit, FileSpreadsheet, RefreshCcw, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { DetailedPrayerTime } from "@/types";
-import { fetchAllPrayerTimes, deletePrayerTimeEntry } from "@/services/dataService";
+import { fetchAllPrayerTimes, deletePrayerTimeEntry, clearPrayerTimesCache } from "@/services/dataService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,7 +18,6 @@ import {
 import { AddEditPrayerTimeDialog } from "./AddEditPrayerTimeDialog";
 import { DeleteAllPrayerTimesDialog } from "./DeleteAllPrayerTimesDialog";
 import { ImportPrayerTimesDialog } from "./ImportPrayerTimesDialog";
-import { clearPrayerTimesCache } from "@/integrations/supabase/client";
 
 const PrayerTimesTableEditor = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);

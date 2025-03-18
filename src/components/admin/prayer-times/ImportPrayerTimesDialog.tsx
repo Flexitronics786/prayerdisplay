@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Loader2, Upload, AlertCircle } from "lucide-react";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
@@ -166,7 +165,7 @@ export const ImportPrayerTimesDialog = ({
         </DialogHeader>
         <form onSubmit={handleImport} className="space-y-4">
           {connectionStatus === 'disconnected' && (
-            <Alert variant="warning" className="bg-yellow-50 border-yellow-300">
+            <Alert variant="destructive" className="bg-yellow-50 border-yellow-300">
               <AlertCircle className="h-4 w-4 text-yellow-600" />
               <AlertDescription className="text-yellow-700">
                 Database connection unavailable. Data will be saved locally only until connection is restored.
