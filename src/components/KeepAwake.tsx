@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const KeepAwake = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const isTV = useTVDisplay();
+  const [videoLoaded, setVideoLoaded] = useState(false);
   
   // Fetch and play the silent video that keeps the screen awake
   useEffect(() => {
@@ -13,15 +15,39 @@ const KeepAwake = () => {
     const fetchKeepAwakeVideo = async () => {
       try {
         // Get public URL for the video
-        const { data } = await supabase
+        const { data, error } = await supabase
           .storage
           .from('keep-awake')
           .getPublicUrl('silent-video.mp4');
         
+        if (error) {
+          console.error("Error getting video URL:", error);
+          return;
+        }
+        
         if (data && videoRef.current) {
           videoRef.current.src = data.publicUrl;
           videoRef.current.load();
-          videoRef.current.play().catch(e => console.error("Failed to autoplay video:", e));
+          
+          // Add event listeners to track video loading
+          videoRef.current.onloadeddata = () => {
+            console.log("Keep awake video loaded successfully");
+            setVideoLoaded(true);
+          };
+          
+          videoRef.current.onerror = (e) => {
+            console.error("Video loading error:", e);
+            // Don't show error toast on TV displays to avoid disrupting the experience
+            if (!isTV) {
+              toast.error("Failed to load keep-awake video. Screen may go to sleep.");
+            }
+          };
+          
+          // Try to play the video
+          videoRef.current.play().catch(e => {
+            console.error("Failed to autoplay video:", e);
+            // DOM activity will still work as fallback
+          });
         }
       } catch (error) {
         console.error("Error fetching keep awake video:", error);
@@ -29,6 +55,14 @@ const KeepAwake = () => {
     };
     
     fetchKeepAwakeVideo();
+    
+    // Cleanup function
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.onloadeddata = null;
+        videoRef.current.onerror = null;
+      }
+    };
   }, [isTV]);
   
   // Simulate user activity every 15 seconds to prevent sleep
@@ -53,13 +87,21 @@ const KeepAwake = () => {
         document.body.removeChild(tempElement);
       }, 50);
       
+      // Trigger a full repaint for devices that need more activity
+      if (!videoLoaded) {
+        document.body.style.opacity = "0.99999";
+        setTimeout(() => {
+          document.body.style.opacity = "1";
+        }, 10);
+      }
+      
       console.log("Keep awake: Activity simulated at", new Date().toISOString());
     }, 15000); // Every 15 seconds
     
     return () => {
       clearInterval(activityInterval);
     };
-  }, [isTV]);
+  }, [isTV, videoLoaded]);
   
   // Only render video element on TV displays
   if (!isTV) return null;
