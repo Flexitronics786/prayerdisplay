@@ -90,7 +90,7 @@ export const usePrayerTimesData = () => {
           console.error("Supabase connection error:", error);
           toast.error("Database connection issue: " + error.message);
         } else {
-          console.log("Supabase connection successful, prayer times count:", data);
+          console.log("Supabase connection successful");
         }
       } catch (err) {
         console.error("Failed to check Supabase connection:", err);
@@ -112,22 +112,12 @@ export const usePrayerTimesData = () => {
       .subscribe((status) => {
         console.log("Supabase subscription status:", status);
       });
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'local-prayer-times') {
-        console.log("Prayer times changed in local storage, reloading...");
-        loadData();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
       supabase.removeChannel(prayerTimesSubscription);
-      window.removeEventListener('storage', handleStorageChange);
     };
   }, [loadData, nextCheckTimer]);
 
