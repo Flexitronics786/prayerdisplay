@@ -39,3 +39,10 @@ export const useTVDisplay = () => {
 
   return isTV;
 };
+
+// Helper function to check if we're on a Firestick specifically
+export const isFirestick = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  return userAgent.includes('silk') || userAgent.includes('firetv') || userAgent.includes('fire tv');
+};
+
