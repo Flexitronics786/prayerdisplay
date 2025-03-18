@@ -835,4 +835,11 @@ export const importPrayerTimesFromSheet = async (
     console.log("CSV data retrieved, importing...");
     return await importFromCSV(csvText);
   } catch (error) {
-    console.error("Error importing from Google Sheet
+    console.error("Error importing from Google Sheet:", error);
+    return {
+      success: false,
+      count: 0,
+      error: error instanceof Error ? error.message : "Unknown error during import"
+    };
+  }
+};
