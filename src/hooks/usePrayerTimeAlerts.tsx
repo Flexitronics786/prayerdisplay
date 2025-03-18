@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 // Create a type for our supported prayer notifications
-type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha";
+type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha" | "Jummah";
 
 export const usePrayerTimeAlerts = (
   prayerTimes: PrayerTime[],
@@ -69,6 +69,8 @@ export const usePrayerTimeAlerts = (
         return detailedTimes.maghrib_iftar; // Use start time for Maghrib
       case "Isha":
         return isJamat ? detailedTimes.isha_first_jamat : null;
+      case "Jummah":
+        return isJamat ? detailedTimes.zuhr_jamat : null; // Use Zuhr Jamat time for Jummah
       default:
         return null;
     }
@@ -116,6 +118,14 @@ export const usePrayerTimeAlerts = (
       
       // Check each prayer time
       const prayers: PrayerNotificationType[] = ["Fajr", "Zuhr", "Asr", "Maghrib", "Isha"];
+      
+      // Get current day of week (0 = Sunday, 1 = Monday, ..., 5 = Friday, ...)
+      const dayOfWeek = new Date().getDay();
+      
+      // Add Jummah to the notification list on Fridays (day 5)
+      if (dayOfWeek === 5) {
+        prayers.push("Jummah");
+      }
       
       prayers.forEach(prayer => {
         // For Maghrib use start time, for others use Jamat time
