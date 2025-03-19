@@ -78,6 +78,25 @@
   font-size: 0.85rem;
 }
 
+/* Keep Awake status indicator */
+.tv-display .keep-awake-indicator {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.1);
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #333;
+  z-index: 9999;
+}
+
+/* Optimize Wake Lock API indicator for TVs */
+.tv-display .wake-lock-status {
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+}
+
 /* Smart TV optimizations (Firestick etc.) */
 @media screen and (min-width: 1280px) and (max-height: 900px), 
        screen and (min-width: 1920px),
@@ -201,4 +220,11 @@
     max-height: calc(100vh - 140px);
     overflow: hidden;
   }
+}
+
+/* Custom toast styles for TV displays */
+.tv-toast {
+  /* Larger toast for TVs */
+  font-size: 1.5rem !important;
+  padding: 1rem !important;
 }

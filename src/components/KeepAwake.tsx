@@ -1,9 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
-// Create a unique ID for the keep-awake audio element to avoid conflicts
+// Create unique IDs for the keep-awake elements to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 const KEEP_AWAKE_VIDEO_ID = "keep-awake-video";
+
+interface WakeLockSentinel {
+  release: () => Promise<void>;
+}
+
+interface NavigatorWithWakeLock extends Navigator {
+  wakeLock?: {
+    request: (type: string) => Promise<WakeLockSentinel>;
+  };
+}
 
 const KeepAwake = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -11,6 +23,67 @@ const KeepAwake = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const [audioDebugMode, setAudioDebugMode] = useState(false);
+  const { toast } = useToast();
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  
+  // Wake Lock API - modern browsers support
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Attempting to use Wake Lock API...");
+    
+    const requestWakeLock = async () => {
+      try {
+        const navigatorWithWakeLock = navigator as NavigatorWithWakeLock;
+        
+        if (navigatorWithWakeLock.wakeLock) {
+          wakeLockRef.current = await navigatorWithWakeLock.wakeLock.request('screen');
+          console.log("Wake Lock API activated successfully");
+          setWakeLockActive(true);
+          
+          // Log Wake Lock success occasionally
+          if (process.env.NODE_ENV === 'development') {
+            toast({
+              title: "Screen Wake Lock active",
+              description: "Using native Wake Lock API to keep screen on",
+            });
+          }
+        } else {
+          console.log("Wake Lock API not supported by this browser/device");
+        }
+      } catch (err) {
+        console.warn("Wake Lock API request failed:", err);
+      }
+    };
+    
+    // Try to request Wake Lock
+    requestWakeLock();
+    
+    // Re-request Wake Lock if document visibility changes (tab becomes visible again)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Release Wake Lock if active
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().then(() => {
+          console.log("Wake Lock released");
+          setWakeLockActive(false);
+        }).catch(err => {
+          console.error("Error releasing Wake Lock:", err);
+        });
+      }
+    };
+  }, [isTV, toast]);
   
   // Use the silent video to keep the screen awake
   useEffect(() => {
@@ -109,6 +182,52 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
+  // Full screen refresh method - more aggressive approach for difficult TVs
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing aggressive screen refresh system");
+    
+    // Use a stronger approach every 30 seconds
+    const aggressiveRefreshInterval = setInterval(() => {
+      // Force full reflow by manipulating layout properties
+      document.body.style.zoom = "0.99999";
+      
+      setTimeout(() => {
+        document.body.style.zoom = "1";
+        
+        // Log activity occasionally
+        if (Math.random() < 0.1) {
+          console.log("Aggressive screen refresh triggered at", new Date().toISOString());
+        }
+      }, 100);
+      
+      // Create and remove an element to trigger DOM updates
+      const forcedRefreshElement = document.createElement('div');
+      forcedRefreshElement.style.position = 'fixed';
+      forcedRefreshElement.style.top = '0';
+      forcedRefreshElement.style.left = '0';
+      forcedRefreshElement.style.width = '100%';
+      forcedRefreshElement.style.height = '100%';
+      forcedRefreshElement.style.pointerEvents = 'none';
+      forcedRefreshElement.style.opacity = '0.01';
+      forcedRefreshElement.style.zIndex = '-1';
+      
+      document.body.appendChild(forcedRefreshElement);
+      
+      setTimeout(() => {
+        if (document.body.contains(forcedRefreshElement)) {
+          document.body.removeChild(forcedRefreshElement);
+        }
+      }, 200);
+      
+    }, 30000); // Every 30 seconds
+    
+    return () => {
+      clearInterval(aggressiveRefreshInterval);
+    };
+  }, [isTV]);
+  
   // Simulate user activity every 15 seconds to prevent sleep
   useEffect(() => {
     if (!isTV) return;
@@ -147,6 +266,41 @@ const KeepAwake = () => {
       clearInterval(activityInterval);
     };
   }, [isTV]);
+  
+  // Debug mode with periodic audio beep for TVs that need audio to stay awake
+  useEffect(() => {
+    if (!isTV || !audioDebugMode) return;
+    
+    console.log("Audio debug mode for keep-awake activated");
+    
+    // Create audio element for debugging if needed
+    if (!audioRef.current) {
+      const audio = new Audio();
+      audio.id = KEEP_AWAKE_AUDIO_ID;
+      audio.src = "/beep-125033.mp3";
+      audio.volume = 0.1; // Noticeable but not too loud
+      audioRef.current = audio;
+    }
+    
+    // Play a soft beep every minute in debug mode
+    const audioDebugInterval = setInterval(() => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play()
+          .then(() => console.log("Audio debug beep played"))
+          .catch(err => console.warn("Audio debug beep failed:", err));
+      }
+    }, 60000); // Every 60 seconds
+    
+    return () => {
+      clearInterval(audioDebugInterval);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+    };
+  }, [isTV, audioDebugMode]);
   
   // Only render elements on TV displays
   if (!isTV) return null;
@@ -190,15 +344,45 @@ const KeepAwake = () => {
             position: 'fixed', 
             bottom: 5, 
             right: 5, 
-            background: keepAwakeActive ? 'rgba(0,255,0,0.2)' : 'rgba(255,0,0,0.2)', 
-            padding: '2px 4px',
-            borderRadius: '2px',
-            fontSize: '10px',
-            color: keepAwakeActive ? 'darkgreen' : 'darkred',
+            background: 'rgba(0,0,0,0.1)', 
+            padding: '8px 12px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: '#333',
             zIndex: 9999
           }}
         >
-          Keep Awake: {keepAwakeActive ? 'Active' : 'Inactive'}
+          <div style={{ marginBottom: '4px' }}>
+            Keep Awake Status:
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '4px',
+            fontSize: '10px'
+          }}>
+            <div style={{ 
+              color: keepAwakeActive ? 'green' : 'red', 
+              fontWeight: 'bold' 
+            }}>
+              • Video: {keepAwakeActive ? 'Active' : 'Inactive'}
+            </div>
+            <div style={{ 
+              color: wakeLockActive ? 'green' : 'red', 
+              fontWeight: 'bold' 
+            }}>
+              • Wake Lock API: {wakeLockActive ? 'Active' : 'Inactive'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+              <span>Audio Debug:</span>
+              <Switch 
+                id="audio-debug-mode" 
+                checked={audioDebugMode} 
+                onCheckedChange={setAudioDebugMode} 
+                size="sm"
+              />
+            </div>
+          </div>
         </div>
       )}
     </>
