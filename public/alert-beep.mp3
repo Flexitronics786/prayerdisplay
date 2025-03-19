@@ -1,3 +1,4 @@
 
 # This is just a placeholder since we can't actually create binary files
-# You'll need to add a 2-second beep MP3 file manually to the public directory
+# The proper MP3 file should be placed in the public directory manually
+# The file should be a short 1-2 second beep sound
