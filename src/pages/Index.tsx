@@ -46,7 +46,11 @@ const Index = () => {
             <PageHeader currentDate={currentDate} isTV={isTV} />
             
             <div className="flex-grow">
-              <PrayerTimesTable prayerTimes={prayerTimes} compactView={isTV} />
+              <PrayerTimesTable 
+                prayerTimes={prayerTimes} 
+                detailedTimes={detailedTimes} 
+                compactView={isTV} 
+              />
             </div>
             
             <PhoneReminder isTVMode={isTV} />
