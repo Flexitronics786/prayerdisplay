@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -27,12 +26,12 @@ export const usePrayerTimeAlerts = (
   const dailyJamatTimesRef = useRef<DailyJamatTimes>({});
   const audioInitializedRef = useRef<boolean>(false);
 
-  // Initialize audio element and fetch the audio URL from Supabase
+  // Initialize audio element and set up the audio file
   useEffect(() => {
-    const fetchAudioUrl = async () => {
+    const initializeAudio = async () => {
       try {
-        // First try to use a local file from the public directory
-        const localBeepUrl = "/alert-beep.mp3";
+        // Use the file you've uploaded to GitHub public directory
+        const localBeepUrl = "/beep-125033.mp3";
         
         // Create audio element
         if (typeof window !== "undefined" && !audioInitializedRef.current) {
@@ -47,7 +46,7 @@ export const usePrayerTimeAlerts = (
             existingAudio.volume = 0.7;
             document.body.appendChild(existingAudio);
             
-            // Try to load the local file first
+            // Set the source to the local file
             const localSource = document.createElement('source');
             localSource.src = localBeepUrl;
             localSource.type = 'audio/mpeg';
@@ -59,42 +58,6 @@ export const usePrayerTimeAlerts = (
           audioRef.current = existingAudio;
           setAudioUrl(localBeepUrl);
           audioInitializedRef.current = true;
-          
-          // Add fallback to Supabase if local file fails
-          existingAudio.addEventListener('error', async () => {
-            console.log("Local audio file failed, trying Supabase fallback");
-            
-            try {
-              const { data, error } = await supabase.storage
-                .from('audio')
-                .createSignedUrl('beep-125033.mp3', 60 * 60 * 24); // 24 hour signed URL
-              
-              if (error) {
-                console.error("Error fetching audio URL from Supabase:", error);
-                return;
-              }
-              
-              if (data) {
-                setAudioUrl(data.signedUrl);
-                if (audioRef.current) {
-                  // Clear existing sources
-                  while (audioRef.current.firstChild) {
-                    audioRef.current.removeChild(audioRef.current.firstChild);
-                  }
-                  
-                  // Add Supabase source
-                  const supabaseSource = document.createElement('source');
-                  supabaseSource.src = data.signedUrl;
-                  supabaseSource.type = 'audio/mpeg';
-                  audioRef.current.appendChild(supabaseSource);
-                  
-                  console.log("Added Supabase fallback audio source");
-                }
-              }
-            } catch (error) {
-              console.error("Error setting up Supabase audio fallback:", error);
-            }
-          });
           
           // Initialize with a user interaction to bypass autoplay restrictions
           const unlockAudio = () => {
@@ -121,6 +84,17 @@ export const usePrayerTimeAlerts = (
             document.removeEventListener('touchstart', unlockAudio);
           };
           
+          // Test the audio file on load
+          existingAudio.addEventListener('loadeddata', () => {
+            console.log("Audio file loaded and ready to play");
+          });
+          
+          // Handle any errors loading the audio
+          existingAudio.addEventListener('error', (e) => {
+            console.error("Error loading audio file:", e);
+            // No need for Supabase fallback now that we have the file in public directory
+          });
+          
           // Add event listeners to unlock audio on user interaction
           document.addEventListener('click', unlockAudio, { once: true });
           document.addEventListener('touchstart', unlockAudio, { once: true });
@@ -130,7 +104,7 @@ export const usePrayerTimeAlerts = (
       }
     };
 
-    fetchAudioUrl();
+    initializeAudio();
     
     return () => {
       // Don't remove the audio element on cleanup, just release our reference
