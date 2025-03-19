@@ -9,13 +9,17 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
+import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { Toaster } from "sonner";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
   const isTV = useTVDisplay();
   const midnightReloadSet = useMidnightRefresh();
-  const { prayerTimes, isLoading } = usePrayerTimesData();
+  const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
+  
+  // Initialize prayer time alerts (without directly using the returned value)
+  usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
     const dateInterval = setInterval(() => {

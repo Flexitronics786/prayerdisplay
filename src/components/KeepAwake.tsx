@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
-import { toast } from "sonner";
+
+// Create a unique ID for the keep-awake audio element to avoid conflicts
+const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 
 const KeepAwake = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
@@ -72,7 +75,7 @@ const KeepAwake = () => {
       const gainNode = audioContext.createGain();
       
       oscillator.frequency.value = 1; // 1 Hz, extremely low frequency
-      gainNode.gain.value = 0.001; // Extremely low volume, virtually silent
+      gainNode.gain.value = 0.0001; // Even lower volume to prevent conflict with prayer alerts
       
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
@@ -87,6 +90,57 @@ const KeepAwake = () => {
     } catch (error) {
       console.error("Error creating audio context:", error);
     }
+  }, [isTV]);
+  
+  // Use a separate HTML audio element for keep-awake
+  useEffect(() => {
+    if (!isTV) return;
+    
+    // Create a persistent audio element for keep-awake
+    let existingAudio = document.getElementById(KEEP_AWAKE_AUDIO_ID) as HTMLAudioElement;
+    if (!existingAudio) {
+      // Create a new audio element with specific ID to avoid conflicts
+      existingAudio = document.createElement('audio');
+      existingAudio.id = KEEP_AWAKE_AUDIO_ID;
+      existingAudio.volume = 0.0001; // Virtually silent
+      existingAudio.loop = true;
+      existingAudio.muted = true;
+      
+      // Create an empty audio buffer - we just need browser to think it's playing
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const audioContext = new AudioContext();
+          const source = audioContext.createBufferSource();
+          source.buffer = audioContext.createBuffer(1, 1, 22050);
+          source.connect(audioContext.destination);
+        }
+      } catch (e) {
+        console.warn("Audio context not supported for keep-awake");
+      }
+      
+      document.body.appendChild(existingAudio);
+    }
+    
+    audioRef.current = existingAudio;
+    
+    // Try to start playback (may be rejected without user interaction)
+    try {
+      const playPromise = existingAudio.play();
+      if (playPromise) {
+        playPromise.catch(e => {
+          console.warn("Auto-play prevented for keep-awake audio:", e);
+        });
+      }
+    } catch (e) {
+      console.warn("Could not auto-play keep-awake audio");
+    }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
   }, [isTV]);
   
   // Simulate user activity every 15 seconds to prevent sleep
@@ -117,7 +171,10 @@ const KeepAwake = () => {
         document.body.style.opacity = "1";
       }, 10);
       
-      console.log("Keep awake: Activity simulated at", new Date().toISOString());
+      // Don't log this too often to avoid console spam
+      if (Math.random() < 0.1) { // Only log approximately 10% of the time
+        console.log("Keep awake: Activity simulated at", new Date().toISOString());
+      }
     }, 15000); // Every 15 seconds
     
     return () => {

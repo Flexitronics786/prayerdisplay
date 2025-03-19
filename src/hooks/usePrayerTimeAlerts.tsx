@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -11,6 +10,9 @@ type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha" | "Ju
 interface DailyJamatTimes {
   [key: string]: string; // Prayer name -> time in HH:MM format
 }
+
+// Create a unique ID for this hook instance to avoid conflicts with KeepAwake
+const PRAYER_ALERT_AUDIO_ID = "prayer-alert-sound";
 
 export const usePrayerTimeAlerts = (
   prayerTimes: PrayerTime[],
@@ -40,8 +42,16 @@ export const usePrayerTimeAlerts = (
           
           // Create audio element once we have the URL
           if (typeof window !== "undefined") {
-            audioRef.current = new Audio(data.signedUrl);
-            audioRef.current.volume = 0.7;
+            // Check if we already have an audio element with this ID
+            let existingAudio = document.getElementById(PRAYER_ALERT_AUDIO_ID) as HTMLAudioElement;
+            if (!existingAudio) {
+              // Create a new audio element with ID to avoid conflicts
+              existingAudio = new Audio(data.signedUrl);
+              existingAudio.id = PRAYER_ALERT_AUDIO_ID;
+              existingAudio.volume = 0.7;
+              document.body.appendChild(existingAudio);
+            }
+            audioRef.current = existingAudio;
           }
         }
       } catch (error) {
@@ -52,6 +62,7 @@ export const usePrayerTimeAlerts = (
     fetchAudioUrl();
     
     return () => {
+      // Don't remove the audio element on cleanup, just release our reference
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -131,6 +142,14 @@ export const usePrayerTimeAlerts = (
   const playAlertSound = () => {
     if (!audioRef.current) return;
     
+    // Ensure any ongoing keep-awake sounds don't block our notification
+    // This is needed because we want to ensure our beep is audible
+    if (audioRef.current.paused === false) {
+      // If it's already playing, stop it first
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
     // Reset to the beginning and play
     audioRef.current.currentTime = 0;
     
@@ -145,11 +164,13 @@ export const usePrayerTimeAlerts = (
             if (audioRef.current) {
               audioRef.current.pause();
               audioRef.current.currentTime = 0;
+              
+              console.log("Prayer notification beep completed");
             }
           }, 1000); // 1 second duration
         })
         .catch(err => {
-          console.error("Error playing alert sound:", err);
+          console.error("Error playing prayer alert sound:", err);
         });
     }
   };
