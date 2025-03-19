@@ -1,11 +1,11 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
-import { fetchPrayerTimes } from "@/services/dataService";
-import { PrayerTime } from "@/types";
+import { fetchPrayerTimes, fetchAllPrayerTimes } from "@/services/dataService";
+import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 export const usePrayerTimesData = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
+  const [detailedTimes, setDetailedTimes] = useState<DetailedPrayerTime | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
   const dataLoadingRef = useRef(false);
@@ -21,8 +21,19 @@ export const usePrayerTimesData = () => {
       dataLoadingRef.current = true;
       setIsLoading(true);
       console.log("Loading prayer times...");
+      
+      // Load standard prayer times
       const times = await fetchPrayerTimes();
       setPrayerTimes(times);
+      
+      // Load detailed prayer times for the current day
+      const allTimes = await fetchAllPrayerTimes();
+      const today = new Date().toISOString().split('T')[0];
+      const todayTimes = allTimes.find(t => t.date === today);
+      if (todayTimes) {
+        setDetailedTimes(todayTimes);
+      }
+      
       scheduleNextCheck(times);
     } catch (error) {
       console.error("Error loading data:", error);
@@ -184,5 +195,5 @@ export const usePrayerTimesData = () => {
     };
   }, [loadData, nextCheckTimer, cleanupOldPrayerTimes]);
 
-  return { prayerTimes, isLoading, loadData };
+  return { prayerTimes, detailedTimes, isLoading, loadData };
 };

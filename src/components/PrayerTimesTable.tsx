@@ -1,7 +1,6 @@
 
 import { PrayerTime } from "@/types";
-import { fetchAllPrayerTimes } from "@/services/dataService";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
@@ -13,32 +12,15 @@ import { JummahTile } from "./prayer-times/JummahTile";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
+  detailedTimes: any;
   compactView?: boolean;
 }
 
-const PrayerTimesTable = ({ prayerTimes, compactView = false }: PrayerTimesTableProps) => {
-  const [detailedTimes, setDetailedTimes] = useState<any>(null);
+const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: PrayerTimesTableProps) => {
   const isTV = useTVDisplay();
 
   // Use our updated hook for prayer time alerts
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
-
-  useEffect(() => {
-    const loadDetailedTimes = async () => {
-      try {
-        const times = await fetchAllPrayerTimes();
-        const today = new Date().toISOString().split('T')[0];
-        const todayTimes = times.find(t => t.date === today);
-        if (todayTimes) {
-          setDetailedTimes(todayTimes);
-        }
-      } catch (error) {
-        console.error("Error loading detailed prayer times:", error);
-      }
-    };
-
-    loadDetailedTimes();
-  }, []);
 
   return (
     <div className="animate-scale-in">
