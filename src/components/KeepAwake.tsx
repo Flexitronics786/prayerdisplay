@@ -6,14 +6,19 @@ import { useToast } from "@/hooks/use-toast";
 // Create unique ID for the keep-awake audio element to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 
+// Define our own interface for WakeLockSentinel instead of extending Navigator
 interface WakeLockSentinel {
   release: () => Promise<void>;
 }
 
+// Define the WakeLock API interface separately
+interface WakeLockAPI {
+  request: (type: string) => Promise<WakeLockSentinel>;
+}
+
+// Extend Navigator type without inheritance conflicts
 interface NavigatorWithWakeLock extends Navigator {
-  wakeLock?: {
-    request: (type: string) => Promise<WakeLockSentinel>;
-  };
+  wakeLock?: WakeLockAPI;
 }
 
 const KeepAwake = () => {
@@ -366,8 +371,7 @@ const KeepAwake = () => {
               <Switch 
                 id="audio-debug-mode" 
                 checked={audioDebugMode} 
-                onCheckedChange={setAudioDebugMode} 
-                size="sm"
+                onCheckedChange={setAudioDebugMode}
               />
             </div>
           </div>
