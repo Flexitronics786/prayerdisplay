@@ -96,6 +96,43 @@
   line-height: 1.1 !important;
 }
 
+/* Enhanced Toast Styling for FireTV */
+.tv-display [data-sonner-toast] {
+  padding: 16px !important;
+  border-radius: 12px !important;
+  width: auto !important;
+  min-width: 400px !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  border: 3px solid #dbb654 !important;
+}
+
+.tv-display [data-sonner-toast] [data-title] {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 8px !important;
+  color: #000 !important;
+}
+
+.tv-display [data-sonner-toast] [data-description] {
+  font-size: 1.5rem !important;
+  color: #333 !important;
+}
+
+.tv-display [data-sonner-toaster] {
+  top: 5% !important;
+}
+
+/* Custom toast styles for TV displays */
+.tv-toast {
+  /* Larger toast for TVs */
+  font-size: 1.8rem !important;
+  padding: 1.25rem !important;
+  border-width: 3px !important;
+  border-color: #dbb654 !important;
+}
+
 /* FireTV specific optimizations */
 @media screen and (width: 1920px) and (height: 1080px) {
   .tv-display {
