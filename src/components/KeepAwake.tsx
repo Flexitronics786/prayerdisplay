@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { Switch } from "@/components/ui/switch";
@@ -6,11 +7,18 @@ import { useToast } from "@/hooks/use-toast";
 // Create unique ID for the keep-awake audio element to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 
-// Define our own custom types using intersection types instead of extends
+// Define our own custom types completely separate from browser types
+interface CustomWakeLockSentinel {
+  release: () => Promise<void>;
+}
+
+interface CustomWakeLockAPI {
+  request: (type: string) => Promise<CustomWakeLockSentinel>;
+}
+
+// Use a type intersection instead of extending Navigator
 type NavigatorWithWakeLock = Navigator & {
-  wakeLock?: {
-    request: (type: string) => Promise<{ release: () => Promise<void> }>;
-  };
+  wakeLock?: CustomWakeLockAPI;
 };
 
 const KeepAwake = () => {
@@ -21,7 +29,7 @@ const KeepAwake = () => {
   const [wakeLockActive, setWakeLockActive] = useState(false);
   const [audioDebugMode, setAudioDebugMode] = useState(false);
   const { toast } = useToast();
-  const wakeLockRef = useRef<{ release: () => Promise<void> } | null>(null);
+  const wakeLockRef = useRef<CustomWakeLockSentinel | null>(null);
   
   // Wake Lock API - modern browsers support
   useEffect(() => {
@@ -269,7 +277,6 @@ const KeepAwake = () => {
   }, [isTV]);
   
   // Debug mode with periodic audio beep for TVs that need audio to stay awake
-  // Modified to avoid conflicts with prayer alert sounds
   useEffect(() => {
     if (!isTV || !audioDebugMode) return;
     
@@ -277,59 +284,28 @@ const KeepAwake = () => {
     
     // Create audio element for debugging if needed
     if (!audioRef.current) {
-      // First check if an element with this ID already exists
-      let existingAudio = document.getElementById(KEEP_AWAKE_AUDIO_ID) as HTMLAudioElement;
-      
-      if (existingAudio) {
-        // Remove existing element to avoid conflicts
-        existingAudio.remove();
-        console.log("Removed existing keep-awake audio element");
-      }
-      
-      // Create new audio element
       const audio = new Audio();
       audio.id = KEEP_AWAKE_AUDIO_ID;
-      audio.src = "/alert-beep.mp3"; // Use the same audio file for consistency
-      audio.volume = 0.05; // Very quiet to not interfere with prayer alerts
+      audio.src = "/alert-beep.mp3"; // Use the correct audio file
+      audio.volume = 0.1; // Noticeable but not too loud
       audioRef.current = audio;
-      
-      // Append to document
-      document.body.appendChild(audio);
     }
     
-    // Play a soft beep less frequently in debug mode to avoid interference
+    // Play a soft beep every minute in debug mode
     const audioDebugInterval = setInterval(() => {
-      // Check if any prayer alert is currently playing
-      const prayerAudioElement = document.getElementById("prayer-alert-sound") as HTMLAudioElement;
-      const isPrayerAudioPlaying = prayerAudioElement && !prayerAudioElement.paused;
-      
-      // Only play debug beep if prayer alert is not playing
-      if (audioRef.current && !isPrayerAudioPlaying) {
+      if (audioRef.current) {
         audioRef.current.currentTime = 0;
-        audioRef.current.volume = 0.05; // Keep very quiet
         audioRef.current.play()
-          .then(() => {
-            setTimeout(() => {
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-              }
-            }, 500); // Stop after 0.5 seconds
-          })
+          .then(() => console.log("Audio debug beep played"))
           .catch(err => console.warn("Audio debug beep failed:", err));
       }
-    }, 120000); // Every 2 minutes instead of 1 minute
+    }, 60000); // Every 60 seconds
     
     return () => {
       clearInterval(audioDebugInterval);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
-        
-        // Remove from DOM
-        if (document.body.contains(audioRef.current)) {
-          document.body.removeChild(audioRef.current);
-        }
         audioRef.current = null;
       }
     };
