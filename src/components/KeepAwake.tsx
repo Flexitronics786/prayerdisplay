@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { Switch } from "@/components/ui/switch";
@@ -285,7 +286,7 @@ const KeepAwake = () => {
     if (!audioRef.current) {
       const audio = new Audio();
       audio.id = KEEP_AWAKE_AUDIO_ID;
-      audio.src = "/beep-125033.mp3";
+      audio.src = "/alert-beep.mp3"; // Use the correct audio file
       audio.volume = 0.1; // Noticeable but not too loud
       audioRef.current = audio;
     }

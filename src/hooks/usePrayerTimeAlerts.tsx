@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -29,8 +30,8 @@ export const usePrayerTimeAlerts = (
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        // Use the file you've uploaded to GitHub public directory
-        const localBeepUrl = "/beep-125033.mp3";
+        // Use the correct alert-beep.mp3 file that's in the public directory
+        const localBeepUrl = "/alert-beep.mp3";
         
         // Create audio element
         if (typeof window !== "undefined" && !audioInitializedRef.current) {
