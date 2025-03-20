@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { Switch } from "@/components/ui/switch";
@@ -7,20 +6,19 @@ import { useToast } from "@/hooks/use-toast";
 // Create unique ID for the keep-awake audio element to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 
-// Define our own interface with a different name to avoid conflicts with built-in types
+// Define our own custom types completely separate from browser types
 interface CustomWakeLockSentinel {
   release: () => Promise<void>;
 }
 
-// Define the WakeLock API interface separately
 interface CustomWakeLockAPI {
   request: (type: string) => Promise<CustomWakeLockSentinel>;
 }
 
-// Extend Navigator type without inheritance conflicts
-interface NavigatorWithWakeLock extends Navigator {
+// Use a type intersection instead of extending Navigator
+type NavigatorWithWakeLock = Navigator & {
   wakeLock?: CustomWakeLockAPI;
-}
+};
 
 const KeepAwake = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
