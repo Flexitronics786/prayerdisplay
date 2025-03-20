@@ -37,19 +37,23 @@ const Index = () => {
     <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
       <KeepAwake />
-      {/* Enhanced Toaster for TV displays */}
+      {/* Enhanced Toaster for TV displays with higher z-index and permanent visibility */}
       <Toaster 
         position={isTV ? "top-center" : "bottom-right"} 
         toastOptions={{ 
           className: isTV ? 'tv-toast' : '',
-          duration: isTV ? 10000 : 5000, // Longer duration for TV
+          duration: isTV ? 15000 : 5000, // Even longer duration for TV
           style: isTV ? { 
-            fontSize: '1.5rem', 
-            padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.95)',
-            border: '2px solid #dbb654'
+            fontSize: '2rem',  // Larger font
+            padding: '1.5rem', // More padding
+            background: 'rgba(255, 255, 255, 0.98)', // More opaque
+            border: '3px solid #dbb654', // Thicker border
+            zIndex: 9999,
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)' // More noticeable shadow
           } : {} 
         }} 
+        expand={isTV} // Expand toasts on TV for better visibility
+        richColors={isTV} // Use rich colors for TV
       />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">
