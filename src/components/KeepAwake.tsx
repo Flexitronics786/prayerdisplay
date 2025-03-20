@@ -3,9 +3,8 @@ import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
-// Create unique IDs for the keep-awake elements to avoid conflicts
+// Create unique ID for the keep-awake audio element to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
-const KEEP_AWAKE_VIDEO_ID = "keep-awake-video";
 
 interface WakeLockSentinel {
   release: () => Promise<void>;
@@ -18,7 +17,6 @@ interface NavigatorWithWakeLock extends Navigator {
 }
 
 const KeepAwake = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isTV = useTVDisplay();
@@ -85,64 +83,11 @@ const KeepAwake = () => {
     };
   }, [isTV, toast]);
   
-  // Use the silent video to keep the screen awake
-  useEffect(() => {
-    if (!isTV || !videoRef.current) return;
-    
-    console.log("Initializing video-based keep-awake system");
-    
-    const video = videoRef.current;
-    
-    // Set video source to the silent video uploaded to public directory
-    video.src = "/silent-video.mp4";
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.volume = 0.001; // Near-silent volume
-    
-    // Try to start playback (may require user interaction)
-    const playVideo = () => {
-      if (!video) return;
-      
-      const playPromise = video.play();
-      if (playPromise) {
-        playPromise.then(() => {
-          console.log("Keep-awake video playback started");
-          setKeepAwakeActive(true);
-        }).catch(err => {
-          console.warn("Auto-play prevented for keep-awake video:", err);
-          // Will try again with user interaction
-        });
-      }
-    };
-    
-    // Try to play immediately
-    playVideo();
-    
-    // Also try to play on user interaction (needed for browsers with strict autoplay policies)
-    const unlockVideo = () => {
-      playVideo();
-    };
-    
-    document.addEventListener('click', unlockVideo, { once: true });
-    document.addEventListener('touchstart', unlockVideo, { once: true });
-    
-    return () => {
-      if (video) {
-        video.pause();
-        video.src = "";
-      }
-      document.removeEventListener('click', unlockVideo);
-      document.removeEventListener('touchstart', unlockVideo);
-      setKeepAwakeActive(false);
-    };
-  }, [isTV]);
-  
-  // Keep the canvas animation as a backup method
+  // Enhanced canvas animation for keeping screen active
   useEffect(() => {
     if (!isTV || !canvasRef.current) return;
     
-    console.log("Initializing canvas-based keep-awake system as backup");
+    console.log("Initializing enhanced canvas-based keep-awake system");
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -152,20 +97,37 @@ const KeepAwake = () => {
       return;
     }
     
-    // Set small canvas size (1x1 pixel is enough)
-    canvas.width = 2;
-    canvas.height = 2;
+    // Set slightly larger canvas size to ensure activity is registered
+    canvas.width = 4;
+    canvas.height = 4;
     
-    // Animation function that draws a tiny changing pattern
+    // Animation function that draws a changing pattern
     // This forces screen refresh without visible changes
     let frameCount = 0;
     const animate = () => {
       frameCount++;
       
-      // Alternate pixel colors very subtly (barely noticeable)
-      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.001)' : 'rgba(0,0,0,0.002)';
-      ctx.fillStyle = color;
-      ctx.fillRect(0, 0, 2, 2);
+      // Create a more varied pattern with alternating colors
+      ctx.clearRect(0, 0, 4, 4);
+      
+      // Use a different pattern every few frames to ensure activity is registered
+      const pattern = frameCount % 4;
+      
+      if (pattern === 0) {
+        ctx.fillStyle = 'rgba(0,0,0,0.001)';
+        ctx.fillRect(0, 0, 2, 2);
+        ctx.fillRect(2, 2, 2, 2);
+      } else if (pattern === 1) {
+        ctx.fillStyle = 'rgba(0,0,0,0.002)';
+        ctx.fillRect(0, 2, 2, 2);
+        ctx.fillRect(2, 0, 2, 2);
+      } else if (pattern === 2) {
+        ctx.fillStyle = 'rgba(255,255,255,0.001)';
+        ctx.fillRect(0, 0, 4, 2);
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.002)';
+        ctx.fillRect(0, 0, 2, 4);
+      }
       
       // Request next frame to keep animation loop going
       requestAnimationFrame(animate);
@@ -174,7 +136,7 @@ const KeepAwake = () => {
     // Start animation
     const animationId = requestAnimationFrame(animate);
     setKeepAwakeActive(true);
-    console.log("Canvas animation started as backup to prevent sleep");
+    console.log("Enhanced canvas animation started to prevent sleep");
     
     // Cleanup function
     return () => {
@@ -182,13 +144,13 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Full screen refresh method - more aggressive approach for difficult TVs
+  // More aggressive screen refresh method - improved for Firestick and TV compatibility
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing aggressive screen refresh system");
     
-    // Use a stronger approach every 30 seconds
+    // Use a stronger approach every 15 seconds (more frequent than before)
     const aggressiveRefreshInterval = setInterval(() => {
       // Force full reflow by manipulating layout properties
       document.body.style.zoom = "0.99999";
@@ -202,65 +164,107 @@ const KeepAwake = () => {
         }
       }, 100);
       
-      // Create and remove an element to trigger DOM updates
-      const forcedRefreshElement = document.createElement('div');
-      forcedRefreshElement.style.position = 'fixed';
-      forcedRefreshElement.style.top = '0';
-      forcedRefreshElement.style.left = '0';
-      forcedRefreshElement.style.width = '100%';
-      forcedRefreshElement.style.height = '100%';
-      forcedRefreshElement.style.pointerEvents = 'none';
-      forcedRefreshElement.style.opacity = '0.01';
-      forcedRefreshElement.style.zIndex = '-1';
+      // Create and remove more elements to trigger DOM updates
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const forcedRefreshElement = document.createElement('div');
+          forcedRefreshElement.style.position = 'fixed';
+          forcedRefreshElement.style.top = `${i * 10}px`;
+          forcedRefreshElement.style.left = `${i * 10}px`;
+          forcedRefreshElement.style.width = '100%';
+          forcedRefreshElement.style.height = '100%';
+          forcedRefreshElement.style.pointerEvents = 'none';
+          forcedRefreshElement.style.opacity = '0.001';
+          forcedRefreshElement.style.zIndex = '-1';
+          
+          document.body.appendChild(forcedRefreshElement);
+          
+          // Force layout calculation
+          forcedRefreshElement.getBoundingClientRect();
+          
+          setTimeout(() => {
+            if (document.body.contains(forcedRefreshElement)) {
+              document.body.removeChild(forcedRefreshElement);
+            }
+          }, 100);
+        }, i * 50);
+      }
       
-      document.body.appendChild(forcedRefreshElement);
+      // Additional CSS animation trigger
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        @keyframes keepAwakeAnimation {
+          0% { opacity: 0.9999; }
+          100% { opacity: 1; }
+        }
+        body {
+          animation: keepAwakeAnimation 0.1s;
+        }
+      `;
+      document.head.appendChild(styleElement);
       
       setTimeout(() => {
-        if (document.body.contains(forcedRefreshElement)) {
-          document.body.removeChild(forcedRefreshElement);
-        }
+        document.head.removeChild(styleElement);
       }, 200);
       
-    }, 30000); // Every 30 seconds
+    }, 15000); // Every 15 seconds - more frequent for Firestick
     
     return () => {
       clearInterval(aggressiveRefreshInterval);
     };
   }, [isTV]);
   
-  // Simulate user activity every 15 seconds to prevent sleep
+  // Enhanced activity simulation specifically for Firestick
   useEffect(() => {
     if (!isTV) return;
     
-    console.log("KeepAwake activity simulation activated for TV display");
+    console.log("Enhanced activity simulation activated for TV display");
     
-    // Simulate small DOM interactions to keep the device awake
+    // Simulate more varied DOM interactions to keep the device awake
     const activityInterval = setInterval(() => {
-      // Create a temporary div with minimal visual impact
-      const tempElement = document.createElement('div');
-      tempElement.style.position = 'fixed';
-      tempElement.style.left = '-9999px';
-      tempElement.style.width = '1px';
-      tempElement.style.height = '1px';
-      document.body.appendChild(tempElement);
+      // Simulate scroll events
+      window.dispatchEvent(new CustomEvent('scroll'));
       
-      // Force layout calculation and remove element 
-      tempElement.getBoundingClientRect();
-      setTimeout(() => {
-        document.body.removeChild(tempElement);
-      }, 50);
+      // Simulate mouse movement (Firestick might detect this)
+      window.dispatchEvent(new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: Math.random() * window.innerWidth,
+        clientY: Math.random() * window.innerHeight
+      }));
       
-      // Trigger a full repaint for devices that need more activity
-      document.body.style.opacity = "0.99999";
+      // Create temporary elements with different properties
+      for (let i = 0; i < 2; i++) {
+        const tempElement = document.createElement('div');
+        tempElement.style.position = 'fixed';
+        tempElement.style.left = `${Math.random() * 100}%`;
+        tempElement.style.top = `${Math.random() * 100}%`;
+        tempElement.style.width = '2px';
+        tempElement.style.height = '2px';
+        tempElement.style.backgroundColor = 'rgba(0,0,0,0.001)';
+        document.body.appendChild(tempElement);
+        
+        // Force layout calculation and remove element 
+        tempElement.getBoundingClientRect();
+        setTimeout(() => {
+          if (document.body.contains(tempElement)) {
+            document.body.removeChild(tempElement);
+          }
+        }, 50);
+      }
+      
+      // Trigger a full repaint using different method
+      document.body.style.filter = "brightness(100%)";
       setTimeout(() => {
-        document.body.style.opacity = "1";
+        document.body.style.filter = "none";
       }, 10);
       
       // Log activity occasionally to avoid console spam
       if (Math.random() < 0.1) { // Only log approximately 10% of the time
-        console.log("Keep awake: Activity simulated at", new Date().toISOString());
+        console.log("Keep awake: Enhanced activity simulated at", new Date().toISOString());
       }
-    }, 15000); // Every 15 seconds
+    }, 10000); // Every 10 seconds - more frequent for Firestick
     
     return () => {
       clearInterval(activityInterval);
@@ -313,25 +317,9 @@ const KeepAwake = () => {
           position: 'fixed',
           right: 0,
           bottom: 0,
-          width: '1px',
-          height: '1px',
+          width: '4px',
+          height: '4px',
           opacity: 0.01,
-          pointerEvents: 'none',
-          zIndex: -1
-        }}
-      />
-      {/* Hidden video element that will use the silent-video.mp4 */}
-      <video
-        id={KEEP_AWAKE_VIDEO_ID}
-        ref={videoRef}
-        muted
-        loop
-        playsInline
-        style={{
-          position: 'fixed',
-          width: '1px',
-          height: '1px',
-          opacity: 0,
           pointerEvents: 'none',
           zIndex: -1
         }}
@@ -365,7 +353,7 @@ const KeepAwake = () => {
               color: keepAwakeActive ? 'green' : 'red', 
               fontWeight: 'bold' 
             }}>
-              • Video: {keepAwakeActive ? 'Active' : 'Inactive'}
+              • Canvas Animation: {keepAwakeActive ? 'Active' : 'Inactive'}
             </div>
             <div style={{ 
               color: wakeLockActive ? 'green' : 'red', 
