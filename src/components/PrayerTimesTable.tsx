@@ -1,6 +1,5 @@
 
 import { PrayerTime } from "@/types";
-import { useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";

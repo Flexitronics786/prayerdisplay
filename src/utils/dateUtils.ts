@@ -33,6 +33,8 @@ export const convertTo24Hour = (time12h: string): string => {
 };
 
 export const convertTo12Hour = (time24h: string): string => {
+  if (!time24h || !time24h.includes(':')) return "";
+  
   let [hours, minutes] = time24h.split(':');
   const hoursNum = parseInt(hours, 10);
   
