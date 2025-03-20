@@ -9,7 +9,6 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
-import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { Toaster } from "sonner";
 
 const Index = () => {
@@ -18,8 +17,7 @@ const Index = () => {
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts (without directly using the returned value)
-  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  // NOTE: Removed duplicate usePrayerTimeAlerts initialization as it's already in PrayerTimesTable
 
   useEffect(() => {
     const dateInterval = setInterval(() => {

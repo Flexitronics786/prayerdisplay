@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -143,13 +142,12 @@ export const usePrayerTimeAlerts = (
       }
       
       prayers.forEach(prayer => {
-        // For Maghrib use start time, for others use Jamat time
-        const useJamat = prayer !== "Maghrib";
-        const prayerTime = getPrayerTime(prayer, useJamat);
+        // IMPORTANT: Always use JAMAT times for alerts, not start times
+        const jamatTime = getJamatTime(prayer);
         
-        if (prayerTime) {
+        if (jamatTime) {
           // Store only the HH:MM part for comparison
-          jamatTimes[prayer] = prayerTime.substring(0, 5);
+          jamatTimes[prayer] = jamatTime.substring(0, 5);
         }
       });
       
@@ -173,23 +171,23 @@ export const usePrayerTimeAlerts = (
     return () => clearTimeout(midnightTimer);
   }, [detailedTimes]);
 
-  // Helper to get prayer time for specific prayer
-  const getPrayerTime = (name: PrayerNotificationType, isJamat: boolean): string | null => {
+  // Helper to get prayer time for specific prayer - JAMAT TIMES ONLY
+  const getJamatTime = (name: PrayerNotificationType): string | null => {
     if (!detailedTimes) return null;
     
     switch (name) {
       case "Fajr":
-        return isJamat ? detailedTimes.fajr_jamat : null;
+        return detailedTimes.fajr_jamat;
       case "Zuhr":
-        return isJamat ? detailedTimes.zuhr_jamat : null;
+        return detailedTimes.zuhr_jamat;
       case "Asr":
-        return isJamat ? detailedTimes.asr_jamat : null;
+        return detailedTimes.asr_jamat;
       case "Maghrib":
-        return detailedTimes.maghrib_iftar; // Use start time for Maghrib
+        return detailedTimes.maghrib_iftar; // Maghrib uses iftar time
       case "Isha":
-        return isJamat ? detailedTimes.isha_first_jamat : null;
+        return detailedTimes.isha_first_jamat;
       case "Jummah":
-        return isJamat ? detailedTimes.zuhr_jamat : null; // Use Zuhr Jamat time for Jummah
+        return detailedTimes.zuhr_jamat; // Use Zuhr Jamat time for Jummah
       default:
         return null;
     }
