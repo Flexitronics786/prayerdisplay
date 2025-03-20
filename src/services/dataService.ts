@@ -1,3 +1,4 @@
+
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,15 +45,28 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   const maghribTime = maghribIndex !== -1 ? updatedTimes[maghribIndex].time : '';
   const ishaTime = ishaIndex !== -1 ? updatedTimes[ishaIndex].time : '';
   
+  // Get prayer start times from detailed times
+  let fajrStartTime = '';
+  let dhuhrStartTime = '';
   let asrStartTime = '';
   let maghribStartTime = '';
+  let ishaStartTime = '';
   let fajrStartTimeNextDay = '';
   
   if (detailedTimes) {
+    fajrStartTime = detailedTimes.sehri_end || '';
+    dhuhrStartTime = detailedTimes.zuhr_start || '';
     asrStartTime = detailedTimes.asr_start || '';
     maghribStartTime = detailedTimes.maghrib_iftar || '';
-    fajrStartTimeNextDay = detailedTimes.fajr_jamat || '';
+    ishaStartTime = detailedTimes.isha_start || '';
   }
+  
+  // If start times aren't available, use jamat times
+  if (!fajrStartTime && fajrTime) fajrStartTime = fajrTime;
+  if (!dhuhrStartTime && dhuhrTime) dhuhrStartTime = dhuhrTime;
+  if (!asrStartTime && asrTime) asrStartTime = asrTime;
+  if (!maghribStartTime && maghribTime) maghribStartTime = maghribTime;
+  if (!ishaStartTime && ishaTime) ishaStartTime = ishaTime;
   
   // Calculate one hour after Maghrib
   let oneHourAfterMaghrib = '';
@@ -63,42 +77,47 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
     oneHourAfterMaghrib = `${newHour.toString().padStart(2, '0')}:${mMinutes.toString().padStart(2, '0')}`;
   }
   
-  // Determine current prayer based on rules
+  // Determine current prayer based on start times
   // Rule 1: Fajr is active from its start until Sunrise
   if (fajrIndex !== -1 && sunriseIndex !== -1 && 
-      !isTimeBefore(currentTime, fajrTime) && 
+      !isTimeBefore(currentTime, fajrStartTime) && 
       isTimeBefore(currentTime, sunriseTime)) {
     updatedTimes[fajrIndex].isActive = true;
   }
   
   // Rule 2: Dhuhr is active from its start until Asr starts
-  if (dhuhrIndex !== -1 && 
-      !isTimeBefore(currentTime, dhuhrTime) && 
-      (asrStartTime ? isTimeBefore(currentTime, asrStartTime) : isTimeBefore(currentTime, asrTime))) {
+  if (dhuhrIndex !== -1 && asrStartTime && 
+      !isTimeBefore(currentTime, dhuhrStartTime) && 
+      isTimeBefore(currentTime, asrStartTime)) {
     updatedTimes[dhuhrIndex].isActive = true;
   }
   
   // Rule 3: Asr is active from its start until Maghrib starts
-  if (asrIndex !== -1 && 
-      !isTimeBefore(currentTime, asrTime) && 
-      isTimeBefore(currentTime, maghribTime)) {
+  if (asrIndex !== -1 && maghribStartTime && 
+      !isTimeBefore(currentTime, asrStartTime) && 
+      isTimeBefore(currentTime, maghribStartTime)) {
     updatedTimes[asrIndex].isActive = true;
   }
   
-  // Rule 4: Maghrib is active from its start until 1 hour after
-  if (maghribIndex !== -1 && 
-      !isTimeBefore(currentTime, maghribTime) && 
-      isTimeBefore(currentTime, oneHourAfterMaghrib)) {
-    updatedTimes[maghribIndex].isActive = true;
+  // Rule 4: Maghrib is active from its start until Isha starts or 1 hour after
+  if (maghribIndex !== -1) {
+    if (ishaStartTime && !isTimeBefore(currentTime, maghribStartTime) && 
+        isTimeBefore(currentTime, ishaStartTime)) {
+      updatedTimes[maghribIndex].isActive = true;
+    } else if (!ishaStartTime && !isTimeBefore(currentTime, maghribStartTime) && 
+        isTimeBefore(currentTime, oneHourAfterMaghrib)) {
+      // Fallback to 1 hour rule if no Isha start time
+      updatedTimes[maghribIndex].isActive = true;
+    }
   }
   
   // Rule 5: Isha is active from its start until Fajr starts (next day)
-  if (ishaIndex !== -1 && !isTimeBefore(currentTime, ishaTime)) {
+  if (ishaIndex !== -1 && !isTimeBefore(currentTime, ishaStartTime)) {
     // If it's after Isha time and before midnight
     updatedTimes[ishaIndex].isActive = true;
   } else if (ishaIndex !== -1 && currentHour < 12) {
     // If it's after midnight but before Fajr (using midnight to noon as approximate)
-    if (fajrTime && isTimeBefore(currentTime, fajrTime)) {
+    if (fajrStartTime && isTimeBefore(currentTime, fajrStartTime)) {
       updatedTimes[ishaIndex].isActive = true;
     }
   }
@@ -106,15 +125,15 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   // Determine next prayer
   let nextPrayerFound = false;
   
-  // Create an array of prayers in chronological order for the day
+  // Create an array of prayers in chronological order for the day with start times
   const orderedPrayers = [
-    { index: fajrIndex, time: fajrTime },
+    { index: fajrIndex, time: fajrStartTime || fajrTime },
     { index: sunriseIndex, time: sunriseTime }, // Not a prayer but a time marker
-    { index: dhuhrIndex, time: dhuhrTime },
-    { index: asrIndex, time: asrTime },
-    { index: maghribIndex, time: maghribTime },
-    { index: ishaIndex, time: ishaTime }
-  ].filter(p => p.index !== -1);
+    { index: dhuhrIndex, time: dhuhrStartTime || dhuhrTime },
+    { index: asrIndex, time: asrStartTime || asrTime },
+    { index: maghribIndex, time: maghribStartTime || maghribTime },
+    { index: ishaIndex, time: ishaStartTime || ishaTime }
+  ].filter(p => p.index !== -1 && p.time);
   
   // Find the next prayer that hasn't started yet
   for (const prayer of orderedPrayers) {
