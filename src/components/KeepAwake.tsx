@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { Switch } from "@/components/ui/switch";
@@ -6,19 +7,19 @@ import { useToast } from "@/hooks/use-toast";
 // Create unique ID for the keep-awake audio element to avoid conflicts
 const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
 
-// Define our own interface for WakeLockSentinel instead of extending Navigator
-interface WakeLockSentinel {
+// Define our own interface with a different name to avoid conflicts with built-in types
+interface CustomWakeLockSentinel {
   release: () => Promise<void>;
 }
 
 // Define the WakeLock API interface separately
-interface WakeLockAPI {
-  request: (type: string) => Promise<WakeLockSentinel>;
+interface CustomWakeLockAPI {
+  request: (type: string) => Promise<CustomWakeLockSentinel>;
 }
 
 // Extend Navigator type without inheritance conflicts
 interface NavigatorWithWakeLock extends Navigator {
-  wakeLock?: WakeLockAPI;
+  wakeLock?: CustomWakeLockAPI;
 }
 
 const KeepAwake = () => {
@@ -29,7 +30,7 @@ const KeepAwake = () => {
   const [wakeLockActive, setWakeLockActive] = useState(false);
   const [audioDebugMode, setAudioDebugMode] = useState(false);
   const { toast } = useToast();
-  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const wakeLockRef = useRef<CustomWakeLockSentinel | null>(null);
   
   // Wake Lock API - modern browsers support
   useEffect(() => {
