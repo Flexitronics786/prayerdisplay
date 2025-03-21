@@ -1,9 +1,7 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 // Create a type for our supported prayer notifications
 type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha" | "Jummah";
@@ -226,11 +224,6 @@ export const usePrayerTimeAlerts = (
     // Reset to the beginning 
     audioRef.current.currentTime = 0;
     audioRef.current.volume = 0.7; // Ensure volume is set correctly
-    
-    // Display a toast notification
-    toast.info(`${prayerName} prayer time`, {
-      duration: 5000,
-    });
     
     console.log(`Playing alert for ${prayerName} prayer time`);
     
