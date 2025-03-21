@@ -18,8 +18,6 @@ export const formatTime = (date: Date = new Date()): string => {
 };
 
 export const convertTo24Hour = (time12h: string): string => {
-  if (!time12h || !time12h.includes(' ')) return time12h;
-  
   const [time, modifier] = time12h.split(' ');
   let [hours, minutes] = time.split(':');
   
@@ -35,8 +33,6 @@ export const convertTo24Hour = (time12h: string): string => {
 };
 
 export const convertTo12Hour = (time24h: string): string => {
-  if (!time24h || !time24h.includes(':')) return "";
-  
   let [hours, minutes] = time24h.split(':');
   const hoursNum = parseInt(hours, 10);
   
@@ -53,35 +49,23 @@ export const convertTo12Hour = (time24h: string): string => {
   return `${hours12}:${minutes} ${period}`;
 };
 
-// Fixed time comparison function
 export const isTimeBefore = (time1: string, time2: string): boolean => {
   if (!time1 || !time2) return false;
   
-  // Convert time strings to minutes since midnight for easier comparison
-  const getMinutesSinceMidnight = (timeStr: string): number => {
-    // Ensure we're using 24-hour format
-    const timeParts = timeStr.split(':');
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1].split(' ')[0], 10);
-    return hours * 60 + minutes;
-  };
+  // Ensure we have just HH:MM format
+  const t1 = time1.split(':').slice(0, 2).join(':');
+  const t2 = time2.split(':').slice(0, 2).join(':');
   
-  // Ensure both times are in 24-hour format
-  let t1 = time1;
-  let t2 = time2;
+  const [hours1, minutes1] = t1.split(':').map(Number);
+  const [hours2, minutes2] = t2.split(':').map(Number);
   
-  if (time1.includes(' ')) {
-    t1 = convertTo24Hour(time1);
+  if (hours1 < hours2) {
+    return true;
+  } else if (hours1 === hours2 && minutes1 < minutes2) {
+    return true;
   }
   
-  if (time2.includes(' ')) {
-    t2 = convertTo24Hour(time2);
-  }
-  
-  const minutes1 = getMinutesSinceMidnight(t1);
-  const minutes2 = getMinutesSinceMidnight(t2);
-  
-  return minutes1 < minutes2;
+  return false;
 };
 
 export const getCurrentTime24h = (): string => {

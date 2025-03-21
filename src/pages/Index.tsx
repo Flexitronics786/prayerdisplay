@@ -18,10 +18,9 @@ const Index = () => {
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Explicitly initialize prayer alerts at the top level for TV displays
-  // This ensures alerts work properly on TVs where component nesting can cause issues
+  // Initialize prayer time alerts (without directly using the returned value)
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
-  
+
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
@@ -38,20 +37,8 @@ const Index = () => {
     <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
       <KeepAwake />
-      {/* Enhanced Toaster for TV displays */}
-      <Toaster 
-        position={isTV ? "top-center" : "bottom-right"} 
-        toastOptions={{ 
-          className: isTV ? 'tv-toast' : '',
-          duration: isTV ? 10000 : 5000, // Longer duration for TV
-          style: isTV ? { 
-            fontSize: '1.5rem', 
-            padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.95)',
-            border: '2px solid #dbb654'
-          } : {} 
-        }} 
-      />
+      {/* Add Toaster for notifications */}
+      <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ className: isTV ? 'tv-toast' : '' }} />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">
         <div className="grid grid-cols-1 gap-4 flex-grow">

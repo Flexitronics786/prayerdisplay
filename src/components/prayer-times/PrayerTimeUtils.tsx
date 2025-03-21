@@ -33,7 +33,6 @@ export const getSunriseTime = (prayerTimes: PrayerTime[]) => {
   return sunrise ? convertTo12Hour(sunrise.time) : "";
 };
 
-// Using start times consistently for display and calculation
 export const getFajrStart = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[]) => {
   if (detailedTimes && detailedTimes.sehri_end) {
     return convertTo12Hour(detailedTimes.sehri_end);
