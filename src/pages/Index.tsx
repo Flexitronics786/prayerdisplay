@@ -18,7 +18,7 @@ const Index = () => {
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts
+  // Initialize prayer time alerts (without directly using the returned value)
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
@@ -38,10 +38,7 @@ const Index = () => {
       <div className="pattern-overlay"></div>
       <KeepAwake />
       {/* Add Toaster for notifications */}
-      <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ 
-        className: isTV ? 'tv-toast' : '',
-        style: { zIndex: 1000 }
-      }} />
+      <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ className: isTV ? 'tv-toast' : '' }} />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">
         <div className="grid grid-cols-1 gap-4 flex-grow">
