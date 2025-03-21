@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 // Create a type for our supported prayer notifications
 type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha" | "Jummah";
@@ -32,7 +31,7 @@ export const usePrayerTimeAlerts = (
     const fetchAudioUrl = async () => {
       try {
         // First try to use a local file from the public directory
-        const localBeepUrl = "/alert-beep.mp3";
+        const localBeepUrl = "/beep-125033.mp3";
         
         // Create audio element
         if (typeof window !== "undefined" && !audioInitializedRef.current) {
@@ -44,7 +43,8 @@ export const usePrayerTimeAlerts = (
             existingAudio = document.createElement('audio');
             existingAudio.id = PRAYER_ALERT_AUDIO_ID;
             existingAudio.preload = "auto"; // Preload the audio
-            existingAudio.volume = 0.7;
+            existingAudio.volume = 1.0; // Maximum volume
+            existingAudio.muted = false; // Ensure not muted
             document.body.appendChild(existingAudio);
             
             // Try to load the local file first
@@ -101,13 +101,14 @@ export const usePrayerTimeAlerts = (
             if (audioRef.current) {
               // Create a silent buffer to play
               audioRef.current.volume = 0.001;
+              audioRef.current.muted = false; // Ensure not muted
               const playPromise = audioRef.current.play();
               if (playPromise !== undefined) {
                 playPromise.then(() => {
                   if (audioRef.current) {
                     audioRef.current.pause();
                     audioRef.current.currentTime = 0;
-                    audioRef.current.volume = 0.7;
+                    audioRef.current.volume = 1.0; // Set to max volume
                     console.log("Audio unlocked for future playback");
                   }
                 }).catch(e => {
@@ -208,71 +209,75 @@ export const usePrayerTimeAlerts = (
     }
   };
 
-  // Function to play the alert sound for exactly 1 second
+  // Function to play the alert sound once
   const playAlertSound = (prayerName: string) => {
     if (!audioRef.current) {
       console.error("Audio reference not available");
       return;
     }
     
-    // Stop any other audio that might be playing
-    const allAudioElements = document.querySelectorAll('audio');
-    allAudioElements.forEach(audio => {
-      if (audio.id !== PRAYER_ALERT_AUDIO_ID && !audio.paused) {
-        audio.pause();
+    // For TV devices, create a new audio element for better compatibility
+    const isTV = window.navigator.userAgent.toLowerCase().includes('tv') || 
+                 window.navigator.userAgent.toLowerCase().includes('firetv') ||
+                 window.navigator.userAgent.toLowerCase().includes('fire tv') ||
+                 window.navigator.userAgent.toLowerCase().includes('webos') ||
+                 window.navigator.userAgent.toLowerCase().includes('tizen');
+                 
+    if (isTV) {
+      console.log("TV device detected, using special playback method for:", prayerName);
+      
+      // Create a temporary audio element for this specific play
+      const tempAudio = new Audio(audioUrl || "/beep-125033.mp3");
+      tempAudio.volume = 1.0;
+      tempAudio.muted = false;
+      tempAudio.autoplay = true;
+      
+      // Force loading and playing
+      tempAudio.load();
+      tempAudio.play().then(() => {
+        console.log(`Playing TV alert sound for ${prayerName} prayer time`);
+      }).catch(err => {
+        console.error(`TV audio playback failed for ${prayerName}:`, err);
+      });
+      
+      return;
+    }
+    
+    // For non-TV devices, use the standard approach
+    try {
+      // Stop any current playback
+      if (!audioRef.current.paused) {
+        audioRef.current.pause();
       }
-    });
-    
-    // Reset to the beginning 
-    audioRef.current.currentTime = 0;
-    audioRef.current.volume = 0.7; // Ensure volume is set correctly
-    
-    // Display a toast notification
-    toast.info(`${prayerName} prayer time`, {
-      duration: 5000,
-    });
-    
-    console.log(`Playing alert for ${prayerName} prayer time`);
-    
-    // Play the sound multiple times with increasing volume to ensure it's heard
-    const attemptToPlay = (attempt = 1, maxAttempts = 3) => {
-      if (!audioRef.current) return;
       
-      // Increase volume slightly with each attempt
-      audioRef.current.volume = Math.min(0.7 + (attempt * 0.1), 1.0);
+      // Reset to the beginning 
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 1.0; // Full volume
+      audioRef.current.muted = false; // Ensure not muted
       
-      const playPromise = audioRef.current.play();
+      console.log(`Playing alert for ${prayerName} prayer time`);
       
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            // Set a timeout to stop the sound after 2 seconds
-            setTimeout(() => {
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-                console.log("Prayer notification beep completed");
-              }
-            }, 2000); // 2 second duration for better chance of being heard
-          })
-          .catch(err => {
-            console.error(`Error playing prayer alert sound (attempt ${attempt}):`, err);
-            
-            // Try again with a delay if we haven't reached max attempts
-            if (attempt < maxAttempts) {
-              setTimeout(() => {
-                attemptToPlay(attempt + 1, maxAttempts);
-              }, 500);
-            }
-          });
-      }
-    };
-    
-    // Start playing with attempt 1
-    attemptToPlay();
+      // Play the sound once
+      audioRef.current.play().then(() => {
+        console.log(`Alert sound played successfully for ${prayerName}`);
+      }).catch(err => {
+        console.error(`Error playing alert sound for ${prayerName}:`, err);
+        
+        // Fallback to a new Audio instance if the main one fails
+        try {
+          const fallbackAudio = new Audio(audioUrl || "/beep-125033.mp3");
+          fallbackAudio.volume = 1.0;
+          fallbackAudio.play().catch(e => console.error("Fallback audio also failed:", e));
+        } catch (fallbackError) {
+          console.error("Complete audio failure:", fallbackError);
+        }
+      });
+    } catch (error) {
+      console.error("Error during sound playback:", error);
+    }
   };
 
-  // Check and play alerts
+  // Check for prayer times more frequently (every 5 seconds)
   useEffect(() => {
     if (!detailedTimes || !audioInitializedRef.current) return;
     
@@ -295,18 +300,19 @@ export const usePrayerTimeAlerts = (
           // Mark this time as checked
           checkedTimesRef.current.add(timeKey);
           
-          // Play alert sound and show notification
+          // Play alert sound (no toast)
           playAlertSound(prayer);
+          console.log(`Prayer time alert for ${prayer} at ${prayerMinutes}`);
         }
       });
     };
     
-    // Check immediately and then every 10 seconds
+    // Check immediately and then every 5 seconds (more frequent checks)
     checkTimes();
-    const interval = setInterval(checkTimes, 10000);
+    const interval = setInterval(checkTimes, 5000);
     
     return () => clearInterval(interval);
-  }, [detailedTimes, lastCheckedMinute, audioInitializedRef.current]);
+  }, [detailedTimes, lastCheckedMinute, audioUrl, audioInitializedRef.current]);
 
   // Reset the checked times at midnight
   useEffect(() => {
