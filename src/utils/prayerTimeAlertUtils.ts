@@ -22,17 +22,17 @@ export const getPrayerTime = (
   
   switch (name) {
     case "Fajr":
-      return isJamat ? detailedTimes.fajr_jamat : null;
+      return isJamat ? detailedTimes.fajr_jamat : detailedTimes.sehri_end;
     case "Zuhr":
-      return isJamat ? detailedTimes.zuhr_jamat : null;
+      return isJamat ? detailedTimes.zuhr_jamat : detailedTimes.zuhr_start;
     case "Asr":
-      return isJamat ? detailedTimes.asr_jamat : null;
+      return isJamat ? detailedTimes.asr_jamat : detailedTimes.asr_start;
     case "Maghrib":
       return detailedTimes.maghrib_iftar; // Use start time for Maghrib
     case "Isha":
-      return isJamat ? detailedTimes.isha_first_jamat : null;
+      return isJamat ? detailedTimes.isha_first_jamat : detailedTimes.isha_start;
     case "Jummah":
-      return isJamat ? detailedTimes.zuhr_jamat : null; // Use Zuhr Jamat time for Jummah
+      return isJamat ? detailedTimes.zuhr_jamat : detailedTimes.zuhr_start; // Use Zuhr Jamat time for Jummah
     default:
       return null;
   }
@@ -49,7 +49,7 @@ export const updateDailyJamatTimes = (detailedTimes: DetailedPrayerTime | null):
   
   // Add Jummah on Fridays
   const dayOfWeek = new Date().getDay();
-  if (dayOfWeek === 5) {
+  if (dayOfWeek === 5) { // 5 is Friday
     prayers.push("Jummah");
   }
   
@@ -80,6 +80,9 @@ export const checkPrayerTimes = (
   // Format: HH:MM
   const currentMinutes = currentTime.substring(0, 5);
   
+  // Debug current time check
+  console.log(`Checking prayer times at ${currentMinutes}`);
+  
   // Check each stored jamat time from our daily record
   Object.entries(jamatTimes).forEach(([prayer, prayerMinutes]) => {
     // Create a unique key for this prayer time
@@ -92,7 +95,33 @@ export const checkPrayerTimes = (
       
       // Play alert sound
       onPlayAlert(prayer);
-      console.log(`Prayer time alert for ${prayer} at ${prayerMinutes}`);
+      console.log(`Prayer time alert triggered for ${prayer} at ${prayerMinutes}`);
     }
   });
 };
+
+/**
+ * Compare times to track upcoming prayers
+ */
+export const isUpcomingPrayer = (
+  prayerTime: string, 
+  currentTime: string,
+  windowMinutes: number = 5
+): boolean => {
+  try {
+    const [prayerHour, prayerMinute] = prayerTime.split(':').map(Number);
+    const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+    
+    const prayerTotalMinutes = prayerHour * 60 + prayerMinute;
+    const currentTotalMinutes = currentHour * 60 + currentMinute;
+    
+    const minutesUntilPrayer = prayerTotalMinutes - currentTotalMinutes;
+    
+    // Return true if prayer is within the window (but not past)
+    return minutesUntilPrayer >= 0 && minutesUntilPrayer <= windowMinutes;
+  } catch (error) {
+    console.error("Error comparing prayer times:", error);
+    return false;
+  }
+};
+

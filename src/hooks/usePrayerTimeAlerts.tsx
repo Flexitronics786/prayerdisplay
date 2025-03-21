@@ -24,6 +24,7 @@ export const usePrayerTimeAlerts = (
   const [audioUrl, setAudioUrl] = useState<string>("");
   const dailyJamatTimesRef = useRef<DailyJamatTimes>({});
   const audioInitializedRef = useRef<boolean>(false);
+  const userInteractionOccurredRef = useRef<boolean>(false);
 
   // Initialize audio element and fetch the audio URL
   useEffect(() => {
@@ -41,20 +42,10 @@ export const usePrayerTimeAlerts = (
           // Add fallback to Supabase if local file fails
           setupAudioFallback(audioElement, (url) => setAudioUrl(url));
           
-          // Initialize with a user interaction to bypass autoplay restrictions
-          const handleUserInteraction = () => {
-            if (audioRef.current) {
-              unlockAudio(audioRef.current);
-            }
-            
-            // Remove event listeners after one use
-            document.removeEventListener('click', handleUserInteraction);
-            document.removeEventListener('touchstart', handleUserInteraction);
-          };
+          console.log("Prayer alert audio system initialized");
           
-          // Add event listeners to unlock audio on user interaction
-          document.addEventListener('click', handleUserInteraction, { once: true });
-          document.addEventListener('touchstart', handleUserInteraction, { once: true });
+          // Try to initialize audio immediately for browsers that allow it
+          unlockAudio(audioElement);
         }
       } catch (error) {
         console.error("Error setting up audio:", error);
@@ -65,9 +56,31 @@ export const usePrayerTimeAlerts = (
     
     return () => {
       // Don't remove the audio element on cleanup, just release our reference
-      if (audioRef.current) {
-        audioRef.current = null;
+      audioRef.current = null;
+    };
+  }, []);
+
+  // Listen for user interaction to unlock audio
+  useEffect(() => {
+    if (!audioRef.current || userInteractionOccurredRef.current) return;
+    
+    const handleUserInteraction = () => {
+      if (audioRef.current && !userInteractionOccurredRef.current) {
+        unlockAudio(audioRef.current);
+        userInteractionOccurredRef.current = true;
+        console.log("Audio unlocked via user interaction");
       }
+    };
+    
+    // Add event listeners to unlock audio on user interaction
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+      document.removeEventListener('keydown', handleUserInteraction);
     };
   }, []);
 
@@ -85,6 +98,7 @@ export const usePrayerTimeAlerts = (
     const msUntilMidnight = midnight.getTime() - now.getTime();
     
     const midnightTimer = setTimeout(() => {
+      checkedTimesRef.current.clear(); // Reset checked times at midnight
       dailyJamatTimesRef.current = updateDailyJamatTimes(detailedTimes);
     }, msUntilMidnight);
     
@@ -93,18 +107,19 @@ export const usePrayerTimeAlerts = (
 
   // Function to play the alert sound once
   const handlePlayAlert = (prayerName: string) => {
+    console.log(`Prayer time alert triggered for ${prayerName}`);
     playAlertSound(prayerName, audioRef.current, audioUrl);
   };
 
-  // Check for prayer times frequently (every 5 seconds)
+  // Check for prayer times every few seconds
   useEffect(() => {
-    if (!detailedTimes || !audioInitializedRef.current) return;
+    if (!detailedTimes) return;
     
     const checkTimes = () => {
       const currentTime24h = getCurrentTime24h();
       // Only check once per minute
-      if (currentTime24h === lastCheckedMinute) return;
-      setLastCheckedMinute(currentTime24h);
+      if (currentTime24h.substring(0, 5) === lastCheckedMinute) return;
+      setLastCheckedMinute(currentTime24h.substring(0, 5));
       
       checkPrayerTimes(
         currentTime24h, 
@@ -119,7 +134,7 @@ export const usePrayerTimeAlerts = (
     const interval = setInterval(checkTimes, 5000);
     
     return () => clearInterval(interval);
-  }, [detailedTimes, lastCheckedMinute, audioUrl, audioInitializedRef.current]);
+  }, [detailedTimes, lastCheckedMinute, audioUrl]);
 
   // Reset the checked times at midnight
   useEffect(() => {
@@ -137,3 +152,4 @@ export const usePrayerTimeAlerts = (
 
   return null; // This hook doesn't render anything
 };
+
