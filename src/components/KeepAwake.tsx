@@ -6,7 +6,7 @@ const KeepAwake = () => {
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
-  // Method 1: Canvas-based animation that keeps the screen awake
+  // Method 1: Canvas-based animation that keeps the screen awake (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV || !canvasRef.current) return;
     
@@ -20,7 +20,7 @@ const KeepAwake = () => {
       return;
     }
     
-    // Set small canvas size (1x1 pixel is enough)
+    // Set small canvas size (2x2 pixels)
     canvas.width = 2;
     canvas.height = 2;
     
@@ -30,8 +30,8 @@ const KeepAwake = () => {
     const animate = () => {
       frameCount++;
       
-      // Alternate pixel colors very subtly (barely noticeable)
-      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.001)' : 'rgba(0,0,0,0.002)';
+      // More aggressive pixel color changes (still visually subtle)
+      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.003)' : 'rgba(0,0,0,0.004)';
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, 2, 2);
       
@@ -42,7 +42,7 @@ const KeepAwake = () => {
     // Start animation
     const animationId = requestAnimationFrame(animate);
     setKeepAwakeActive(true);
-    console.log("Canvas animation started to prevent sleep");
+    console.log("Canvas animation started to prevent sleep (aggressive mode)");
     
     // Cleanup function
     return () => {
@@ -51,156 +51,194 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 2: CSS Animation to keep display active
+  // Method 2: CSS Animation to keep display active (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing CSS animation-based keep-awake system");
     
-    // Create a style element for our animation
+    // Create a style element for our animation with more frequent changes
     const styleElement = document.createElement('style');
     styleElement.textContent = `
       @keyframes keepAwakeAnimation {
-        0% { opacity: 0.999999; }
+        0% { opacity: 0.999; }
+        25% { opacity: 0.9995; }
+        50% { opacity: 0.999; }
+        75% { opacity: 0.9995; }
         100% { opacity: 1; }
       }
       
       .keep-awake-element {
         position: fixed;
-        width: 1px;
-        height: 1px;
+        width: 2px;
+        height: 2px;
         bottom: 0;
         right: 0;
-        opacity: 0.001;
+        opacity: 0.002;
         z-index: -1;
-        animation: keepAwakeAnimation 10s infinite;
+        animation: keepAwakeAnimation 5s infinite; /* Faster animation */
         pointer-events: none;
       }
     `;
     
     document.head.appendChild(styleElement);
     
-    // Create an element that uses this animation
-    const animatedElement = document.createElement('div');
-    animatedElement.className = 'keep-awake-element';
-    document.body.appendChild(animatedElement);
+    // Create multiple elements that use this animation
+    const elements = [];
+    for (let i = 0; i < 3; i++) {
+      const animatedElement = document.createElement('div');
+      animatedElement.className = 'keep-awake-element';
+      animatedElement.style.right = `${i * 2}px`;
+      document.body.appendChild(animatedElement);
+      elements.push(animatedElement);
+    }
     
-    console.log("CSS animation method initialized for keep-awake");
+    console.log("CSS animation method initialized for keep-awake (aggressive mode)");
     
     return () => {
       document.head.removeChild(styleElement);
-      document.body.removeChild(animatedElement);
+      elements.forEach(el => document.body.removeChild(el));
     };
   }, [isTV]);
   
-  // Method 3: Periodic visibility changes and focus events
+  // Method 3: Periodic visibility changes and focus events (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing visibility/focus-based keep-awake system");
     
     const focusInterval = setInterval(() => {
-      // Force a focus/blur cycle
+      // Force multiple focus/blur cycles
       window.dispatchEvent(new Event('focus'));
+      setTimeout(() => window.dispatchEvent(new Event('blur')), 100);
+      setTimeout(() => window.dispatchEvent(new Event('focus')), 200);
       
       // Force visibility state check
       if (document.hidden) {
         console.log("Document appears hidden, triggering visibility change");
       }
       
-      // Update document title slightly (can prevent sleep on some systems)
+      // Update document title more aggressively
       const currentTitle = document.title;
       document.title = currentTitle + " ";
       setTimeout(() => {
         document.title = currentTitle;
-      }, 500);
+      }, 200);
       
-    }, 30000); // Every 30 seconds
+      // Force a layout recalculation
+      document.body.getBoundingClientRect();
+      
+    }, 20000); // Every 20 seconds (more frequent)
     
-    console.log("Visibility/focus-based keep-awake method initialized");
+    console.log("Visibility/focus-based keep-awake method initialized (aggressive mode)");
     
     return () => {
       clearInterval(focusInterval);
     };
   }, [isTV]);
   
-  // Method 4: Simulate small DOM interactions to keep the device awake
+  // Method 4: Simulate DOM interactions to keep the device awake (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("KeepAwake DOM interaction method activated");
     
     const activityInterval = setInterval(() => {
-      // Create a temporary div with minimal visual impact
-      const tempElement = document.createElement('div');
-      tempElement.style.position = 'fixed';
-      tempElement.style.left = '-9999px';
-      tempElement.style.width = '1px';
-      tempElement.style.height = '1px';
-      document.body.appendChild(tempElement);
+      // Create multiple temporary elements to force more layout calculations
+      for (let i = 0; i < 3; i++) {
+        const tempElement = document.createElement('div');
+        tempElement.style.position = 'fixed';
+        tempElement.style.left = `-${9999 + i}px`;
+        tempElement.style.width = '1px';
+        tempElement.style.height = '1px';
+        document.body.appendChild(tempElement);
+        
+        // Force layout calculation
+        tempElement.getBoundingClientRect();
+        
+        setTimeout(() => {
+          document.body.removeChild(tempElement);
+        }, 50);
+      }
       
-      // Force layout calculation and remove element 
-      tempElement.getBoundingClientRect();
-      setTimeout(() => {
-        document.body.removeChild(tempElement);
-      }, 50);
-      
-      // Trigger a full repaint for devices that need more activity
-      document.body.style.opacity = "0.99999";
+      // Trigger a more aggressive repaint cycle
+      document.body.style.opacity = "0.9999";
       setTimeout(() => {
         document.body.style.opacity = "1";
       }, 10);
+      setTimeout(() => {
+        document.body.style.opacity = "0.9999";
+      }, 20);
+      setTimeout(() => {
+        document.body.style.opacity = "1";
+      }, 30);
       
       // Don't log this too often to avoid console spam
       if (Math.random() < 0.1) { // Only log approximately 10% of the time
-        console.log("Keep awake: DOM activity simulated at", new Date().toISOString());
+        console.log("Keep awake: Aggressive DOM activity simulated at", new Date().toISOString());
       }
-    }, 15000); // Every 15 seconds
+    }, 10000); // Every 10 seconds (more frequent)
     
     return () => {
       clearInterval(activityInterval);
     };
   }, [isTV]);
   
-  // Method 5: HTML5 Page Visibility API manipulation
+  // Method 5: HTML5 Page Visibility API manipulation (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing Page Visibility API keep-awake system");
     
-    // Create a hidden iframe that we can manipulate
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.opacity = '0.001';
-    iframe.style.pointerEvents = 'none';
-    iframe.style.zIndex = '-1';
+    // Create multiple hidden iframes that we can manipulate
+    const iframes = [];
+    for (let i = 0; i < 2; i++) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = `-${9999 + i}px`;
+      iframe.style.width = '1px';
+      iframe.style.height = '1px';
+      iframe.style.opacity = '0.001';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-1';
+      document.body.appendChild(iframe);
+      iframes.push(iframe);
+    }
     
-    document.body.appendChild(iframe);
-    
-    // Access iframe document if possible
+    // Access iframe documents periodically
     const iframeVisibilityInterval = setInterval(() => {
-      try {
-        if (iframe.contentWindow && iframe.contentWindow.document) {
-          // Change something in the iframe to trigger visibility processing
-          iframe.contentWindow.document.title = "keepAwake" + new Date().getTime();
+      iframes.forEach((iframe, idx) => {
+        try {
+          if (iframe.contentWindow && iframe.contentWindow.document) {
+            // Change something in the iframe to trigger visibility processing
+            iframe.contentWindow.document.title = "keepAwake" + new Date().getTime() + idx;
+            
+            // Create and remove elements in the iframe
+            const div = iframe.contentWindow.document.createElement('div');
+            iframe.contentWindow.document.body.appendChild(div);
+            setTimeout(() => {
+              try {
+                iframe.contentWindow.document.body.removeChild(div);
+              } catch (e) {
+                // Silent catch
+              }
+            }, 50);
+          }
+        } catch (e) {
+          // Silent catch to avoid console spam
         }
-      } catch (e) {
-        console.warn("Could not access iframe content for keep-awake", e);
-      }
-    }, 20000); // Every 20 seconds
+      });
+    }, 15000); // Every 15 seconds (more frequent)
     
-    console.log("Page Visibility API keep-awake method initialized");
+    console.log("Page Visibility API keep-awake method initialized (aggressive mode)");
     
     return () => {
       clearInterval(iframeVisibilityInterval);
-      document.body.removeChild(iframe);
+      iframes.forEach(iframe => document.body.removeChild(iframe));
     };
   }, [isTV]);
   
-  // Method 6: Wake Lock API - modern method to prevent device sleep
+  // Method 6: Wake Lock API - modern method to prevent device sleep (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
@@ -221,21 +259,23 @@ const KeepAwake = () => {
           // Listen for wake lock release
           wakeLock.addEventListener('release', () => {
             console.log('Wake Lock was released');
-            // Try to re-acquire the wake lock
-            setTimeout(() => requestWakeLock(), 1000);
+            // Try to re-acquire the wake lock immediately
+            setTimeout(() => requestWakeLock(), 100);
           });
         } else {
           console.log('Wake Lock API not supported on this device');
         }
       } catch (err) {
         console.error(`Failed to get wake lock: ${err}`);
+        // Try again after a short delay
+        setTimeout(() => requestWakeLock(), 1000);
       }
     };
     
     // Function to handle visibility change events
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && wakeLock === null) {
-        // The page has become visible again, try to request a wake lock
+      if (document.visibilityState === 'visible') {
+        // The page has become visible, try to request a wake lock
         requestWakeLock();
       }
     };
@@ -243,13 +283,21 @@ const KeepAwake = () => {
     // Add an event listener for visibility changes
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Request a wake lock when the component mounts
+    // Request a wake lock immediately and retry on an interval
     requestWakeLock();
+    
+    // Also set up a periodic wake lock refresh
+    const wakeLockInterval = setInterval(() => {
+      if (wakeLock === null) {
+        requestWakeLock();
+      }
+    }, 30000); // Try to reacquire every 30 seconds if needed
     
     // Cleanup function
     return () => {
       // Remove the event listener
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(wakeLockInterval);
       
       // Release the wake lock if it's active
       if (wakeLock !== null) {
@@ -265,70 +313,6 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 7: Video-based Keep-Awake System
-  useEffect(() => {
-    if (!isTV) return;
-    
-    console.log("Initializing video-based keep-awake system");
-    
-    // Create a tiny invisible video element
-    const video = document.createElement('video');
-    video.style.position = 'fixed';
-    video.style.left = '-9999px';
-    video.style.width = '1px';
-    video.style.height = '1px';
-    video.style.opacity = '0.001';
-    video.style.pointerEvents = 'none';
-    video.style.zIndex = '-1';
-    
-    // Create a MediaSource object
-    const mediaSource = new MediaSource();
-    video.src = URL.createObjectURL(mediaSource);
-    
-    // When MediaSource is open, create an empty buffer
-    mediaSource.addEventListener('sourceopen', () => {
-      try {
-        // Try to create a video buffer (this will vary by browser support)
-        const sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8"');
-        
-        // Creating an "empty" ArrayBuffer
-        const emptyBuffer = new ArrayBuffer(1024);
-        
-        // Attempt to append buffer (this may fail safely in some browsers)
-        try {
-          sourceBuffer.appendBuffer(emptyBuffer);
-        } catch (e) {
-          console.warn("Could not append buffer for video keep-awake", e);
-        }
-      } catch (e) {
-        console.warn("MediaSource not fully supported for keep-awake", e);
-      }
-    });
-    
-    // Add video to DOM
-    document.body.appendChild(video);
-    
-    // Try to play the video (may be blocked by autoplay policies)
-    video.play().catch(e => {
-      console.warn("Autoplay prevented for keep-awake video", e);
-    });
-    
-    // Periodically try to play the video again
-    const videoPlayInterval = setInterval(() => {
-      video.play().catch(() => {
-        // Silently catch errors to avoid console spam
-      });
-    }, 30000);
-    
-    console.log("Video-based keep-awake method initialized");
-    
-    return () => {
-      clearInterval(videoPlayInterval);
-      document.body.removeChild(video);
-      URL.revokeObjectURL(video.src);
-    };
-  }, [isTV]);
-  
   // Only render elements on TV displays
   if (!isTV) return null;
   
@@ -340,8 +324,8 @@ const KeepAwake = () => {
           position: 'fixed',
           right: 0,
           bottom: 0,
-          width: '1px',
-          height: '1px',
+          width: '2px',
+          height: '2px',
           opacity: 0.01,
           pointerEvents: 'none',
           zIndex: -1
