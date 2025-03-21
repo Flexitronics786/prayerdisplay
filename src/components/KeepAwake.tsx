@@ -6,7 +6,7 @@ const KeepAwake = () => {
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
-  // Create and play a silent canvas animation that keeps the screen awake
+  // Method 1: Canvas-based animation that keeps the screen awake
   useEffect(() => {
     if (!isTV || !canvasRef.current) return;
     
@@ -51,7 +51,7 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 1: CSS Animation to keep display active
+  // Method 2: CSS Animation to keep display active
   useEffect(() => {
     if (!isTV) return;
     
@@ -93,7 +93,7 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 2: Periodic visibility changes and focus events
+  // Method 3: Periodic visibility changes and focus events
   useEffect(() => {
     if (!isTV) return;
     
@@ -124,7 +124,7 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 3: Simulate small DOM interactions to keep the device awake
+  // Method 4: Simulate small DOM interactions to keep the device awake
   useEffect(() => {
     if (!isTV) return;
     
@@ -162,7 +162,7 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 4: HTML5 Page Visibility API manipulation
+  // Method 5: HTML5 Page Visibility API manipulation
   useEffect(() => {
     if (!isTV) return;
     
@@ -197,6 +197,135 @@ const KeepAwake = () => {
     return () => {
       clearInterval(iframeVisibilityInterval);
       document.body.removeChild(iframe);
+    };
+  }, [isTV]);
+  
+  // Method 6: Wake Lock API - modern method to prevent device sleep
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing Wake Lock API keep-awake system");
+    
+    let wakeLock: any = null;
+    
+    // Function to request a wake lock
+    const requestWakeLock = async () => {
+      try {
+        // Check if the Wake Lock API is supported
+        if ('wakeLock' in navigator) {
+          // Request a screen wake lock
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          
+          console.log('Wake Lock is active!');
+          
+          // Listen for wake lock release
+          wakeLock.addEventListener('release', () => {
+            console.log('Wake Lock was released');
+            // Try to re-acquire the wake lock
+            setTimeout(() => requestWakeLock(), 1000);
+          });
+        } else {
+          console.log('Wake Lock API not supported on this device');
+        }
+      } catch (err) {
+        console.error(`Failed to get wake lock: ${err}`);
+      }
+    };
+    
+    // Function to handle visibility change events
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && wakeLock === null) {
+        // The page has become visible again, try to request a wake lock
+        requestWakeLock();
+      }
+    };
+    
+    // Add an event listener for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Request a wake lock when the component mounts
+    requestWakeLock();
+    
+    // Cleanup function
+    return () => {
+      // Remove the event listener
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Release the wake lock if it's active
+      if (wakeLock !== null) {
+        wakeLock.release()
+          .then(() => {
+            console.log('Wake Lock released by cleanup');
+            wakeLock = null;
+          })
+          .catch((err: any) => {
+            console.error(`Failed to release Wake Lock: ${err}`);
+          });
+      }
+    };
+  }, [isTV]);
+  
+  // Method 7: Video-based Keep-Awake System
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing video-based keep-awake system");
+    
+    // Create a tiny invisible video element
+    const video = document.createElement('video');
+    video.style.position = 'fixed';
+    video.style.left = '-9999px';
+    video.style.width = '1px';
+    video.style.height = '1px';
+    video.style.opacity = '0.001';
+    video.style.pointerEvents = 'none';
+    video.style.zIndex = '-1';
+    
+    // Create a MediaSource object
+    const mediaSource = new MediaSource();
+    video.src = URL.createObjectURL(mediaSource);
+    
+    // When MediaSource is open, create an empty buffer
+    mediaSource.addEventListener('sourceopen', () => {
+      try {
+        // Try to create a video buffer (this will vary by browser support)
+        const sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp8"');
+        
+        // Creating an "empty" ArrayBuffer
+        const emptyBuffer = new ArrayBuffer(1024);
+        
+        // Attempt to append buffer (this may fail safely in some browsers)
+        try {
+          sourceBuffer.appendBuffer(emptyBuffer);
+        } catch (e) {
+          console.warn("Could not append buffer for video keep-awake", e);
+        }
+      } catch (e) {
+        console.warn("MediaSource not fully supported for keep-awake", e);
+      }
+    });
+    
+    // Add video to DOM
+    document.body.appendChild(video);
+    
+    // Try to play the video (may be blocked by autoplay policies)
+    video.play().catch(e => {
+      console.warn("Autoplay prevented for keep-awake video", e);
+    });
+    
+    // Periodically try to play the video again
+    const videoPlayInterval = setInterval(() => {
+      video.play().catch(() => {
+        // Silently catch errors to avoid console spam
+      });
+    }, 30000);
+    
+    console.log("Video-based keep-awake method initialized");
+    
+    return () => {
+      clearInterval(videoPlayInterval);
+      document.body.removeChild(video);
+      URL.revokeObjectURL(video.src);
     };
   }, [isTV]);
   
