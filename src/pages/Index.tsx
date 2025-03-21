@@ -9,6 +9,7 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
+import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { Toaster } from "sonner";
 
 const Index = () => {
@@ -17,8 +18,10 @@ const Index = () => {
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // NOTE: Removed duplicate usePrayerTimeAlerts initialization as it's already in PrayerTimesTable
-
+  // Explicitly initialize prayer alerts at the top level for TV displays
+  // This ensures alerts work properly on TVs where component nesting can cause issues
+  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());

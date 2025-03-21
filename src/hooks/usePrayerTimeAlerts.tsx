@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -62,11 +63,19 @@ export const usePrayerTimeAlerts = (
           setAudioUrl(localBeepUrl);
           audioInitializedRef.current = true;
           
+          // TVs especially need user interaction to unlock audio
+          if (isTV) {
+            console.log("TV detected, setting up special audio unlock handlers");
+          }
+          
           // Initialize with a user interaction to bypass autoplay restrictions
           const unlockAudio = () => {
             if (audioRef.current) {
+              console.log("Attempting to unlock audio for future playback...");
               // Create a silent buffer to play
               audioRef.current.volume = 0.001;
+              audioRef.current.muted = false; // Ensure not muted for FireTV
+              
               const playPromise = audioRef.current.play();
               if (playPromise !== undefined) {
                 playPromise.then(() => {
@@ -74,7 +83,7 @@ export const usePrayerTimeAlerts = (
                     audioRef.current.pause();
                     audioRef.current.currentTime = 0;
                     audioRef.current.volume = isTV ? 1.0 : 0.7;
-                    console.log("Audio unlocked for future playback");
+                    console.log("Audio unlocked successfully for future playback");
                   }
                 }).catch(e => {
                   console.warn("Audio unlock failed, will try again on user interaction:", e);
@@ -95,7 +104,11 @@ export const usePrayerTimeAlerts = (
           // Handle any errors loading the audio
           existingAudio.addEventListener('error', (e) => {
             console.error("Error loading audio file:", e);
-            // No need for Supabase fallback now that we have the file in public directory
+            toast({
+              title: "Audio Error",
+              description: "Failed to load prayer alert sound",
+              duration: isTV ? 10000 : 5000,
+            });
           });
           
           // Add event listeners to unlock audio on user interaction
@@ -104,11 +117,20 @@ export const usePrayerTimeAlerts = (
           
           // FireStick specific: also try to unlock on keydown events
           if (isTV) {
-            const tvUnlockAudio = () => {
+            const tvUnlockAudio = (e: KeyboardEvent) => {
+              console.log("TV key press detected, attempting to unlock audio:", e.key);
               unlockAudio();
               document.removeEventListener('keydown', tvUnlockAudio);
             };
             document.addEventListener('keydown', tvUnlockAudio, { once: true });
+            
+            // For FireTV, we need additional fallbacks
+            setTimeout(() => {
+              if (audioRef.current && !audioRef.current.paused) {
+                console.log("Auto-unlocking audio after timeout");
+                unlockAudio();
+              }
+            }, 3000);
           }
         }
       } catch (error) {
@@ -124,7 +146,7 @@ export const usePrayerTimeAlerts = (
         audioRef.current = null;
       }
     };
-  }, [isTV]);
+  }, [isTV, toast]);
 
   // Update daily jamat times at midnight or when detailed times change
   useEffect(() => {
@@ -200,6 +222,8 @@ export const usePrayerTimeAlerts = (
       return;
     }
     
+    console.log(`Attempting to play alert for ${prayerName} prayer time on ${isTV ? 'TV' : 'regular'} device`);
+    
     // Stop any other audio that might be playing
     const allAudioElements = document.querySelectorAll('audio');
     allAudioElements.forEach(audio => {
@@ -213,15 +237,14 @@ export const usePrayerTimeAlerts = (
     
     // Set higher volume for TV displays
     audioRef.current.volume = isTV ? 1.0 : 0.7;
-    
-    console.log(`Playing alert for ${prayerName} prayer time on ${isTV ? 'TV' : 'regular'} device`);
+    audioRef.current.muted = false; // Ensure not muted for FireTV
     
     // Show a toast notification alongside the sound on TV devices
     if (isTV) {
       toast({
         title: `${prayerName} Prayer Time`,
         description: "It's time for prayer",
-        duration: 10000, // Longer duration for TV
+        duration: 15000, // Longer duration for TV
       });
     }
     
@@ -229,16 +252,26 @@ export const usePrayerTimeAlerts = (
     const attemptToPlay = (attempt = 1, maxAttempts = isTV ? 5 : 3) => {
       if (!audioRef.current) return;
       
+      // Ensure audio element is properly set up for TV
+      if (isTV && attempt === 1) {
+        audioRef.current.muted = false;
+        audioRef.current.setAttribute('autoplay', 'true');
+        audioRef.current.load(); // Force reload on TV devices
+      }
+      
       // Increase volume slightly with each attempt, more aggressively for TV
       const volumeIncrement = isTV ? 0.2 : 0.1;
       const baseVolume = isTV ? 0.9 : 0.7;
       audioRef.current.volume = Math.min(baseVolume + (attempt * volumeIncrement), 1.0);
+      
+      console.log(`Playing alert attempt ${attempt}/${maxAttempts} at volume ${audioRef.current.volume}`);
       
       const playPromise = audioRef.current.play();
       
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
+            console.log(`Alert playing successfully (attempt ${attempt})`);
             // Set a timeout to stop the sound after 2-3 seconds (longer for TV)
             setTimeout(() => {
               if (audioRef.current) {
@@ -251,7 +284,7 @@ export const usePrayerTimeAlerts = (
                   setTimeout(() => attemptToPlay(attempt + 1, maxAttempts), 1000);
                 }
               }
-            }, isTV ? 3000 : 2000); // Longer duration for TV
+            }, isTV ? 4000 : 2000); // Longer duration for TV
           })
           .catch(err => {
             console.error(`Error playing prayer alert sound (attempt ${attempt}):`, err);
@@ -295,10 +328,16 @@ export const usePrayerTimeAlerts = (
         // Create a unique key for this prayer time
         const timeKey = `${prayer}-${prayerMinutes}-${new Date().toDateString()}`;
         
+        // Special TV debugging
+        if (isTV) {
+          console.log(`Checking ${prayer} jamat time ${prayerMinutes} against current time ${currentMinutes}`);
+        }
+        
         // Alert if time matches and we haven't alerted for this time yet today
         if (prayerMinutes === currentMinutes && !checkedTimesRef.current.has(timeKey)) {
           // Mark this time as checked
           checkedTimesRef.current.add(timeKey);
+          console.log(`Prayer time alert triggered for ${prayer} at ${prayerMinutes}`);
           
           // Play alert sound and show notification
           playAlertSound(prayer);
@@ -311,7 +350,7 @@ export const usePrayerTimeAlerts = (
     const interval = setInterval(checkTimes, 10000);
     
     return () => clearInterval(interval);
-  }, [detailedTimes, lastCheckedMinute, audioInitializedRef.current]);
+  }, [detailedTimes, lastCheckedMinute, audioInitializedRef.current, isTV, toast]);
 
   // Reset the checked times at midnight
   useEffect(() => {
