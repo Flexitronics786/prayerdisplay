@@ -38,7 +38,10 @@ const Index = () => {
       <div className="pattern-overlay"></div>
       <KeepAwake />
       {/* Add Toaster for notifications */}
-      <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ className: isTV ? 'tv-toast' : '' }} />
+      <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ 
+        className: isTV ? 'tv-toast' : '',
+        style: { zIndex: 1000 }
+      }} />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">
         <div className="grid grid-cols-1 gap-4 flex-grow">
