@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -24,13 +25,15 @@ export const usePrayerTimeAlerts = (
   const [audioUrl, setAudioUrl] = useState<string>("");
   const dailyJamatTimesRef = useRef<DailyJamatTimes>({});
   const audioInitializedRef = useRef<boolean>(false);
+  const audioLoadAttemptsRef = useRef<number>(0);
 
   // Initialize audio element and set up the audio file
   useEffect(() => {
     const initializeAudio = async () => {
       try {
-        // Use the file you've uploaded to GitHub public directory
+        // Use the file from GitHub public directory with the exact filename
         const localBeepUrl = "/beep-125033.mp3";
+        console.log("Attempting to load audio from:", localBeepUrl);
         
         // Create audio element
         if (typeof window !== "undefined" && !audioInitializedRef.current) {
@@ -42,7 +45,7 @@ export const usePrayerTimeAlerts = (
             existingAudio = document.createElement('audio');
             existingAudio.id = PRAYER_ALERT_AUDIO_ID;
             existingAudio.preload = "auto"; // Preload the audio
-            existingAudio.volume = 0.7;
+            existingAudio.volume = 1.0; // Maximum volume
             document.body.appendChild(existingAudio);
             
             // Set the source to the local file
@@ -58,18 +61,72 @@ export const usePrayerTimeAlerts = (
           setAudioUrl(localBeepUrl);
           audioInitializedRef.current = true;
           
+          // Handle any errors loading the audio
+          existingAudio.addEventListener('error', async (e) => {
+            console.error("Error loading audio file from public directory:", e);
+            audioLoadAttemptsRef.current += 1;
+            
+            if (audioLoadAttemptsRef.current <= 3) {
+              // Fallback to Supabase storage if local file fails
+              try {
+                console.log("Attempting to fetch audio file from Supabase storage");
+                const { data, error } = await supabase.storage
+                  .from('public')
+                  .download('beep-125033.mp3');
+                
+                if (error) {
+                  console.error("Error fetching from Supabase:", error);
+                  return;
+                }
+                
+                if (data) {
+                  // Create a blob URL from the fetched file
+                  const blob = new Blob([data], { type: 'audio/mpeg' });
+                  const blobUrl = URL.createObjectURL(blob);
+                  
+                  // Replace the source
+                  while (existingAudio.firstChild) {
+                    existingAudio.removeChild(existingAudio.firstChild);
+                  }
+                  
+                  const supabaseSource = document.createElement('source');
+                  supabaseSource.src = blobUrl;
+                  supabaseSource.type = 'audio/mpeg';
+                  existingAudio.appendChild(supabaseSource);
+                  
+                  console.log("Successfully loaded audio from Supabase");
+                  
+                  // Test play to ensure it works
+                  existingAudio.volume = 0.01;
+                  existingAudio.play().then(() => {
+                    existingAudio.pause();
+                    existingAudio.currentTime = 0;
+                    existingAudio.volume = 1.0;
+                    console.log("Audio from Supabase tested successfully");
+                  }).catch(e => {
+                    console.warn("Test play from Supabase failed:", e);
+                  });
+                }
+              } catch (supabaseError) {
+                console.error("Failed to fetch from Supabase:", supabaseError);
+              }
+            }
+          });
+          
           // Initialize with a user interaction to bypass autoplay restrictions
           const unlockAudio = () => {
             if (audioRef.current) {
               // Create a silent buffer to play
-              audioRef.current.volume = 0.001;
+              audioRef.current.volume = 0.01;
+              audioRef.current.muted = false;
               const playPromise = audioRef.current.play();
               if (playPromise !== undefined) {
                 playPromise.then(() => {
                   if (audioRef.current) {
                     audioRef.current.pause();
                     audioRef.current.currentTime = 0;
-                    audioRef.current.volume = 0.7;
+                    audioRef.current.volume = 1.0;
+                    audioRef.current.muted = false;
                     console.log("Audio unlocked for future playback");
                   }
                 }).catch(e => {
@@ -86,12 +143,17 @@ export const usePrayerTimeAlerts = (
           // Test the audio file on load
           existingAudio.addEventListener('loadeddata', () => {
             console.log("Audio file loaded and ready to play");
-          });
-          
-          // Handle any errors loading the audio
-          existingAudio.addEventListener('error', (e) => {
-            console.error("Error loading audio file:", e);
-            // No need for Supabase fallback now that we have the file in public directory
+            // Force a test play with low volume to ensure it works
+            existingAudio.volume = 0.01;
+            existingAudio.muted = false;
+            existingAudio.play().then(() => {
+              existingAudio.pause();
+              existingAudio.currentTime = 0;
+              existingAudio.volume = 1.0;
+              console.log("Audio test play successful");
+            }).catch(e => {
+              console.warn("Audio test play failed:", e);
+            });
           });
           
           // Add event listeners to unlock audio on user interaction
@@ -198,30 +260,42 @@ export const usePrayerTimeAlerts = (
     
     // Reset to the beginning 
     audioRef.current.currentTime = 0;
-    audioRef.current.volume = 0.7; // Ensure volume is set correctly
+    audioRef.current.volume = 1.0; // Maximum volume
+    audioRef.current.muted = false; // Ensure not muted
     
     console.log(`Playing alert for ${prayerName} prayer time`);
     
-    // Play the sound multiple times with increasing volume to ensure it's heard
-    const attemptToPlay = (attempt = 1, maxAttempts = 3) => {
+    // Play the sound multiple times with maximum volume to ensure it's heard
+    const attemptToPlay = (attempt = 1, maxAttempts = 5) => {
       if (!audioRef.current) return;
       
-      // Increase volume slightly with each attempt
-      audioRef.current.volume = Math.min(0.7 + (attempt * 0.1), 1.0);
+      // Always use maximum volume
+      audioRef.current.volume = 1.0;
+      audioRef.current.muted = false;
+      
+      console.log(`Play attempt ${attempt}/${maxAttempts} for ${prayerName}`);
       
       const playPromise = audioRef.current.play();
       
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            // Set a timeout to stop the sound after 2 seconds
+            console.log(`Play attempt ${attempt} succeeded`);
+            // Set a timeout to stop the sound after 3 seconds
             setTimeout(() => {
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
                 console.log("Prayer notification beep completed");
+                
+                // Try again if we haven't reached max attempts
+                if (attempt < maxAttempts) {
+                  setTimeout(() => {
+                    attemptToPlay(attempt + 1, maxAttempts);
+                  }, 1000);
+                }
               }
-            }, 2000); // 2 second duration for better chance of being heard
+            }, 3000); // 3 second duration for better chance of being heard
           })
           .catch(err => {
             console.error(`Error playing prayer alert sound (attempt ${attempt}):`, err);
@@ -230,7 +304,7 @@ export const usePrayerTimeAlerts = (
             if (attempt < maxAttempts) {
               setTimeout(() => {
                 attemptToPlay(attempt + 1, maxAttempts);
-              }, 500);
+              }, 1000);
             }
           });
       }
@@ -253,6 +327,8 @@ export const usePrayerTimeAlerts = (
       // Format: HH:MM
       const currentMinutes = currentTime24h.substring(0, 5);
       
+      console.log(`Checking prayer times at ${currentMinutes} against:`, dailyJamatTimesRef.current);
+      
       // Check each stored jamat time from our daily record
       Object.entries(dailyJamatTimesRef.current).forEach(([prayer, prayerMinutes]) => {
         // Create a unique key for this prayer time
@@ -263,15 +339,17 @@ export const usePrayerTimeAlerts = (
           // Mark this time as checked
           checkedTimesRef.current.add(timeKey);
           
-          // Play alert sound and show notification
+          console.log(`MATCH! Playing alert for ${prayer} at ${prayerMinutes}`);
+          
+          // Play alert sound
           playAlertSound(prayer);
         }
       });
     };
     
-    // Check immediately and then every 10 seconds
+    // Check immediately and then every 5 seconds
     checkTimes();
-    const interval = setInterval(checkTimes, 10000);
+    const interval = setInterval(checkTimes, 5000);
     
     return () => clearInterval(interval);
   }, [detailedTimes, lastCheckedMinute, audioInitializedRef.current]);

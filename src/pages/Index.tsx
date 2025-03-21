@@ -18,7 +18,7 @@ const Index = () => {
   const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts (without directly using the returned value)
+  // Initialize prayer time alerts
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
