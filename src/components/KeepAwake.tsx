@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 
-// Create a unique ID for the keep-awake audio element to avoid conflicts
-const KEEP_AWAKE_AUDIO_ID = "keep-awake-sound";
-
 const KeepAwake = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
@@ -56,100 +51,85 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Generate silent audio tone as an alternative method
+  // Method 1: CSS Animation to keep display active
   useEffect(() => {
     if (!isTV) return;
     
-    try {
-      // Create audio context
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContext) {
-        console.warn("AudioContext not supported");
-        return;
+    console.log("Initializing CSS animation-based keep-awake system");
+    
+    // Create a style element for our animation
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      @keyframes keepAwakeAnimation {
+        0% { opacity: 0.999999; }
+        100% { opacity: 1; }
       }
       
-      const audioContext = new AudioContext();
-      
-      // Create silent oscillator (near-silent tone at very low volume)
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.frequency.value = 1; // 1 Hz, extremely low frequency
-      gainNode.gain.value = 0.0001; // Even lower volume to prevent conflict with prayer alerts
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.start();
-      console.log("Silent audio tone started to prevent sleep");
-      
-      return () => {
-        oscillator.stop();
-        audioContext.close();
-      };
-    } catch (error) {
-      console.error("Error creating audio context:", error);
-    }
-  }, [isTV]);
-  
-  // Use a separate HTML audio element for keep-awake
-  useEffect(() => {
-    if (!isTV) return;
-    
-    // Create a persistent audio element for keep-awake
-    let existingAudio = document.getElementById(KEEP_AWAKE_AUDIO_ID) as HTMLAudioElement;
-    if (!existingAudio) {
-      // Create a new audio element with specific ID to avoid conflicts
-      existingAudio = document.createElement('audio');
-      existingAudio.id = KEEP_AWAKE_AUDIO_ID;
-      existingAudio.volume = 0.0001; // Virtually silent
-      existingAudio.loop = true;
-      existingAudio.muted = true;
-      
-      // Create an empty audio buffer - we just need browser to think it's playing
-      try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContext) {
-          const audioContext = new AudioContext();
-          const source = audioContext.createBufferSource();
-          source.buffer = audioContext.createBuffer(1, 1, 22050);
-          source.connect(audioContext.destination);
-        }
-      } catch (e) {
-        console.warn("Audio context not supported for keep-awake");
+      .keep-awake-element {
+        position: fixed;
+        width: 1px;
+        height: 1px;
+        bottom: 0;
+        right: 0;
+        opacity: 0.001;
+        z-index: -1;
+        animation: keepAwakeAnimation 10s infinite;
+        pointer-events: none;
       }
-      
-      document.body.appendChild(existingAudio);
-    }
+    `;
     
-    audioRef.current = existingAudio;
+    document.head.appendChild(styleElement);
     
-    // Try to start playback (may be rejected without user interaction)
-    try {
-      const playPromise = existingAudio.play();
-      if (playPromise) {
-        playPromise.catch(e => {
-          console.warn("Auto-play prevented for keep-awake audio:", e);
-        });
-      }
-    } catch (e) {
-      console.warn("Could not auto-play keep-awake audio");
-    }
+    // Create an element that uses this animation
+    const animatedElement = document.createElement('div');
+    animatedElement.className = 'keep-awake-element';
+    document.body.appendChild(animatedElement);
+    
+    console.log("CSS animation method initialized for keep-awake");
     
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      document.head.removeChild(styleElement);
+      document.body.removeChild(animatedElement);
     };
   }, [isTV]);
   
-  // Simulate user activity every 15 seconds to prevent sleep
+  // Method 2: Periodic visibility changes and focus events
   useEffect(() => {
     if (!isTV) return;
     
-    console.log("KeepAwake component activated for TV display");
+    console.log("Initializing visibility/focus-based keep-awake system");
     
-    // Simulate small DOM interactions to keep the device awake
+    const focusInterval = setInterval(() => {
+      // Force a focus/blur cycle
+      window.dispatchEvent(new Event('focus'));
+      
+      // Force visibility state check
+      if (document.hidden) {
+        console.log("Document appears hidden, triggering visibility change");
+      }
+      
+      // Update document title slightly (can prevent sleep on some systems)
+      const currentTitle = document.title;
+      document.title = currentTitle + " ";
+      setTimeout(() => {
+        document.title = currentTitle;
+      }, 500);
+      
+    }, 30000); // Every 30 seconds
+    
+    console.log("Visibility/focus-based keep-awake method initialized");
+    
+    return () => {
+      clearInterval(focusInterval);
+    };
+  }, [isTV]);
+  
+  // Method 3: Simulate small DOM interactions to keep the device awake
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("KeepAwake DOM interaction method activated");
+    
     const activityInterval = setInterval(() => {
       // Create a temporary div with minimal visual impact
       const tempElement = document.createElement('div');
@@ -173,12 +153,50 @@ const KeepAwake = () => {
       
       // Don't log this too often to avoid console spam
       if (Math.random() < 0.1) { // Only log approximately 10% of the time
-        console.log("Keep awake: Activity simulated at", new Date().toISOString());
+        console.log("Keep awake: DOM activity simulated at", new Date().toISOString());
       }
     }, 15000); // Every 15 seconds
     
     return () => {
       clearInterval(activityInterval);
+    };
+  }, [isTV]);
+  
+  // Method 4: HTML5 Page Visibility API manipulation
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing Page Visibility API keep-awake system");
+    
+    // Create a hidden iframe that we can manipulate
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.opacity = '0.001';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '-1';
+    
+    document.body.appendChild(iframe);
+    
+    // Access iframe document if possible
+    const iframeVisibilityInterval = setInterval(() => {
+      try {
+        if (iframe.contentWindow && iframe.contentWindow.document) {
+          // Change something in the iframe to trigger visibility processing
+          iframe.contentWindow.document.title = "keepAwake" + new Date().getTime();
+        }
+      } catch (e) {
+        console.warn("Could not access iframe content for keep-awake", e);
+      }
+    }, 20000); // Every 20 seconds
+    
+    console.log("Page Visibility API keep-awake method initialized");
+    
+    return () => {
+      clearInterval(iframeVisibilityInterval);
+      document.body.removeChild(iframe);
     };
   }, [isTV]);
   
@@ -200,23 +218,6 @@ const KeepAwake = () => {
           zIndex: -1
         }}
       />
-      {/* Hidden video element that will be activated by user interaction if needed */}
-      <video
-        ref={videoRef}
-        muted
-        loop
-        playsInline
-        style={{
-          position: 'fixed',
-          width: '1px',
-          height: '1px',
-          opacity: 0,
-          pointerEvents: 'none',
-          zIndex: -1
-        }}
-      >
-        {/* Video sources can be added here if needed in the future */}
-      </video>
       
       {/* Status indicator only shown during development */}
       {process.env.NODE_ENV === 'development' && (
