@@ -37,7 +37,7 @@ const Index = () => {
     <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
       <div className="pattern-overlay"></div>
       <KeepAwake />
-      {/* Add Toaster for other notifications (not for prayer alerts) */}
+      {/* Add Toaster for notifications */}
       <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ className: isTV ? 'tv-toast' : '' }} />
       
       <div className="max-w-7xl mx-auto h-full flex flex-col">

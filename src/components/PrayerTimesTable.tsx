@@ -1,6 +1,8 @@
 
 import { PrayerTime } from "@/types";
+import { useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
+import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
 import { AsrTile } from "./prayer-times/AsrTile";
@@ -16,6 +18,9 @@ interface PrayerTimesTableProps {
 
 const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: PrayerTimesTableProps) => {
   const isTV = useTVDisplay();
+
+  // Use our updated hook for prayer time alerts
+  usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   return (
     <div className="animate-scale-in">
