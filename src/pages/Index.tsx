@@ -7,7 +7,6 @@ import PageHeader from "@/components/PageHeader";
 import LoadingScreen from "@/components/LoadingScreen";
 import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
-import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { Toaster } from "sonner";
@@ -15,7 +14,6 @@ import { Toaster } from "sonner";
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
   const isTV = useTVDisplay();
-  const midnightReloadSet = useMidnightRefresh();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
   // Initialize prayer time alerts (without directly using the returned value)

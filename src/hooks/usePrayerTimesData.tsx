@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from "react";
 import { fetchPrayerTimes, fetchAllPrayerTimes } from "@/services/dataService";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
@@ -161,35 +162,10 @@ export const usePrayerTimesData = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Set up daily cleanup at midnight
-    const setupMidnightCleanup = () => {
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 5, 0); // 12:00:05 AM - small delay after midnight
-      
-      const timeUntilMidnight = tomorrow.getTime() - now.getTime();
-      
-      console.log(`Scheduling prayer times cleanup at midnight (in ${Math.round(timeUntilMidnight/1000/60)} minutes)`);
-      
-      return setTimeout(() => {
-        cleanupOldPrayerTimes();
-        // Re-schedule for next midnight
-        const nextMidnightTimeout = setupMidnightCleanup();
-        setNextCheckTimer(prevTimer => {
-          if (prevTimer) clearTimeout(prevTimer);
-          return nextMidnightTimeout;
-        });
-      }, timeUntilMidnight);
-    };
-    
-    const midnightCleanupTimer = setupMidnightCleanup();
-    
     return () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
-      clearTimeout(midnightCleanupTimer);
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };

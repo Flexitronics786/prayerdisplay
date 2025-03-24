@@ -1,7 +1,6 @@
 
 import { PrayerTime } from "@/types";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
-import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
