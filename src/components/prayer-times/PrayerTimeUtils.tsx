@@ -97,7 +97,7 @@ export const getIshaStart = (detailedTimes: DetailedPrayerTime | null, prayerTim
   return isha ? convertTo12Hour(isha.time) : "";
 };
 
-export const getIshaFirstJamat = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[]) => {
+export const getIshaJamat = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[]) => {
   if (detailedTimes && detailedTimes.isha_first_jamat) {
     return convertTo12Hour(detailedTimes.isha_first_jamat);
   }

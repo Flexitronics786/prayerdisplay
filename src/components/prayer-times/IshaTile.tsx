@@ -2,7 +2,7 @@
 import React from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { PrayerTile } from "./PrayerTile";
-import { getPrayerDetails, getIshaStart, getIshaFirstJamat } from "./PrayerTimeUtils";
+import { getPrayerDetails, getIshaStart, getIshaJamat } from "./PrayerTimeUtils";
 
 interface IshaTileProps {
   prayerTimes: PrayerTime[];
@@ -19,7 +19,7 @@ export const IshaTile: React.FC<IshaTileProps> = ({ prayerTimes, detailedTimes }
     },
     {
       label: "Jamat",
-      time: getIshaFirstJamat(detailedTimes, prayerTimes)
+      time: getIshaJamat(detailedTimes, prayerTimes)
     }
   ];
   
