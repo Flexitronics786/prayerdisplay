@@ -36,7 +36,7 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   const maghribIndex = updatedTimes.findIndex(p => p.name === 'Maghrib');
   const ishaIndex = updatedTimes.findIndex(p => p.name === 'Isha');
   
-  // Get prayer times - we'll use START times for prayer activation logic
+  // Get START times for prayers (critical for determining active status)
   const fajrStartTime = detailedTimes?.sehri_end || (fajrIndex !== -1 ? updatedTimes[fajrIndex].time : '');
   const sunriseTime = detailedTimes?.sunrise || (sunriseIndex !== -1 ? updatedTimes[sunriseIndex].time : '');
   const dhuhrStartTime = detailedTimes?.zuhr_start || (dhuhrIndex !== -1 ? updatedTimes[dhuhrIndex].time : '');
@@ -53,9 +53,10 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
     oneHourAfterMaghrib = `${newHour.toString().padStart(2, '0')}:${mMinutes.toString().padStart(2, '0')}`;
   }
   
-  // Determine current prayer based on rules using START times
+  // IMPORTANT: We're explicitly using START times for determining active prayers
+  
   // Rule 1: Fajr is active from its start until Sunrise
-  if (fajrIndex !== -1 && sunriseIndex !== -1 && 
+  if (fajrIndex !== -1 && 
       !isTimeBefore(currentTime, fajrStartTime) && 
       isTimeBefore(currentTime, sunriseTime)) {
     updatedTimes[fajrIndex].isActive = true;
@@ -87,39 +88,38 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
     // If it's after Isha time and before midnight
     updatedTimes[ishaIndex].isActive = true;
   } else if (ishaIndex !== -1 && currentHour < 12) {
-    // If it's after midnight but before Fajr (using midnight to noon as approximate)
+    // If it's after midnight but before Fajr
     if (fajrStartTime && isTimeBefore(currentTime, fajrStartTime)) {
       updatedTimes[ishaIndex].isActive = true;
     }
   }
   
-  // Determine next prayer using START times
+  // Determine next prayer - also using START times
   let nextPrayerFound = false;
   
-  // Create an array of prayers in chronological order for the day using START times
+  // Create an array of prayers in chronological order for the day
   const orderedPrayers = [
-    { index: fajrIndex, time: fajrStartTime },
-    { index: sunriseIndex, time: sunriseTime }, // Not a prayer but a time marker
-    { index: dhuhrIndex, time: dhuhrStartTime },
-    { index: asrIndex, time: asrStartTime },
-    { index: maghribIndex, time: maghribStartTime },
-    { index: ishaIndex, time: ishaStartTime }
+    { index: fajrIndex, time: fajrStartTime, name: 'Fajr' },
+    { index: dhuhrIndex, time: dhuhrStartTime, name: 'Dhuhr/Zuhr' },
+    { index: asrIndex, time: asrStartTime, name: 'Asr' },
+    { index: maghribIndex, time: maghribStartTime, name: 'Maghrib' },
+    { index: ishaIndex, time: ishaStartTime, name: 'Isha' }
   ].filter(p => p.index !== -1 && p.time !== '');
   
   // Find the next prayer that hasn't started yet
   for (const prayer of orderedPrayers) {
     if (isTimeBefore(currentTime, prayer.time)) {
-      if (prayer.index !== sunriseIndex) { // Skip sunrise as "next prayer"
-        updatedTimes[prayer.index].isNext = true;
-        nextPrayerFound = true;
-        break;
-      }
+      updatedTimes[prayer.index].isNext = true;
+      nextPrayerFound = true;
+      console.log(`Next prayer will be ${prayer.name} at ${prayer.time} (current time: ${currentTime})`);
+      break;
     }
   }
   
   // If no next prayer found and it's after Isha, next prayer is Fajr tomorrow
   if (!nextPrayerFound && fajrIndex !== -1) {
     updatedTimes[fajrIndex].isNext = true;
+    console.log(`Next prayer will be Fajr tomorrow at ${fajrStartTime} (current time: ${currentTime})`);
   }
   
   return updatedTimes;
