@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Loader2, Plus, Save, Calendar, Clock } from "lucide-react";
 import { addPrayerTimeEntry, updatePrayerTimeEntry } from "@/services/dataService";
@@ -8,6 +7,7 @@ import { DetailedPrayerTime } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -85,7 +85,7 @@ export const AddEditPrayerTimeDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>{editingId ? "Edit Prayer Time" : "Add New Prayer Time"}</DialogTitle>
           <DialogDescription>
@@ -94,240 +94,242 @@ export const AddEditPrayerTimeDialog = ({
               : "Enter the prayer time details for a specific date."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date*</Label>
-              <div className="relative">
+        <ScrollArea className="h-[60vh] pr-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Date*</Label>
+                <div className="relative">
+                  <Input
+                    id="date"
+                    name="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="day">Day*</Label>
                 <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={formData.date}
+                  id="day"
+                  name="day"
+                  value={formData.day}
                   onChange={handleInputChange}
+                  placeholder="e.g. Monday"
                   required
-                  className="pl-10"
                 />
-                <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="day">Day*</Label>
-              <Input
-                id="day"
-                name="day"
-                value={formData.day}
-                onChange={handleInputChange}
-                placeholder="e.g. Monday"
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sehri_end">Fajr Start</Label>
-              <div className="relative">
-                <Input
-                  id="sehri_end"
-                  name="sehri_end"
-                  type="time"
-                  value={formData.sehri_end}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sehri_end">Fajr Start</Label>
+                <div className="relative">
+                  <Input
+                    id="sehri_end"
+                    name="sehri_end"
+                    type="time"
+                    value={formData.sehri_end}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="fajr_jamat">Fajr Jamat*</Label>
+                <div className="relative">
+                  <Input
+                    id="fajr_jamat"
+                    name="fajr_jamat"
+                    type="time"
+                    value={formData.fajr_jamat}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="fajr_jamat">Fajr Jamat*</Label>
-              <div className="relative">
-                <Input
-                  id="fajr_jamat"
-                  name="fajr_jamat"
-                  type="time"
-                  value={formData.fajr_jamat}
-                  onChange={handleInputChange}
-                  required
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sunrise">Sunrise*</Label>
+                <div className="relative">
+                  <Input
+                    id="sunrise"
+                    name="sunrise"
+                    type="time"
+                    value={formData.sunrise}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sunrise">Sunrise*</Label>
-              <div className="relative">
-                <Input
-                  id="sunrise"
-                  name="sunrise"
-                  type="time"
-                  value={formData.sunrise}
-                  onChange={handleInputChange}
-                  required
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="zuhr_start">Zuhr Start</Label>
-              <div className="relative">
-                <Input
-                  id="zuhr_start"
-                  name="zuhr_start"
-                  type="time"
-                  value={formData.zuhr_start}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="zuhr_jamat">Zuhr Jamat*</Label>
-              <div className="relative">
-                <Input
-                  id="zuhr_jamat"
-                  name="zuhr_jamat"
-                  type="time"
-                  value={formData.zuhr_jamat}
-                  onChange={handleInputChange}
-                  required
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="zuhr_start">Zuhr Start</Label>
+                <div className="relative">
+                  <Input
+                    id="zuhr_start"
+                    name="zuhr_start"
+                    type="time"
+                    value={formData.zuhr_start}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="asr_start">Asr Start</Label>
-              <div className="relative">
-                <Input
-                  id="asr_start"
-                  name="asr_start"
-                  type="time"
-                  value={formData.asr_start}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="zuhr_jamat">Zuhr Jamat*</Label>
+                <div className="relative">
+                  <Input
+                    id="zuhr_jamat"
+                    name="zuhr_jamat"
+                    type="time"
+                    value={formData.zuhr_jamat}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="asr_jamat">Asr Jamat*</Label>
-              <div className="relative">
-                <Input
-                  id="asr_jamat"
-                  name="asr_jamat"
-                  type="time"
-                  value={formData.asr_jamat}
-                  onChange={handleInputChange}
-                  required
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="maghrib_iftar">Maghrib/Iftar*</Label>
-              <div className="relative">
-                <Input
-                  id="maghrib_iftar"
-                  name="maghrib_iftar"
-                  type="time"
-                  value={formData.maghrib_iftar}
-                  onChange={handleInputChange}
-                  required
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="isha_start">Isha Start</Label>
-              <div className="relative">
-                <Input
-                  id="isha_start"
-                  name="isha_start"
-                  type="time"
-                  value={formData.isha_start}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+              
+              <div className="space-y-2">
+                <Label htmlFor="asr_start">Asr Start</Label>
+                <div className="relative">
+                  <Input
+                    id="asr_start"
+                    name="asr_start"
+                    type="time"
+                    value={formData.asr_start}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="isha_first_jamat">Isha First Jamat*</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="asr_jamat">Asr Jamat*</Label>
+                <div className="relative">
+                  <Input
+                    id="asr_jamat"
+                    name="asr_jamat"
+                    type="time"
+                    value={formData.asr_jamat}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="maghrib_iftar">Maghrib/Iftar*</Label>
+                <div className="relative">
+                  <Input
+                    id="maghrib_iftar"
+                    name="maghrib_iftar"
+                    type="time"
+                    value={formData.maghrib_iftar}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="isha_start">Isha Start</Label>
+                <div className="relative">
+                  <Input
+                    id="isha_start"
+                    name="isha_start"
+                    type="time"
+                    value={formData.isha_start}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="isha_first_jamat">Isha First Jamat*</Label>
+                <div className="relative">
+                  <Input
+                    id="isha_first_jamat"
+                    name="isha_first_jamat"
+                    type="time"
+                    value={formData.isha_first_jamat}
+                    onChange={handleInputChange}
+                    required
+                    className="pl-10"
+                  />
+                  <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-2 pb-4">
+              <Label htmlFor="isha_second_jamat">Isha Second Jamat</Label>
               <div className="relative">
                 <Input
-                  id="isha_first_jamat"
-                  name="isha_first_jamat"
+                  id="isha_second_jamat"
+                  name="isha_second_jamat"
                   type="time"
-                  value={formData.isha_first_jamat}
+                  value={formData.isha_second_jamat}
                   onChange={handleInputChange}
-                  required
                   className="pl-10"
                 />
                 <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="isha_second_jamat">Isha Second Jamat</Label>
-            <div className="relative">
-              <Input
-                id="isha_second_jamat"
-                name="isha_second_jamat"
-                type="time"
-                value={formData.isha_second_jamat}
-                onChange={handleInputChange}
-                className="pl-10"
-              />
-              <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => {
-              onOpenChange(false);
-              setEditingId(null);
-            }}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {editingId ? "Update" : "Save"}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </ScrollArea>
+        
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => {
+            onOpenChange(false);
+            setEditingId(null);
+          }}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                {editingId ? "Update" : "Save"}
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

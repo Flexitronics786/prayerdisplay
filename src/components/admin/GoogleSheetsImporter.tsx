@@ -19,6 +19,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
 import { Loader2, Upload, AlertCircle, FileDown } from 'lucide-react';
@@ -95,92 +96,94 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
           The sheet must be publicly accessible.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Alert className="mb-4 bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-800" />
-          <AlertTitle>Data Format Requirements</AlertTitle>
-          <AlertDescription className="mt-2">
-            <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
-              <li><strong>Date:</strong> YYYY-MM-DD format (e.g., 2024-06-15)</li>
-              <li><strong>Day:</strong> Full day name (e.g., Monday, Tuesday)</li>
-              <li><strong>Time Fields:</strong> 24-hour format HH:MM (e.g., 05:30, 17:45)</li>
-              <li><strong>Required Fields:</strong> date, day, fajr_jamat, sunrise, zuhr_jamat, asr_jamat, maghrib_iftar, isha_first_jamat</li>
-              <li><strong>Column Names:</strong> Must match the database field names exactly if using header row</li>
-              <li><strong>Column Order:</strong> date, day, fajr_start, fajr_jamat, sunrise, zuhr_start, zuhr_jamat, asr_start, asr_jamat, maghrib_iftar, isha_start, isha_first_jamat, isha_second_jamat</li>
-              <li><strong>Sheet Sharing:</strong> Set to "Anyone with the link can view"</li>
-            </ul>
-          </AlertDescription>
-          <div className="mt-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-amber-800 border-amber-300 hover:bg-amber-100"
-              onClick={downloadTemplateCSV}
-            >
-              <FileDown className="mr-2 h-4 w-4" />
-              Download Template
-            </Button>
+      <ScrollArea className="h-[60vh]">
+        <CardContent className="space-y-4">
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-800" />
+            <AlertTitle>Data Format Requirements</AlertTitle>
+            <AlertDescription className="mt-2">
+              <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
+                <li><strong>Date:</strong> YYYY-MM-DD format (e.g., 2024-06-15)</li>
+                <li><strong>Day:</strong> Full day name (e.g., Monday, Tuesday)</li>
+                <li><strong>Time Fields:</strong> 24-hour format HH:MM (e.g., 05:30, 17:45)</li>
+                <li><strong>Required Fields:</strong> date, day, fajr_jamat, sunrise, zuhr_jamat, asr_jamat, maghrib_iftar, isha_first_jamat</li>
+                <li><strong>Column Names:</strong> Must match the database field names exactly if using header row</li>
+                <li><strong>Column Order:</strong> date, day, fajr_start, fajr_jamat, sunrise, zuhr_start, zuhr_jamat, asr_start, asr_jamat, maghrib_iftar, isha_start, isha_first_jamat, isha_second_jamat</li>
+                <li><strong>Sheet Sharing:</strong> Set to "Anyone with the link can view"</li>
+              </ul>
+            </AlertDescription>
+            <div className="mt-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-amber-800 border-amber-300 hover:bg-amber-100"
+                onClick={downloadTemplateCSV}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Download Template
+              </Button>
+            </div>
+          </Alert>
+
+          <div className="space-y-2">
+            <Label htmlFor="sheetId">Google Sheet ID</Label>
+            <Input
+              id="sheetId"
+              value={sheetId}
+              onChange={(e) => setSheetId(e.target.value)}
+              placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+            />
+            <p className="text-xs text-muted-foreground">
+              The ID is the part of the URL between /d/ and /edit
+            </p>
           </div>
-        </Alert>
 
-        <div className="space-y-2">
-          <Label htmlFor="sheetId">Google Sheet ID</Label>
-          <Input
-            id="sheetId"
-            value={sheetId}
-            onChange={(e) => setSheetId(e.target.value)}
-            placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-          />
-          <p className="text-xs text-muted-foreground">
-            The ID is the part of the URL between /d/ and /edit
-          </p>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="tabName">Sheet/Tab Name</Label>
+            <Input
+              id="tabName"
+              value={tabName}
+              onChange={(e) => setTabName(e.target.value)}
+              placeholder="e.g. Sheet1"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="tabName">Sheet/Tab Name</Label>
-          <Input
-            id="tabName"
-            value={tabName}
-            onChange={(e) => setTabName(e.target.value)}
-            placeholder="e.g. Sheet1"
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="hasHeaderRow">First Row is Header</Label>
+            <Select
+              value={hasHeaderRow ? "true" : "false"}
+              onValueChange={(value) => setHasHeaderRow(value === "true")}
+            >
+              <SelectTrigger id="hasHeaderRow">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Yes</SelectItem>
+                <SelectItem value="false">No</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="hasHeaderRow">First Row is Header</Label>
-          <Select
-            value={hasHeaderRow ? "true" : "false"}
-            onValueChange={(value) => setHasHeaderRow(value === "true")}
-          >
-            <SelectTrigger id="hasHeaderRow">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Yes</SelectItem>
-              <SelectItem value="false">No</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="isPublic">Sheet is Public</Label>
-          <Select
-            value={isPublic ? "true" : "true"}
-            onValueChange={(value) => setIsPublic(value === "true")}
-          >
-            <SelectTrigger id="isPublic">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Yes</SelectItem>
-              <SelectItem value="false">No (Not Supported)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Make sure your sheet is shared with "Anyone with the link can view" permission
-          </p>
-        </div>
-      </CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="isPublic">Sheet is Public</Label>
+            <Select
+              value={isPublic ? "true" : "true"}
+              onValueChange={(value) => setIsPublic(value === "true")}
+            >
+              <SelectTrigger id="isPublic">
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">Yes</SelectItem>
+                <SelectItem value="false">No (Not Supported)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Make sure your sheet is shared with "Anyone with the link can view" permission
+            </p>
+          </div>
+        </CardContent>
+      </ScrollArea>
       <CardFooter>
         <Button onClick={handleImport} disabled={isImporting} className="w-full">
           {isImporting ? (
