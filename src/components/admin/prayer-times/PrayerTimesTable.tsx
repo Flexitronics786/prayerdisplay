@@ -117,10 +117,7 @@ export const PrayerTimesTable = ({
                       {entry.isha_start?.slice(0, 5) && (
                         <div className="text-xs text-muted-foreground">Start: {entry.isha_start.slice(0, 5)}</div>
                       )}
-                      <div>1st: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
-                      {entry.isha_second_jamat?.slice(0, 5) && (
-                        <div>2nd: {entry.isha_second_jamat.slice(0, 5)}</div>
-                      )}
+                      <div>Jamat: {entry.isha_first_jamat?.slice(0, 5) || "-"}</div>
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

@@ -92,7 +92,7 @@ const PrayerTimesTableEditor = () => {
       maghrib_iftar: entry.maghrib_iftar || '',
       isha_start: entry.isha_start || '',
       isha_first_jamat: entry.isha_first_jamat || '',
-      isha_second_jamat: entry.isha_second_jamat || ''
+      isha_second_jamat: ''
     });
     setIsAddDialogOpen(true);
   };

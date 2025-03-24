@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Loader2, Plus, Save, Calendar, Clock } from "lucide-react";
 import { addPrayerTimeEntry, updatePrayerTimeEntry } from "@/services/dataService";
@@ -259,7 +260,7 @@ export const AddEditPrayerTimeDialog = ({
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 pb-4">
               <div className="space-y-2">
                 <Label htmlFor="isha_start">Isha Start</Label>
                 <div className="relative">
@@ -276,7 +277,7 @@ export const AddEditPrayerTimeDialog = ({
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="isha_first_jamat">Isha First Jamat*</Label>
+                <Label htmlFor="isha_first_jamat">Isha Jamat*</Label>
                 <div className="relative">
                   <Input
                     id="isha_first_jamat"
@@ -289,21 +290,6 @@ export const AddEditPrayerTimeDialog = ({
                   />
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2 pb-4">
-              <Label htmlFor="isha_second_jamat">Isha Second Jamat</Label>
-              <div className="relative">
-                <Input
-                  id="isha_second_jamat"
-                  name="isha_second_jamat"
-                  type="time"
-                  value={formData.isha_second_jamat}
-                  onChange={handleInputChange}
-                  className="pl-10"
-                />
-                <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </form>

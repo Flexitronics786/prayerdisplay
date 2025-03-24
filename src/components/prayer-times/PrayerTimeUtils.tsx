@@ -105,13 +105,6 @@ export const getIshaFirstJamat = (detailedTimes: DetailedPrayerTime | null, pray
   return isha ? convertTo12Hour(isha.time) : "";
 };
 
-export const getIshaSecondJamat = (detailedTimes: DetailedPrayerTime | null) => {
-  if (detailedTimes && detailedTimes.isha_second_jamat) {
-    return convertTo12Hour(detailedTimes.isha_second_jamat);
-  }
-  return "";
-};
-
 export const getSunriseFromDetailedTimes = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[]) => {
   if (detailedTimes && detailedTimes.sunrise) {
     return convertTo12Hour(detailedTimes.sunrise);

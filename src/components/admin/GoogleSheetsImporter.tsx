@@ -72,9 +72,9 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
   };
 
   const downloadTemplateCSV = () => {
-    const headers = "date,day,fajr_start,fajr_jamat,sunrise,zuhr_start,zuhr_jamat,asr_start,asr_jamat,maghrib_iftar,isha_start,isha_first_jamat,isha_second_jamat";
-    const sampleRow1 = "2024-06-15,Saturday,03:45,04:15,05:38,12:45,13:15,17:30,17:45,21:20,22:45,23:00,23:30";
-    const sampleRow2 = "2024-06-16,Sunday,03:46,04:15,05:38,12:45,13:15,17:30,17:45,21:21,22:45,23:00,23:30";
+    const headers = "date,day,fajr_start,fajr_jamat,sunrise,zuhr_start,zuhr_jamat,asr_start,asr_jamat,maghrib_iftar,isha_start,isha_first_jamat";
+    const sampleRow1 = "2024-06-15,Saturday,03:45,04:15,05:38,12:45,13:15,17:30,17:45,21:20,22:45,23:00";
+    const sampleRow2 = "2024-06-16,Sunday,03:46,04:15,05:38,12:45,13:15,17:30,17:45,21:21,22:45,23:00";
     
     const csvContent = `${headers}\n${sampleRow1}\n${sampleRow2}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -108,7 +108,7 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
                 <li><strong>Time Fields:</strong> 24-hour format HH:MM (e.g., 05:30, 17:45)</li>
                 <li><strong>Required Fields:</strong> date, day, fajr_jamat, sunrise, zuhr_jamat, asr_jamat, maghrib_iftar, isha_first_jamat</li>
                 <li><strong>Column Names:</strong> Must match the database field names exactly if using header row</li>
-                <li><strong>Column Order:</strong> date, day, fajr_start, fajr_jamat, sunrise, zuhr_start, zuhr_jamat, asr_start, asr_jamat, maghrib_iftar, isha_start, isha_first_jamat, isha_second_jamat</li>
+                <li><strong>Column Order:</strong> date, day, fajr_start, fajr_jamat, sunrise, zuhr_start, zuhr_jamat, asr_start, asr_jamat, maghrib_iftar, isha_start, isha_first_jamat</li>
                 <li><strong>Sheet Sharing:</strong> Set to "Anyone with the link can view"</li>
               </ul>
             </AlertDescription>
