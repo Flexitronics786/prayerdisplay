@@ -78,6 +78,16 @@
   font-size: 0.85rem;
 }
 
+/* Sony TV with Firestick optimizations */
+.tv-display .tv-toast {
+  font-size: 1.5rem !important;
+  padding: 16px !important;
+}
+
+.tv-display audio {
+  display: none; /* Hide audio elements but keep them in the DOM */
+}
+
 /* Smart TV optimizations (Firestick etc.) */
 @media screen and (min-width: 1280px) and (max-height: 900px), 
        screen and (min-width: 1920px),
@@ -170,6 +180,22 @@
   .tv-display .tv-phone-reminder .w-3 {
     width: 0.6rem;
     height: 0.6rem;
+  }
+}
+
+/* Sony TV with Firestick specific fixes */
+@media screen and (width: 1920px) and (height: 1080px) {
+  /* Ensure audio elements have enough time to initialize */
+  audio {
+    position: absolute;
+    visibility: hidden;
+    height: 0;
+    width: 0;
+  }
+  
+  /* Use higher contrast for better visibility on Sony TVs */
+  .tv-display .active-prayer {
+    border-width: 6px !important;
   }
 }
 

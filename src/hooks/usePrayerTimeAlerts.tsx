@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -29,6 +30,7 @@ export const usePrayerTimeAlerts = (
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const audioLoadAttemptsRef = useRef<number>(0); // Track loading attempts
 
   // Initialize audio element and fetch the audio URL from Supabase
   useEffect(() => {
@@ -57,6 +59,9 @@ export const usePrayerTimeAlerts = (
                 console.log("Audio buffer loaded successfully");
               }, (error) => {
                 console.error("Error decoding audio data:", error);
+                
+                // Try loading from Supabase if local file decoding fails
+                loadSupabaseAudio();
               });
             }
           } catch (e) {
@@ -80,6 +85,12 @@ export const usePrayerTimeAlerts = (
             localSource.type = 'audio/mpeg';
             existingAudio.appendChild(localSource);
             
+            // Add MP3 format for better compatibility
+            const mp3Source = document.createElement('source');
+            mp3Source.src = localBeepUrl;
+            mp3Source.type = 'audio/mp3';
+            existingAudio.appendChild(mp3Source);
+            
             console.log(`Created prayer alert audio element with local source (TV mode: ${isTV}):`, localBeepUrl);
           }
           
@@ -87,9 +98,33 @@ export const usePrayerTimeAlerts = (
           setAudioUrl(localBeepUrl);
           audioInitializedRef.current = true;
           
+          // Preload the audio on Firestick/TVs
+          if (isTV) {
+            try {
+              existingAudio.load();
+              console.log("Preloaded audio for TV");
+              
+              // Try to play a silent version to unlock audio
+              existingAudio.volume = 0.001;
+              const silentPlay = existingAudio.play();
+              if (silentPlay) {
+                silentPlay.then(() => {
+                  existingAudio.pause();
+                  existingAudio.currentTime = 0;
+                  existingAudio.volume = 1.0;
+                  console.log("Audio preplay successful on TV");
+                }).catch(e => {
+                  console.log("Silent audio preplay failed:", e);
+                });
+              }
+            } catch (e) {
+              console.error("Error preloading audio:", e);
+            }
+          }
+          
           // Add fallback to Supabase if local file fails
-          existingAudio.addEventListener('error', async () => {
-            console.log("Local audio file failed, trying Supabase fallback");
+          const loadSupabaseAudio = async () => {
+            console.log("Loading Supabase fallback audio");
             
             try {
               const { data, error } = await supabase.storage
@@ -115,9 +150,15 @@ export const usePrayerTimeAlerts = (
                   supabaseSource.type = 'audio/mpeg';
                   audioRef.current.appendChild(supabaseSource);
                   
+                  // Add MP3 format for better compatibility
+                  const mp3Source = document.createElement('source');
+                  mp3Source.src = data.signedUrl;
+                  mp3Source.type = 'audio/mp3';
+                  audioRef.current.appendChild(mp3Source);
+                  
                   console.log("Added Supabase fallback audio source");
                   
-                  // Also try to load this into the AudioContext
+                  // Try to load this into the AudioContext
                   if (audioContextRef.current) {
                     fetch(data.signedUrl)
                       .then(response => response.arrayBuffer())
@@ -129,11 +170,21 @@ export const usePrayerTimeAlerts = (
                       })
                       .catch(e => console.error("Error loading Supabase audio into AudioContext:", e));
                   }
+                  
+                  // Preload on TV
+                  if (isTV && audioRef.current) {
+                    audioRef.current.load();
+                  }
                 }
               }
             } catch (error) {
               console.error("Error setting up Supabase audio fallback:", error);
             }
+          };
+          
+          existingAudio.addEventListener('error', () => {
+            console.log("Local audio file failed, trying Supabase fallback");
+            loadSupabaseAudio();
           });
           
           // Initialize with a user interaction to bypass autoplay restrictions
@@ -182,6 +233,33 @@ export const usePrayerTimeAlerts = (
               }).catch(() => {});
             }
           }, 10000); // Try every 10 seconds
+          
+          // Special handling for Firestick: create and play a short audio clip after 5 seconds
+          if (isTV) {
+            setTimeout(() => {
+              try {
+                if (audioRef.current) {
+                  audioRef.current.volume = 0.001; // Nearly silent
+                  const tvUnlockPromise = audioRef.current.play();
+                  if (tvUnlockPromise) {
+                    tvUnlockPromise.then(() => {
+                      setTimeout(() => {
+                        if (audioRef.current) {
+                          audioRef.current.pause();
+                          audioRef.current.currentTime = 0;
+                          console.log("TV audio unlock successful");
+                        }
+                      }, 100);
+                    }).catch(e => {
+                      console.log("TV audio unlock failed:", e);
+                    });
+                  }
+                }
+              } catch (e) {
+                console.error("TV audio unlock error:", e);
+              }
+            }, 5000);
+          }
           
           return () => clearInterval(resumeInterval);
         }
@@ -276,6 +354,37 @@ export const usePrayerTimeAlerts = (
   const playAlertSound = (prayerName: string) => {
     console.log(`Playing alert for ${prayerName} prayer time (TV mode: ${isTV})`);
     
+    // Firestick-specific approach - try to create a new audio element for each play
+    if (isTV && navigator.userAgent.toLowerCase().includes('firetv')) {
+      try {
+        const tempAudio = new Audio("/alert-beep.mp3");
+        tempAudio.volume = 1.0;
+        const tempPlayPromise = tempAudio.play();
+        if (tempPlayPromise) {
+          tempPlayPromise.then(() => {
+            console.log("Firestick temp audio playback successful");
+            // Let it play and clean up after 3 seconds
+            setTimeout(() => {
+              try {
+                tempAudio.pause();
+              } catch (e) {
+                // Ignore cleanup errors
+              }
+            }, 3000);
+          }).catch(e => {
+            console.error("Firestick temp audio failed:", e);
+            // Fall through to next approach
+          });
+          
+          // If this worked, return early
+          return;
+        }
+      } catch (e) {
+        console.error("Error with Firestick temp audio approach:", e);
+        // Continue to next approach
+      }
+    }
+    
     // Try to play using AudioContext first (better for TV devices)
     if (audioContextRef.current && audioBufferRef.current) {
       try {
@@ -341,6 +450,62 @@ export const usePrayerTimeAlerts = (
     // Reset to the beginning 
     audioRef.current.currentTime = 0;
     audioRef.current.volume = isTV ? 1.0 : 0.7; // Full volume on TV
+    
+    // Try multiple approaches for TV platforms
+    if (isTV) {
+      // For Firestick on Sony TV, try playing multiple times
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      const attemptPlay = () => {
+        if (!audioRef.current || attempts >= maxAttempts) return;
+        
+        attempts++;
+        console.log(`TV audio play attempt ${attempts}/${maxAttempts}`);
+        
+        try {
+          // Reload the audio element before playing (helps on some TVs)
+          if (audioLoadAttemptsRef.current < 5) {
+            audioRef.current.load();
+            audioLoadAttemptsRef.current++;
+          }
+          
+          const playPromise = audioRef.current.play();
+          if (playPromise) {
+            playPromise.then(() => {
+              console.log(`TV audio playing (attempt ${attempts})`);
+              
+              // Set a timeout to stop after 3 seconds
+              setTimeout(() => {
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+              }, 3000);
+            }).catch(err => {
+              console.error(`TV audio play error (attempt ${attempts}):`, err);
+              
+              // Try again with a slight delay
+              if (attempts < maxAttempts) {
+                setTimeout(attemptPlay, 200);
+              }
+            });
+          }
+        } catch (err) {
+          console.error(`TV audio exception (attempt ${attempts}):`, err);
+          
+          // Try again with a slight delay
+          if (attempts < maxAttempts) {
+            setTimeout(attemptPlay, 200);
+          }
+        }
+      };
+      
+      // Start the attempt chain
+      attemptPlay();
+      
+      return;
+    }
     
     // Play the sound multiple times with increasing volume to ensure it's heard
     const attemptToPlay = (attempt = 1, maxAttempts = 3) => {
