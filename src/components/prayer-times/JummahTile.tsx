@@ -10,12 +10,15 @@ interface JummahTileProps {
 }
 
 export const JummahTile: React.FC<JummahTileProps> = ({ prayerTimes, detailedTimes }) => {
-  const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
+  const today = new Date();
+  const isFriday = today.getDay() === 5; // 5 is Friday in JavaScript's getDay()
   
   // Only use Zuhr's active/next status on Fridays
   const zuhrPrayer = prayerTimes.find(p => p.name === "Zuhr" || p.name === "Dhuhr");
   const isActive = isFriday ? (zuhrPrayer?.isActive || false) : false;
   const isNext = isFriday ? (zuhrPrayer?.isNext || false) : false;
+  
+  console.log(`JummahTile: Today is ${today.toLocaleDateString()}, isFriday=${isFriday}, isActive=${isActive}, isNext=${isNext}`);
 
   return (
     <PrayerTile
@@ -37,7 +40,7 @@ export const JummahTile: React.FC<JummahTileProps> = ({ prayerTimes, detailedTim
           time: getZuhrJamat(detailedTimes, prayerTimes)
         }
       ]}
-      headerClass="jummah-header"
+      headerClass={`jummah-header${isFriday ? " friday" : ""}`}
     />
   );
 };

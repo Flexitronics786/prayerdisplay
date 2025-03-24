@@ -1,3 +1,4 @@
+
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,8 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   const now = new Date();
   const currentHour = now.getHours();
   const currentMinute = now.getMinutes();
+  
+  console.log(`Current time: ${currentTime}`);
   
   // Reset all to inactive
   const updatedTimes = prayerTimes.map(prayer => ({
@@ -44,6 +47,8 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   const maghribStartTime = detailedTimes?.maghrib_iftar || (maghribIndex !== -1 ? updatedTimes[maghribIndex].time : '');
   const ishaStartTime = detailedTimes?.isha_start || (ishaIndex !== -1 ? updatedTimes[ishaIndex].time : '');
   
+  console.log(`Prayer start times - Fajr: ${fajrStartTime}, Dhuhr: ${dhuhrStartTime}, Asr: ${asrStartTime}, Maghrib: ${maghribStartTime}, Isha: ${ishaStartTime}`);
+  
   // Calculate one hour after Maghrib
   let oneHourAfterMaghrib = '';
   if (maghribStartTime) {
@@ -60,6 +65,7 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
       !isTimeBefore(currentTime, fajrStartTime) && 
       isTimeBefore(currentTime, sunriseTime)) {
     updatedTimes[fajrIndex].isActive = true;
+    console.log("Fajr is active");
   }
   
   // Rule 2: Dhuhr is active from its start until Asr starts
@@ -67,6 +73,7 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
       !isTimeBefore(currentTime, dhuhrStartTime) && 
       isTimeBefore(currentTime, asrStartTime)) {
     updatedTimes[dhuhrIndex].isActive = true;
+    console.log("Dhuhr is active");
   }
   
   // Rule 3: Asr is active from its start until Maghrib starts
@@ -74,6 +81,7 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
       !isTimeBefore(currentTime, asrStartTime) && 
       isTimeBefore(currentTime, maghribStartTime)) {
     updatedTimes[asrIndex].isActive = true;
+    console.log("Asr is active");
   }
   
   // Rule 4: Maghrib is active from its start until 1 hour after
@@ -81,16 +89,19 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
       !isTimeBefore(currentTime, maghribStartTime) && 
       isTimeBefore(currentTime, oneHourAfterMaghrib)) {
     updatedTimes[maghribIndex].isActive = true;
+    console.log("Maghrib is active");
   }
   
   // Rule 5: Isha is active from its start until Fajr starts (next day)
   if (ishaIndex !== -1 && !isTimeBefore(currentTime, ishaStartTime)) {
     // If it's after Isha time and before midnight
     updatedTimes[ishaIndex].isActive = true;
+    console.log("Isha is active (evening)");
   } else if (ishaIndex !== -1 && currentHour < 12) {
     // If it's after midnight but before Fajr
     if (fajrStartTime && isTimeBefore(currentTime, fajrStartTime)) {
       updatedTimes[ishaIndex].isActive = true;
+      console.log("Isha is active (after midnight)");
     }
   }
   
@@ -176,13 +187,14 @@ export const fetchPrayerTimes = async (): Promise<PrayerTime[]> => {
 
 // Helper function to map detailed prayer time to display format
 const mapToDisplayFormat = (data: DetailedPrayerTime): PrayerTime[] => {
+  // CRITICAL FIX: Use START times rather than Jamat times
   return [
-    { id: '1', name: 'Fajr', time: data.fajr_jamat.slice(0, 5) },
+    { id: '1', name: 'Fajr', time: data.sehri_end?.slice(0, 5) || data.fajr_jamat.slice(0, 5) },
     { id: '2', name: 'Sunrise', time: data.sunrise.slice(0, 5) },
-    { id: '3', name: 'Zuhr', time: data.zuhr_jamat.slice(0, 5) },
-    { id: '4', name: 'Asr', time: data.asr_jamat.slice(0, 5) },
+    { id: '3', name: 'Zuhr', time: data.zuhr_start?.slice(0, 5) || data.zuhr_jamat.slice(0, 5) },
+    { id: '4', name: 'Asr', time: data.asr_start?.slice(0, 5) || data.asr_jamat.slice(0, 5) },
     { id: '5', name: 'Maghrib', time: data.maghrib_iftar.slice(0, 5) },
-    { id: '6', name: 'Isha', time: data.isha_first_jamat.slice(0, 5) }
+    { id: '6', name: 'Isha', time: data.isha_start?.slice(0, 5) || data.isha_first_jamat.slice(0, 5) }
   ];
 };
 
