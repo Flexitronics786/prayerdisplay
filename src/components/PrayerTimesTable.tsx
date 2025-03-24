@@ -2,6 +2,7 @@
 import { PrayerTime } from "@/types";
 import { useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
+import { useMidnightRefresh } from "@/hooks/useMidnightRefresh";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
@@ -35,7 +36,7 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
         <AsrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <MaghribTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <IshaTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
-        {isFriday && <JummahTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />}
+        <JummahTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
       </div>
     </div>
   );
