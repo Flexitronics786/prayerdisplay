@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
-import { Loader2, Upload } from 'lucide-react';
+import { Loader2, Upload, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsImporterProps {
   onImportComplete?: () => void;
@@ -79,6 +80,20 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Alert className="mb-4 bg-amber-50 border-amber-200">
+          <AlertCircle className="h-4 w-4 text-amber-800" />
+          <AlertTitle>Data Format Requirements</AlertTitle>
+          <AlertDescription className="mt-2">
+            <ul className="list-disc list-inside text-sm space-y-1 text-amber-800">
+              <li><strong>Date:</strong> YYYY-MM-DD format (e.g., 2024-06-15)</li>
+              <li><strong>Day:</strong> Full day name (e.g., Monday, Tuesday)</li>
+              <li><strong>Time Fields:</strong> 24-hour format HH:MM (e.g., 05:30, 17:45)</li>
+              <li><strong>Required Fields:</strong> date, day, fajr_jamat, sunrise, zuhr_jamat, asr_jamat, maghrib_iftar, isha_first_jamat</li>
+              <li><strong>Column Names:</strong> Must match the database field names exactly if using header row</li>
+            </ul>
+          </AlertDescription>
+        </Alert>
+
         <div className="space-y-2">
           <Label htmlFor="sheetId">Google Sheet ID</Label>
           <Input

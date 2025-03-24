@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Loader2, Plus, Save, Calendar, Clock } from "lucide-react";
 import { addPrayerTimeEntry, updatePrayerTimeEntry } from "@/services/dataService";
@@ -126,7 +127,7 @@ export const AddEditPrayerTimeDialog = ({
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="sehri_end">Sehri End</Label>
+              <Label htmlFor="sehri_end">Fajr Start</Label>
               <div className="relative">
                 <Input
                   id="sehri_end"
