@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertCircle } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, FileDown } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsImporterProps {
@@ -70,6 +70,22 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
     }
   };
 
+  const downloadTemplateCSV = () => {
+    const headers = "date,day,fajr_start,fajr_jamat,sunrise,zuhr_start,zuhr_jamat,asr_start,asr_jamat,maghrib_iftar,isha_start,isha_first_jamat,isha_second_jamat";
+    const sampleRow1 = "2024-06-15,Saturday,03:45,04:15,05:38,12:45,13:15,17:30,17:45,21:20,22:45,23:00,23:30";
+    const sampleRow2 = "2024-06-16,Sunday,03:46,04:15,05:38,12:45,13:15,17:30,17:45,21:21,22:45,23:00,23:30";
+    
+    const csvContent = `${headers}\n${sampleRow1}\n${sampleRow2}`;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'prayer_times_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -90,8 +106,21 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
               <li><strong>Time Fields:</strong> 24-hour format HH:MM (e.g., 05:30, 17:45)</li>
               <li><strong>Required Fields:</strong> date, day, fajr_jamat, sunrise, zuhr_jamat, asr_jamat, maghrib_iftar, isha_first_jamat</li>
               <li><strong>Column Names:</strong> Must match the database field names exactly if using header row</li>
+              <li><strong>Column Order:</strong> date, day, fajr_start, fajr_jamat, sunrise, zuhr_start, zuhr_jamat, asr_start, asr_jamat, maghrib_iftar, isha_start, isha_first_jamat, isha_second_jamat</li>
+              <li><strong>Sheet Sharing:</strong> Set to "Anyone with the link can view"</li>
             </ul>
           </AlertDescription>
+          <div className="mt-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-amber-800 border-amber-300 hover:bg-amber-100"
+              onClick={downloadTemplateCSV}
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Download Template
+            </Button>
+          </div>
         </Alert>
 
         <div className="space-y-2">
@@ -136,7 +165,7 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
         <div className="space-y-2">
           <Label htmlFor="isPublic">Sheet is Public</Label>
           <Select
-            value={isPublic ? "true" : "false"}
+            value={isPublic ? "true" : "true"}
             onValueChange={(value) => setIsPublic(value === "true")}
           >
             <SelectTrigger id="isPublic">
@@ -147,6 +176,9 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
               <SelectItem value="false">No (Not Supported)</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Make sure your sheet is shared with "Anyone with the link can view" permission
+          </p>
         </div>
       </CardContent>
       <CardFooter>
