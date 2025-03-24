@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
+import { useTVDisplay } from "./useTVDisplay";
 
 // Create a type for our supported prayer notifications
 type PrayerNotificationType = "Fajr" | "Zuhr" | "Asr" | "Maghrib" | "Isha" | "Jummah";
@@ -24,6 +25,10 @@ export const usePrayerTimeAlerts = (
   const [audioUrl, setAudioUrl] = useState<string>("");
   const dailyJamatTimesRef = useRef<DailyJamatTimes>({});
   const audioInitializedRef = useRef<boolean>(false);
+  const isTV = useTVDisplay(); // Add TV detection
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
 
   // Initialize audio element and fetch the audio URL from Supabase
   useEffect(() => {
@@ -32,9 +37,33 @@ export const usePrayerTimeAlerts = (
         // First try to use a local file from the public directory
         const localBeepUrl = "/alert-beep.mp3";
         
-        // Create audio element
+        // Create audio element - different approach for TV vs regular browser
         if (typeof window !== "undefined" && !audioInitializedRef.current) {
-          // Check if we already have an audio element with this ID
+          // For all devices, set up the AudioContext for more reliable playback
+          try {
+            // Create AudioContext - this works better on TVs and FireStick
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+              audioContextRef.current = new AudioContextClass();
+              console.log("Created AudioContext for prayer alerts");
+              
+              // Load the audio file as an ArrayBuffer
+              const response = await fetch(localBeepUrl);
+              const arrayBuffer = await response.arrayBuffer();
+              
+              // Decode the audio data
+              audioContextRef.current.decodeAudioData(arrayBuffer, (buffer) => {
+                audioBufferRef.current = buffer;
+                console.log("Audio buffer loaded successfully");
+              }, (error) => {
+                console.error("Error decoding audio data:", error);
+              });
+            }
+          } catch (e) {
+            console.error("Error creating AudioContext:", e);
+          }
+          
+          // Also set up the standard HTML5 Audio element as fallback
           let existingAudio = document.getElementById(PRAYER_ALERT_AUDIO_ID) as HTMLAudioElement;
           
           if (!existingAudio) {
@@ -42,7 +71,7 @@ export const usePrayerTimeAlerts = (
             existingAudio = document.createElement('audio');
             existingAudio.id = PRAYER_ALERT_AUDIO_ID;
             existingAudio.preload = "auto"; // Preload the audio
-            existingAudio.volume = 0.7;
+            existingAudio.volume = isTV ? 1.0 : 0.7; // Louder on TV
             document.body.appendChild(existingAudio);
             
             // Try to load the local file first
@@ -51,7 +80,7 @@ export const usePrayerTimeAlerts = (
             localSource.type = 'audio/mpeg';
             existingAudio.appendChild(localSource);
             
-            console.log("Created prayer alert audio element with local source:", localBeepUrl);
+            console.log(`Created prayer alert audio element with local source (TV mode: ${isTV}):`, localBeepUrl);
           }
           
           audioRef.current = existingAudio;
@@ -87,6 +116,19 @@ export const usePrayerTimeAlerts = (
                   audioRef.current.appendChild(supabaseSource);
                   
                   console.log("Added Supabase fallback audio source");
+                  
+                  // Also try to load this into the AudioContext
+                  if (audioContextRef.current) {
+                    fetch(data.signedUrl)
+                      .then(response => response.arrayBuffer())
+                      .then(arrayBuffer => {
+                        audioContextRef.current?.decodeAudioData(arrayBuffer, (buffer) => {
+                          audioBufferRef.current = buffer;
+                          console.log("Supabase audio buffer loaded successfully");
+                        });
+                      })
+                      .catch(e => console.error("Error loading Supabase audio into AudioContext:", e));
+                  }
                 }
               }
             } catch (error) {
@@ -96,8 +138,8 @@ export const usePrayerTimeAlerts = (
           
           // Initialize with a user interaction to bypass autoplay restrictions
           const unlockAudio = () => {
+            // Unlock standard HTML5 Audio
             if (audioRef.current) {
-              // Create a silent buffer to play
               audioRef.current.volume = 0.001;
               const playPromise = audioRef.current.play();
               if (playPromise !== undefined) {
@@ -105,16 +147,25 @@ export const usePrayerTimeAlerts = (
                   if (audioRef.current) {
                     audioRef.current.pause();
                     audioRef.current.currentTime = 0;
-                    audioRef.current.volume = 0.7;
-                    console.log("Audio unlocked for future playback");
+                    audioRef.current.volume = isTV ? 1.0 : 0.7;
+                    console.log("HTML5 Audio unlocked for future playback");
                   }
                 }).catch(e => {
-                  console.warn("Audio unlock failed, will try again on user interaction:", e);
+                  console.warn("HTML5 Audio unlock failed:", e);
                 });
               }
             }
             
-            // Remove this event listener after one use
+            // Also resume AudioContext if available
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+              audioContextRef.current.resume().then(() => {
+                console.log("AudioContext resumed successfully");
+              }).catch(e => {
+                console.error("Failed to resume AudioContext:", e);
+              });
+            }
+            
+            // Remove event listeners after one use
             document.removeEventListener('click', unlockAudio);
             document.removeEventListener('touchstart', unlockAudio);
           };
@@ -122,6 +173,17 @@ export const usePrayerTimeAlerts = (
           // Add event listeners to unlock audio on user interaction
           document.addEventListener('click', unlockAudio, { once: true });
           document.addEventListener('touchstart', unlockAudio, { once: true });
+          
+          // Also try to resume the AudioContext periodically (helps on TVs)
+          const resumeInterval = setInterval(() => {
+            if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+              audioContextRef.current.resume().then(() => {
+                console.log("AudioContext resumed via interval");
+              }).catch(() => {});
+            }
+          }, 10000); // Try every 10 seconds
+          
+          return () => clearInterval(resumeInterval);
         }
       } catch (error) {
         console.error("Error setting up audio:", error);
@@ -135,8 +197,14 @@ export const usePrayerTimeAlerts = (
       if (audioRef.current) {
         audioRef.current = null;
       }
+      
+      // Close AudioContext if it exists
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current = null;
+      }
     };
-  }, []);
+  }, [isTV]);
 
   // Update daily jamat times at midnight or when detailed times change
   useEffect(() => {
@@ -154,9 +222,29 @@ export const usePrayerTimeAlerts = (
       }
       
       prayers.forEach(prayer => {
-        // For Maghrib use start time, for others use Jamat time
-        const useJamat = prayer !== "Maghrib";
-        const prayerTime = getPrayerTime(prayer, useJamat);
+        let prayerTime: string | null = null;
+        
+        // Get the appropriate time for each prayer
+        switch (prayer) {
+          case "Fajr":
+            prayerTime = detailedTimes.fajr_jamat;
+            break;
+          case "Zuhr":
+            prayerTime = detailedTimes.zuhr_jamat;
+            break;
+          case "Asr":
+            prayerTime = detailedTimes.asr_jamat;
+            break;
+          case "Maghrib":
+            prayerTime = detailedTimes.maghrib_iftar; // Use start time for Maghrib
+            break;
+          case "Isha":
+            prayerTime = detailedTimes.isha_first_jamat;
+            break;
+          case "Jummah":
+            prayerTime = detailedTimes.zuhr_jamat; // Use Zuhr Jamat time for Jummah
+            break;
+        }
         
         if (prayerTime) {
           // Store only the HH:MM part for comparison
@@ -184,30 +272,59 @@ export const usePrayerTimeAlerts = (
     return () => clearTimeout(midnightTimer);
   }, [detailedTimes]);
 
-  // Helper to get prayer time for specific prayer
-  const getPrayerTime = (name: PrayerNotificationType, isJamat: boolean): string | null => {
-    if (!detailedTimes) return null;
-    
-    switch (name) {
-      case "Fajr":
-        return isJamat ? detailedTimes.fajr_jamat : null;
-      case "Zuhr":
-        return isJamat ? detailedTimes.zuhr_jamat : null;
-      case "Asr":
-        return isJamat ? detailedTimes.asr_jamat : null;
-      case "Maghrib":
-        return detailedTimes.maghrib_iftar; // Use start time for Maghrib
-      case "Isha":
-        return isJamat ? detailedTimes.isha_first_jamat : null;
-      case "Jummah":
-        return isJamat ? detailedTimes.zuhr_jamat : null; // Use Zuhr Jamat time for Jummah
-      default:
-        return null;
-    }
-  };
-
-  // Function to play the alert sound for exactly 1 second
+  // Function to play the alert sound using both HTML5 Audio and AudioContext for better compatibility
   const playAlertSound = (prayerName: string) => {
+    console.log(`Playing alert for ${prayerName} prayer time (TV mode: ${isTV})`);
+    
+    // Try to play using AudioContext first (better for TV devices)
+    if (audioContextRef.current && audioBufferRef.current) {
+      try {
+        // Stop any previous sound
+        if (audioSourceRef.current) {
+          try {
+            audioSourceRef.current.stop();
+          } catch (e) {
+            // Ignore errors when stopping
+          }
+        }
+        
+        // Create a new source node
+        const source = audioContextRef.current.createBufferSource();
+        source.buffer = audioBufferRef.current;
+        
+        // Create a gain node for volume control
+        const gainNode = audioContextRef.current.createGain();
+        gainNode.gain.value = isTV ? 1.0 : 0.7; // Full volume on TV
+        
+        // Connect nodes
+        source.connect(gainNode);
+        gainNode.connect(audioContextRef.current.destination);
+        
+        // Store reference to stop later
+        audioSourceRef.current = source;
+        
+        // Play the sound
+        source.start(0);
+        console.log("Playing alert using AudioContext");
+        
+        // Stop after 3 seconds (longer duration for TV)
+        setTimeout(() => {
+          try {
+            source.stop();
+            console.log("Stopped AudioContext alert sound");
+          } catch (e) {
+            // Already stopped, ignore
+          }
+        }, isTV ? 3000 : 2000);
+        
+        // Return early if AudioContext playback succeeds
+        return;
+      } catch (e) {
+        console.error("Error playing with AudioContext, falling back to HTML5 Audio:", e);
+      }
+    }
+    
+    // Fallback to HTML5 Audio
     if (!audioRef.current) {
       console.error("Audio reference not available");
       return;
@@ -223,30 +340,28 @@ export const usePrayerTimeAlerts = (
     
     // Reset to the beginning 
     audioRef.current.currentTime = 0;
-    audioRef.current.volume = 0.7; // Ensure volume is set correctly
-    
-    console.log(`Playing alert for ${prayerName} prayer time`);
+    audioRef.current.volume = isTV ? 1.0 : 0.7; // Full volume on TV
     
     // Play the sound multiple times with increasing volume to ensure it's heard
     const attemptToPlay = (attempt = 1, maxAttempts = 3) => {
       if (!audioRef.current) return;
       
       // Increase volume slightly with each attempt
-      audioRef.current.volume = Math.min(0.7 + (attempt * 0.1), 1.0);
+      audioRef.current.volume = Math.min((isTV ? 0.8 : 0.7) + (attempt * 0.1), 1.0);
       
       const playPromise = audioRef.current.play();
       
       if (playPromise !== undefined) {
         playPromise
           .then(() => {
-            // Set a timeout to stop the sound after 2 seconds
+            // Set a timeout to stop the sound after 2-3 seconds
             setTimeout(() => {
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
                 console.log("Prayer notification beep completed");
               }
-            }, 2000); // 2 second duration for better chance of being heard
+            }, isTV ? 3000 : 2000); // Longer duration for TV
           })
           .catch(err => {
             console.error(`Error playing prayer alert sound (attempt ${attempt}):`, err);
@@ -288,18 +403,20 @@ export const usePrayerTimeAlerts = (
           // Mark this time as checked
           checkedTimesRef.current.add(timeKey);
           
+          console.log(`⏰ JAMAT TIME ALERT for ${prayer} prayer at ${prayerMinutes} ⏰`);
+          
           // Play alert sound and show notification
           playAlertSound(prayer);
         }
       });
     };
     
-    // Check immediately and then every 10 seconds
+    // Check immediately and then every 5 seconds (more frequent for reliability)
     checkTimes();
-    const interval = setInterval(checkTimes, 10000);
+    const interval = setInterval(checkTimes, 5000);
     
     return () => clearInterval(interval);
-  }, [detailedTimes, lastCheckedMinute, audioInitializedRef.current]);
+  }, [detailedTimes, lastCheckedMinute, isTV]);
 
   // Reset the checked times at midnight
   useEffect(() => {
