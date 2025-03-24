@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Loader2, Plus, Save, Calendar, Clock } from "lucide-react";
+import { Loader2, Save, Calendar, Clock } from "lucide-react";
 import { addPrayerTimeEntry, updatePrayerTimeEntry } from "@/services/dataService";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -53,10 +52,12 @@ export const AddEditPrayerTimeDialog = ({
       
       if (missingFields.length > 0) {
         toast.error(`Please fill in the required fields: ${missingFields.join(', ')}`);
+        setIsSubmitting(false);
         return;
       }
       
       if (editingId) {
+        console.log("Updating prayer time entry:", editingId, formData);
         const result = await updatePrayerTimeEntry(editingId, formData);
         if (result) {
           toast.success("Prayer time updated successfully");
@@ -67,6 +68,7 @@ export const AddEditPrayerTimeDialog = ({
           toast.error("Failed to update prayer time");
         }
       } else {
+        console.log("Adding new prayer time entry:", formData);
         const result = await addPrayerTimeEntry(formData);
         if (result) {
           toast.success("Prayer time added successfully");
@@ -268,7 +270,7 @@ export const AddEditPrayerTimeDialog = ({
                     id="isha_start"
                     name="isha_start"
                     type="time"
-                    value={formData.isha_start}
+                    value={formData.isha_start || ""}
                     onChange={handleInputChange}
                     className="pl-10"
                   />
@@ -283,7 +285,7 @@ export const AddEditPrayerTimeDialog = ({
                     id="isha_first_jamat"
                     name="isha_first_jamat"
                     type="time"
-                    value={formData.isha_first_jamat}
+                    value={formData.isha_first_jamat || ""}
                     onChange={handleInputChange}
                     required
                     className="pl-10"
@@ -302,7 +304,7 @@ export const AddEditPrayerTimeDialog = ({
           }}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -352,6 +352,7 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
 
 export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedPrayerTime>): Promise<DetailedPrayerTime | null> => {
   try {
+    console.log("Updating prayer time entry:", id, entry);
     let updatedEntry: DetailedPrayerTime | null = null;
     
     // Check if this is a temporary ID (for locally stored entries)
@@ -412,6 +413,7 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
       }
     } else {
       // Update in Supabase
+      console.log("Updating in Supabase:", id, entry);
       const { data, error } = await supabase
         .from('prayer_times')
         .update(entry)
@@ -423,6 +425,8 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
         console.error("Supabase error updating prayer time:", error);
         throw error;
       }
+      
+      console.log("Supabase update result:", data);
       
       // Also update local storage copy for redundancy
       const savedTimes = localStorage.getItem('local-prayer-times');
