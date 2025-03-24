@@ -10,12 +10,17 @@ interface JummahTileProps {
 }
 
 export const JummahTile: React.FC<JummahTileProps> = ({ prayerTimes, detailedTimes }) => {
+  // On Friday, Jummah replaces Zuhr, so we'll use the same logic to determine if it's active or next
+  const zuhrPrayer = prayerTimes.find(p => p.name === "Zuhr" || p.name === "Dhuhr");
+  const isActive = zuhrPrayer?.isActive || false;
+  const isNext = zuhrPrayer?.isNext || false;
+
   return (
     <PrayerTile
       title="Jummah"
       arabicTitle="الجمعة"
-      isActive={false}
-      isNext={false}
+      isActive={isActive}
+      isNext={isNext}
       items={[
         {
           label: "Start",
