@@ -16,11 +16,13 @@ interface PrayerTimesTableProps {
 }
 
 const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: PrayerTimesTableProps) => {
-  const isTV = useTVDisplay();
+  const { isTV } = useTVDisplay();
   const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
 
   // Use our updated hook for prayer time alerts - this will play sounds at jamat times
-  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  // We don't use this instance's return value to avoid duplication with Index.tsx
+  // Just let Index.tsx handle the alerts
+  // usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   return (
     <div className="animate-scale-in">

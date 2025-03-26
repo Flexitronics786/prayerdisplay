@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { fetchPrayerTimes, fetchAllPrayerTimes } from "@/services/dataService";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
@@ -11,8 +10,19 @@ export const usePrayerTimesData = () => {
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
   const dataLoadingRef = useRef(false);
   const lastCleanupDateRef = useRef<string | null>(null);
+  const lastCheckedTimeRef = useRef<Date | null>(null);
 
   const loadData = useCallback(async () => {
+    // Throttle data loading to at most once every 5 seconds
+    const now = new Date();
+    if (lastCheckedTimeRef.current && 
+        now.getTime() - lastCheckedTimeRef.current.getTime() < 5000) {
+      console.log("Skipping data load - checked too recently");
+      return;
+    }
+    
+    lastCheckedTimeRef.current = now;
+    
     if (dataLoadingRef.current) {
       console.log("Already loading data, skipping this request");
       return;
@@ -27,12 +37,16 @@ export const usePrayerTimesData = () => {
       const times = await fetchPrayerTimes();
       setPrayerTimes(times);
       
+      // Debug prayer times - helpful for Sony TV issues
+      console.log("Prayer times loaded:", times);
+      
       // Load detailed prayer times for the current day
       const allTimes = await fetchAllPrayerTimes();
       const today = new Date().toISOString().split('T')[0];
       const todayTimes = allTimes.find(t => t.date === today);
       if (todayTimes) {
         setDetailedTimes(todayTimes);
+        console.log("Today's detailed times:", todayTimes);
       }
       
       scheduleNextCheck(times);
@@ -136,7 +150,13 @@ export const usePrayerTimesData = () => {
   }, [loadData, nextCheckTimer]);
 
   useEffect(() => {
+    // Load immediately on mount
     loadData();
+    
+    // Also check every 5 minutes - this helps on Sony TVs where timers may not be reliable
+    const regularRefreshInterval = setInterval(() => {
+      loadData();
+    }, 5 * 60 * 1000);
     
     // Initial cleanup when component mounts
     cleanupOldPrayerTimes();
@@ -166,6 +186,7 @@ export const usePrayerTimesData = () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
+      clearInterval(regularRefreshInterval);
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };

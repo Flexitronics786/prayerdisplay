@@ -13,19 +13,22 @@ import { Toaster } from "sonner";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
-  const isTV = useTVDisplay();
+  const { isTV, isSonyFirestick } = useTVDisplay();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts (without directly using the returned value)
-  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  // Initialize prayer time alerts with TV detection
+  usePrayerTimeAlerts(prayerTimes, detailedTimes, isSonyFirestick);
 
   useEffect(() => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
     }, 60000);
     
+    // Debug TV detection
+    console.log("Index.tsx: TV detection", { isTV, isSonyFirestick });
+    
     return () => clearInterval(dateInterval);
-  }, []);
+  }, [isTV, isSonyFirestick]);
 
   if (isLoading && prayerTimes.length === 0) {
     return <LoadingScreen />;

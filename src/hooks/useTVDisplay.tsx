@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 export const useTVDisplay = () => {
   const [isTV, setIsTV] = useState(false);
+  const [isSonyFirestick, setIsSonyFirestick] = useState(false);
 
   useEffect(() => {
     const checkIfTV = () => {
@@ -26,6 +27,16 @@ export const useTVDisplay = () => {
                        userAgent.includes('playstation') ||
                        userAgent.includes('bravia');
       
+      // Detect Sony TV with Firestick specifically
+      const isSonyFirestickCombo = isFireTV && (
+        isSonyTV || 
+        // Additional checks for Sony TV characteristics
+        (window.screen && 
+         window.screen.width === 1920 && 
+         window.screen.height === 1080 &&
+         navigator.maxTouchPoints === 0)
+      );
+      
       // Check for any TV or TV-like platform
       const isTVPlatform = isFireTV || isLGTV || isSamsungTV || isSonyTV || 
                           userAgent.includes('tv') || 
@@ -38,6 +49,9 @@ export const useTVDisplay = () => {
       // Combine all checks
       const result = (isTVPlatform || isLargeScreen);
       
+      // Set Sony Firestick flag
+      setIsSonyFirestick(isSonyFirestickCombo);
+      
       // Log detection info for debugging
       console.log("TV detection:", { 
         userAgent, 
@@ -45,6 +59,7 @@ export const useTVDisplay = () => {
         isLGTV,
         isSamsungTV,
         isSonyTV, 
+        isSonyFirestickCombo,
         isTVPlatform,
         isLargeScreen, 
         result 
@@ -64,5 +79,5 @@ export const useTVDisplay = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return isTV;
+  return { isTV, isSonyFirestick };
 };
