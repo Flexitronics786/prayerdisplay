@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
-  const isTV = useTVDisplay();
+  const { isTV } = useTVDisplay();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
   // Initialize prayer time alerts (without directly using the returned value)

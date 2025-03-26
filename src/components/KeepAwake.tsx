@@ -3,7 +3,7 @@ import { useTVDisplay } from "@/hooks/useTVDisplay";
 
 const KeepAwake = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isTV = useTVDisplay();
+  const { isTV, isFirestick } = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
   // Method 1: Canvas-based animation that keeps the screen awake (MORE AGGRESSIVE)
@@ -313,6 +313,154 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
+  // Method 7: SPECIAL FIRESTICK PREVENTION - More aggressive for Firestick devices
+  useEffect(() => {
+    if (!isFirestick) return;
+    
+    console.log("Initializing Firestick-specific keep-awake system");
+    
+    // Firestick has issues with background apps, we need to be more aggressive
+    // Create a recurring browser interaction that simulates user activity
+    
+    // Create an audio element that plays silent audio periodically
+    const silentAudio = new Audio();
+    silentAudio.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
+    silentAudio.loop = true;
+    
+    // Set up touch/click simulation at random intervals
+    const touchSimulationInterval = setInterval(() => {
+      // Create a random spot slightly offscreen
+      const x = window.innerWidth * 0.99; 
+      const y = window.innerHeight * 0.99;
+      
+      // Create and dispatch touch/mouse events
+      try {
+        // Try to use touch events first (FireTV supports these)
+        const touchStartEvent = new TouchEvent('touchstart', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          touches: [new Touch({
+            identifier: Date.now(),
+            target: document.body,
+            clientX: x,
+            clientY: y
+          })]
+        });
+        
+        document.body.dispatchEvent(touchStartEvent);
+        
+        // Also try mouse events as fallback
+        const mouseEvent = new MouseEvent('mousemove', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          clientX: x,
+          clientY: y
+        });
+        
+        document.body.dispatchEvent(mouseEvent);
+        
+        // Try to play a silent sound (this can keep media sessions alive)
+        silentAudio.play().catch(() => {
+          // Silent catch for autoplay restrictions
+        });
+      } catch (e) {
+        // Silent catch
+      }
+      
+      // Change document title (keeps UI thread active)
+      const originalTitle = document.title;
+      document.title = originalTitle + " ";
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 500);
+      
+      // Log occasionally for debugging
+      if (Math.random() < 0.05) {
+        console.log("Firestick keep-awake: simulated interaction at", new Date().toISOString());
+      }
+    }, 5000); // More frequent for Firestick - every 5 seconds
+    
+    // Method to prevent common TV browser timeouts by forcing frequent history state changes
+    // This keeps the browser "active" in TV OS's view
+    const historyInterval = setInterval(() => {
+      try {
+        // Push a tiny state change to history without changing the URL
+        const stateObj = { keepAlive: Date.now() };
+        window.history.replaceState(stateObj, document.title);
+        
+        // Force layout recalculation (keeps rendering pipeline active)
+        document.body.style.zoom = "0.9999";
+        setTimeout(() => {
+          document.body.style.zoom = "1";
+        }, 10);
+      } catch (e) {
+        // Silent catch
+      }
+    }, 8000); // Every 8 seconds
+    
+    return () => {
+      clearInterval(touchSimulationInterval);
+      clearInterval(historyInterval);
+      silentAudio.pause();
+      silentAudio.src = "";
+    };
+  }, [isFirestick]);
+  
+  // Method 8: Pointer lock API - can help keep some devices awake
+  useEffect(() => {
+    if (!isFirestick) return;
+    
+    console.log("Initializing Pointer Lock keep-awake method");
+    
+    // Create a hidden canvas for pointer lock
+    const pointerLockCanvas = document.createElement('canvas');
+    pointerLockCanvas.width = 1;
+    pointerLockCanvas.height = 1;
+    pointerLockCanvas.style.position = 'fixed';
+    pointerLockCanvas.style.opacity = '0.001';
+    pointerLockCanvas.style.pointerEvents = 'none';
+    pointerLockCanvas.style.left = '-9999px';
+    document.body.appendChild(pointerLockCanvas);
+    
+    // Try to request pointer lock periodically
+    const pointerLockInterval = setInterval(() => {
+      try {
+        // Some browsers require user interaction first, but we'll try anyway
+        // This won't hurt even if it fails
+        if (pointerLockCanvas.requestPointerLock) {
+          pointerLockCanvas.requestPointerLock();
+        }
+      } catch (e) {
+        // Silent catch
+      }
+      
+      // Also, force a DOM recalculation
+      const div = document.createElement('div');
+      div.style.position = 'fixed';
+      div.style.opacity = '0.001';
+      div.style.left = '-9999px';
+      document.body.appendChild(div);
+      div.getBoundingClientRect(); // Force layout calculation
+      document.body.removeChild(div);
+      
+    }, 30000); // Every 30 seconds
+    
+    // Handle pointer lock change
+    const pointerLockChangeHandler = () => {
+      console.log("Pointer lock state changed");
+    };
+    
+    document.addEventListener('pointerlockchange', pointerLockChangeHandler);
+    
+    return () => {
+      clearInterval(pointerLockInterval);
+      document.removeEventListener('pointerlockchange', pointerLockChangeHandler);
+      document.body.removeChild(pointerLockCanvas);
+    };
+  }, [isFirestick]);
+  
   // Only render elements on TV displays
   if (!isTV) return null;
   
@@ -347,7 +495,7 @@ const KeepAwake = () => {
             zIndex: 9999
           }}
         >
-          Keep Awake: {keepAwakeActive ? 'Active' : 'Inactive'}
+          Keep Awake: {keepAwakeActive ? 'Active' : 'Inactive'} {isFirestick ? '(Firestick Mode)' : ''}
         </div>
       )}
     </>

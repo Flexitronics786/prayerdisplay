@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 
 export const useTVDisplay = () => {
   const [isTV, setIsTV] = useState(false);
+  const [isFirestick, setIsFirestick] = useState(false);
 
   useEffect(() => {
     const checkIfTV = () => {
@@ -38,6 +39,9 @@ export const useTVDisplay = () => {
       // Combine all checks
       const result = (isTVPlatform || isLargeScreen);
       
+      // Set Firestick specific state
+      setIsFirestick(isFireTV);
+      
       // Log detection info for debugging
       console.log("TV detection:", { 
         userAgent, 
@@ -64,5 +68,5 @@ export const useTVDisplay = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return isTV;
+  return { isTV, isFirestick };
 };
