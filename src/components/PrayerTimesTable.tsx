@@ -18,9 +18,6 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
   const { isTV } = useTVDisplay();
   const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
 
-  // We've removed the usePrayerTimeAlerts initialization here
-  // It's now handled only in Index.tsx to avoid duplication
-
   return (
     <div className="animate-scale-in">
       <div className="mb-2 sm:mb-3">
