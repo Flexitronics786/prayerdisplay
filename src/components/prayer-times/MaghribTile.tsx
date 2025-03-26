@@ -12,9 +12,6 @@ interface MaghribTileProps {
 export const MaghribTile: React.FC<MaghribTileProps> = ({ prayerTimes, detailedTimes }) => {
   const maghribDetails = getPrayerDetails(prayerTimes, "Maghrib");
   
-  // Add console logs to help debug Maghrib timing
-  console.log(`Maghrib prayer details:`, maghribDetails);
-  
   return (
     <PrayerTile
       title="Maghrib"
