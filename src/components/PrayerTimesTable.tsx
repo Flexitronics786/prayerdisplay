@@ -8,6 +8,7 @@ import { AsrTile } from "./prayer-times/AsrTile";
 import { MaghribTile } from "./prayer-times/MaghribTile";
 import { IshaTile } from "./prayer-times/IshaTile";
 import { JummahTile } from "./prayer-times/JummahTile";
+import { useEffect } from "react";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
@@ -20,7 +21,31 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
   const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
 
   // Use our updated hook for prayer time alerts - this will play sounds at jamat times
-  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  const alertsActive = usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  
+  // Additional check to periodically log prayer times for debugging
+  useEffect(() => {
+    // Log jamat times on component mount and every 5 minutes
+    const logJamatTimes = () => {
+      if (detailedTimes) {
+        console.log("Current detailed prayer times for alerts:", {
+          fajr: detailedTimes.fajr_jamat,
+          zuhr: detailedTimes.zuhr_jamat,
+          asr: detailedTimes.asr_jamat,
+          maghrib: detailedTimes.maghrib_iftar,
+          isha: detailedTimes.isha_first_jamat,
+          isTV,
+          alertsActive
+        });
+      }
+    };
+    
+    // Log immediately and then every 5 minutes
+    logJamatTimes();
+    const interval = setInterval(logJamatTimes, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [detailedTimes, isTV, alertsActive]);
 
   return (
     <div className="animate-scale-in">
