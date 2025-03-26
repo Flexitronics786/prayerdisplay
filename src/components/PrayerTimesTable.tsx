@@ -1,7 +1,6 @@
 
 import { PrayerTime } from "@/types";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
-import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
 import { FajrTile } from "./prayer-times/FajrTile";
 import { ZuhrTile } from "./prayer-times/ZuhrTile";
 import { AsrTile } from "./prayer-times/AsrTile";
@@ -16,11 +15,11 @@ interface PrayerTimesTableProps {
 }
 
 const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: PrayerTimesTableProps) => {
-  const isTV = useTVDisplay();
+  const { isTV } = useTVDisplay();
   const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
 
-  // Use our updated hook for prayer time alerts - this will play sounds at jamat times
-  usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  // Note: We've removed the usePrayerTimeAlerts hook call from here
+  // It's now only called in the Index.tsx component to avoid duplicate alerts
 
   return (
     <div className="animate-scale-in">

@@ -16,7 +16,8 @@ const Index = () => {
   const { isTV } = useTVDisplay();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts (without directly using the returned value)
+  // Initialize prayer time alerts only once in the main component
+  // This ensures we don't have multiple instances trying to play sounds
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
