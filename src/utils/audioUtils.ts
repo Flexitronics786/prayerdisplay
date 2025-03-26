@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,7 +19,7 @@ export const useAudioInitialization = (config: AudioConfig) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
-  const audioLoadAttemptsRef = useRef<number>(0);
+  const audioLoadAttemptsRef = useRef<number>(0); // Fix: Keep as useRef<number>
 
   useEffect(() => {
     const fetchAudioUrl = async () => {
@@ -414,9 +413,11 @@ export const playAlertSound = (
       
       try {
         // Reload the audio element before playing (helps on some TVs)
-        if (audioLoadAttemptsRef.current && audioLoadAttemptsRef.current.current < 5) {
+        // FIX: Handle audioLoadAttemptsRef correctly
+        if (audioLoadAttemptsRef.current < 5) {
           audioRef.current.load();
-          audioLoadAttemptsRef.current.current++;
+          // FIX: Increment the value using the state setter pattern to avoid direct assignment
+          audioLoadAttemptsRef.current = audioLoadAttemptsRef.current + 1;
         }
         
         const playPromise = audioRef.current.play();
