@@ -1,4 +1,3 @@
-
 import { PrayerTime, DetailedPrayerTime, Hadith } from "@/types";
 import { getCurrentTime24h, isTimeBefore } from "@/utils/dateUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,15 +48,6 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
   
   console.log(`Prayer start times - Fajr: ${fajrStartTime}, Dhuhr: ${dhuhrStartTime}, Asr: ${asrStartTime}, Maghrib: ${maghribStartTime}, Isha: ${ishaStartTime}`);
   
-  // Calculate one hour after Maghrib
-  let oneHourAfterMaghrib = '';
-  if (maghribStartTime) {
-    const [mHours, mMinutes] = maghribStartTime.split(':').map(Number);
-    let newHour = mHours + 1;
-    if (newHour >= 24) newHour -= 24;
-    oneHourAfterMaghrib = `${newHour.toString().padStart(2, '0')}:${mMinutes.toString().padStart(2, '0')}`;
-  }
-  
   // IMPORTANT: We're explicitly using START times for determining active prayers
   
   // Rule 1: Fajr is active from its start until Sunrise
@@ -84,10 +74,10 @@ const markActivePrayer = (prayerTimes: PrayerTime[], detailedTimes?: DetailedPra
     console.log("Asr is active");
   }
   
-  // Rule 4: Maghrib is active from its start until 1 hour after
+  // Rule 4: MODIFIED - Maghrib is active from its start until Isha starts
   if (maghribIndex !== -1 && 
       !isTimeBefore(currentTime, maghribStartTime) && 
-      isTimeBefore(currentTime, oneHourAfterMaghrib)) {
+      isTimeBefore(currentTime, ishaStartTime)) {
     updatedTimes[maghribIndex].isActive = true;
     console.log("Maghrib is active");
   }
