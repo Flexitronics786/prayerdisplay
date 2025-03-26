@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { getCurrentTime24h } from "@/utils/dateUtils";
@@ -18,7 +17,8 @@ const PRAYER_ALERT_AUDIO_ID = "prayer-alert-sound";
 
 export const usePrayerTimeAlerts = (
   prayerTimes: PrayerTime[],
-  detailedTimes: DetailedPrayerTime | null
+  detailedTimes: DetailedPrayerTime | null,
+  isSonyFirestick: boolean = false // Add the third parameter with a default value
 ) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const checkedTimesRef = useRef<Set<string>>(new Set());
@@ -26,7 +26,7 @@ export const usePrayerTimeAlerts = (
   const [audioUrl, setAudioUrl] = useState<string>("");
   const dailyJamatTimesRef = useRef<DailyJamatTimes>({});
   const audioInitializedRef = useRef<boolean>(false);
-  const isTV = useTVDisplay(); // Add TV detection
+  const { isTV } = useTVDisplay(); // Add TV detection
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const audioBufferRef = useRef<AudioBuffer | null>(null);
@@ -91,7 +91,7 @@ export const usePrayerTimeAlerts = (
             mp3Source.type = 'audio/mp3';
             existingAudio.appendChild(mp3Source);
             
-            console.log(`Created prayer alert audio element with local source (TV mode: ${isTV}):`, localBeepUrl);
+            console.log(`Created prayer alert audio element with local source (TV mode: ${isTV}, Sony Firestick: ${isSonyFirestick}):`, localBeepUrl);
           }
           
           audioRef.current = existingAudio;
@@ -99,10 +99,10 @@ export const usePrayerTimeAlerts = (
           audioInitializedRef.current = true;
           
           // Preload the audio on Firestick/TVs
-          if (isTV) {
+          if (isTV || isSonyFirestick) {
             try {
               existingAudio.load();
-              console.log("Preloaded audio for TV");
+              console.log("Preloaded audio for TV/Firestick");
               
               // Try to play a silent version to unlock audio
               existingAudio.volume = 0.001;
@@ -112,7 +112,7 @@ export const usePrayerTimeAlerts = (
                   existingAudio.pause();
                   existingAudio.currentTime = 0;
                   existingAudio.volume = 1.0;
-                  console.log("Audio preplay successful on TV");
+                  console.log("Audio preplay successful on TV/Firestick");
                 }).catch(e => {
                   console.log("Silent audio preplay failed:", e);
                 });
@@ -172,7 +172,7 @@ export const usePrayerTimeAlerts = (
                   }
                   
                   // Preload on TV
-                  if (isTV && audioRef.current) {
+                  if (isTV || isSonyFirestick) {
                     audioRef.current.load();
                   }
                 }
@@ -235,7 +235,7 @@ export const usePrayerTimeAlerts = (
           }, 10000); // Try every 10 seconds
           
           // Special handling for Firestick: create and play a short audio clip after 5 seconds
-          if (isTV) {
+          if (isTV || isSonyFirestick) {
             setTimeout(() => {
               try {
                 if (audioRef.current) {
@@ -282,7 +282,7 @@ export const usePrayerTimeAlerts = (
         audioContextRef.current = null;
       }
     };
-  }, [isTV]);
+  }, [isTV, isSonyFirestick]); // Add isSonyFirestick to dependencies
 
   // Update daily jamat times at midnight or when detailed times change
   useEffect(() => {
@@ -352,10 +352,10 @@ export const usePrayerTimeAlerts = (
 
   // Function to play the alert sound using both HTML5 Audio and AudioContext for better compatibility
   const playAlertSound = (prayerName: string) => {
-    console.log(`Playing alert for ${prayerName} prayer time (TV mode: ${isTV})`);
+    console.log(`Playing alert for ${prayerName} prayer time (TV mode: ${isTV}, Sony Firestick: ${isSonyFirestick})`);
     
     // Firestick-specific approach - try to create a new audio element for each play
-    if (isTV && navigator.userAgent.toLowerCase().includes('firetv')) {
+    if ((isTV || isSonyFirestick) && navigator.userAgent.toLowerCase().includes('firetv')) {
       try {
         const tempAudio = new Audio("/alert-beep.mp3");
         tempAudio.volume = 1.0;
