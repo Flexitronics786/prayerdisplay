@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 
-// Define a unique ID for the keep awake audio element to avoid conflicts with alert audio
-const KEEP_AWAKE_AUDIO_ID = "keep-awake-audio";
-
 const KeepAwake = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { isTV, isFirestick } = useTVDisplay();
+  const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
-  // Method 1: Canvas-based animation that keeps the screen awake
+  // Method 1: Canvas-based animation that keeps the screen awake (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV || !canvasRef.current) return;
     
@@ -33,8 +30,8 @@ const KeepAwake = () => {
     const animate = () => {
       frameCount++;
       
-      // More subtle pixel color changes to reduce resource usage
-      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.001)' : 'rgba(0,0,0,0.002)';
+      // More aggressive pixel color changes (still visually subtle)
+      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.003)' : 'rgba(0,0,0,0.004)';
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, 2, 2);
       
@@ -45,7 +42,7 @@ const KeepAwake = () => {
     // Start animation
     const animationId = requestAnimationFrame(animate);
     setKeepAwakeActive(true);
-    console.log("Canvas animation started to prevent sleep");
+    console.log("Canvas animation started to prevent sleep (aggressive mode)");
     
     // Cleanup function
     return () => {
@@ -54,18 +51,20 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 2: CSS Animation to keep display active with reduced frequency
+  // Method 2: CSS Animation to keep display active (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing CSS animation-based keep-awake system");
     
-    // Create a style element for our animation with less frequent changes
+    // Create a style element for our animation with more frequent changes
     const styleElement = document.createElement('style');
     styleElement.textContent = `
       @keyframes keepAwakeAnimation {
-        0% { opacity: 0.998; }
+        0% { opacity: 0.999; }
+        25% { opacity: 0.9995; }
         50% { opacity: 0.999; }
+        75% { opacity: 0.9995; }
         100% { opacity: 1; }
       }
       
@@ -75,23 +74,26 @@ const KeepAwake = () => {
         height: 2px;
         bottom: 0;
         right: 0;
-        opacity: 0.001;
+        opacity: 0.002;
         z-index: -1;
-        animation: keepAwakeAnimation 10s infinite; /* Slower animation */
+        animation: keepAwakeAnimation 5s infinite; /* Faster animation */
         pointer-events: none;
       }
     `;
     
     document.head.appendChild(styleElement);
     
-    // Create fewer elements that use this animation
+    // Create multiple elements that use this animation
     const elements = [];
-    const animatedElement = document.createElement('div');
-    animatedElement.className = 'keep-awake-element';
-    document.body.appendChild(animatedElement);
-    elements.push(animatedElement);
+    for (let i = 0; i < 3; i++) {
+      const animatedElement = document.createElement('div');
+      animatedElement.className = 'keep-awake-element';
+      animatedElement.style.right = `${i * 2}px`;
+      document.body.appendChild(animatedElement);
+      elements.push(animatedElement);
+    }
     
-    console.log("CSS animation method initialized for keep-awake");
+    console.log("CSS animation method initialized for keep-awake (aggressive mode)");
     
     return () => {
       document.head.removeChild(styleElement);
@@ -99,38 +101,144 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 3: Periodic visibility changes and focus events (reduced frequency)
+  // Method 3: Periodic visibility changes and focus events (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
     console.log("Initializing visibility/focus-based keep-awake system");
     
     const focusInterval = setInterval(() => {
-      // Force focus cycle once
+      // Force multiple focus/blur cycles
       window.dispatchEvent(new Event('focus'));
+      setTimeout(() => window.dispatchEvent(new Event('blur')), 100);
+      setTimeout(() => window.dispatchEvent(new Event('focus')), 200);
       
       // Force visibility state check
       if (document.hidden) {
         console.log("Document appears hidden, triggering visibility change");
       }
       
-      // Update document title less aggressively
+      // Update document title more aggressively
       const currentTitle = document.title;
       document.title = currentTitle + " ";
       setTimeout(() => {
         document.title = currentTitle;
       }, 200);
       
-    }, 30000); // Every 30 seconds (less frequent)
+      // Force a layout recalculation
+      document.body.getBoundingClientRect();
+      
+    }, 20000); // Every 20 seconds (more frequent)
     
-    console.log("Visibility/focus-based keep-awake method initialized");
+    console.log("Visibility/focus-based keep-awake method initialized (aggressive mode)");
     
     return () => {
       clearInterval(focusInterval);
     };
   }, [isTV]);
   
-  // Method 4: Wake Lock API - modern method to prevent device sleep
+  // Method 4: Simulate DOM interactions to keep the device awake (MORE AGGRESSIVE)
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("KeepAwake DOM interaction method activated");
+    
+    const activityInterval = setInterval(() => {
+      // Create multiple temporary elements to force more layout calculations
+      for (let i = 0; i < 3; i++) {
+        const tempElement = document.createElement('div');
+        tempElement.style.position = 'fixed';
+        tempElement.style.left = `-${9999 + i}px`;
+        tempElement.style.width = '1px';
+        tempElement.style.height = '1px';
+        document.body.appendChild(tempElement);
+        
+        // Force layout calculation
+        tempElement.getBoundingClientRect();
+        
+        setTimeout(() => {
+          document.body.removeChild(tempElement);
+        }, 50);
+      }
+      
+      // Trigger a more aggressive repaint cycle
+      document.body.style.opacity = "0.9999";
+      setTimeout(() => {
+        document.body.style.opacity = "1";
+      }, 10);
+      setTimeout(() => {
+        document.body.style.opacity = "0.9999";
+      }, 20);
+      setTimeout(() => {
+        document.body.style.opacity = "1";
+      }, 30);
+      
+      // Don't log this too often to avoid console spam
+      if (Math.random() < 0.1) { // Only log approximately 10% of the time
+        console.log("Keep awake: Aggressive DOM activity simulated at", new Date().toISOString());
+      }
+    }, 10000); // Every 10 seconds (more frequent)
+    
+    return () => {
+      clearInterval(activityInterval);
+    };
+  }, [isTV]);
+  
+  // Method 5: HTML5 Page Visibility API manipulation (MORE AGGRESSIVE)
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing Page Visibility API keep-awake system");
+    
+    // Create multiple hidden iframes that we can manipulate
+    const iframes = [];
+    for (let i = 0; i < 2; i++) {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = `-${9999 + i}px`;
+      iframe.style.width = '1px';
+      iframe.style.height = '1px';
+      iframe.style.opacity = '0.001';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.zIndex = '-1';
+      document.body.appendChild(iframe);
+      iframes.push(iframe);
+    }
+    
+    // Access iframe documents periodically
+    const iframeVisibilityInterval = setInterval(() => {
+      iframes.forEach((iframe, idx) => {
+        try {
+          if (iframe.contentWindow && iframe.contentWindow.document) {
+            // Change something in the iframe to trigger visibility processing
+            iframe.contentWindow.document.title = "keepAwake" + new Date().getTime() + idx;
+            
+            // Create and remove elements in the iframe
+            const div = iframe.contentWindow.document.createElement('div');
+            iframe.contentWindow.document.body.appendChild(div);
+            setTimeout(() => {
+              try {
+                iframe.contentWindow.document.body.removeChild(div);
+              } catch (e) {
+                // Silent catch
+              }
+            }, 50);
+          }
+        } catch (e) {
+          // Silent catch to avoid console spam
+        }
+      });
+    }, 15000); // Every 15 seconds (more frequent)
+    
+    console.log("Page Visibility API keep-awake method initialized (aggressive mode)");
+    
+    return () => {
+      clearInterval(iframeVisibilityInterval);
+      iframes.forEach(iframe => document.body.removeChild(iframe));
+    };
+  }, [isTV]);
+  
+  // Method 6: Wake Lock API - modern method to prevent device sleep (MORE AGGRESSIVE)
   useEffect(() => {
     if (!isTV) return;
     
@@ -205,122 +313,6 @@ const KeepAwake = () => {
     };
   }, [isTV]);
   
-  // Method 5: SPECIAL FIRESTICK PREVENTION - Modified to avoid audio conflicts
-  useEffect(() => {
-    if (!isFirestick) return;
-    
-    console.log("Initializing Firestick-specific keep-awake system");
-    
-    // Create an audio element that plays silent audio periodically
-    // Use a unique ID to avoid conflicts with prayer alert audio
-    let silentAudio = document.getElementById(KEEP_AWAKE_AUDIO_ID) as HTMLAudioElement;
-    
-    if (!silentAudio) {
-      silentAudio = new Audio();
-      silentAudio.id = KEEP_AWAKE_AUDIO_ID;
-      silentAudio.loop = false; // Don't loop continuously
-      silentAudio.volume = 0.001; // Nearly silent
-      
-      // Very short silent MP3
-      silentAudio.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==";
-      document.body.appendChild(silentAudio);
-    }
-    
-    // Set up a timer to periodically play a very short silent audio
-    // Use a less frequent interval and don't overlap with alert times
-    const silentAudioInterval = setInterval(() => {
-      // Only try to play audio if no other audio is currently playing
-      // This helps avoid conflicts with prayer alert sounds
-      const allAudioElements = document.querySelectorAll('audio');
-      let otherAudioPlaying = false;
-      
-      allAudioElements.forEach(audio => {
-        if (audio.id !== KEEP_AWAKE_AUDIO_ID && !audio.paused) {
-          otherAudioPlaying = true;
-        }
-      });
-      
-      if (!otherAudioPlaying) {
-        try {
-          // Reset to beginning and keep volume very low
-          silentAudio.currentTime = 0;
-          silentAudio.volume = 0.001;
-          
-          // Play very briefly and then pause
-          const playPromise = silentAudio.play();
-          if (playPromise) {
-            playPromise.then(() => {
-              setTimeout(() => {
-                silentAudio.pause();
-              }, 100); // Very short play time
-            }).catch(() => {
-              // Silently catch autoplay errors
-            });
-          }
-        } catch (e) {
-          // Silent catch
-        }
-      }
-    }, 45000); // Every 45 seconds (less frequent)
-    
-    // Set up touch/click simulation with reduced frequency
-    const touchSimulationInterval = setInterval(() => {
-      // Create a random spot slightly offscreen
-      const x = window.innerWidth * 0.99; 
-      const y = window.innerHeight * 0.99;
-      
-      // Create and dispatch touch/mouse events
-      try {
-        // Only use mouse events as they are less resource intensive
-        const mouseEvent = new MouseEvent('mousemove', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          clientX: x,
-          clientY: y
-        });
-        
-        document.body.dispatchEvent(mouseEvent);
-      } catch (e) {
-        // Silent catch
-      }
-      
-    }, 20000); // Every 20 seconds
-    
-    // Method to prevent common TV browser timeouts with reduced frequency
-    const historyInterval = setInterval(() => {
-      try {
-        // Push a tiny state change to history without changing the URL
-        const stateObj = { keepAlive: Date.now() };
-        window.history.replaceState(stateObj, document.title);
-        
-        // Force minimal layout recalculation (keeps rendering pipeline active)
-        document.body.style.zIndex = "0";
-        setTimeout(() => {
-          document.body.style.zIndex = "auto";
-        }, 10);
-      } catch (e) {
-        // Silent catch
-      }
-    }, 25000); // Every 25 seconds
-    
-    return () => {
-      clearInterval(silentAudioInterval);
-      clearInterval(touchSimulationInterval);
-      clearInterval(historyInterval);
-      
-      // Properly clean up audio element
-      if (silentAudio) {
-        silentAudio.pause();
-        try {
-          document.body.removeChild(silentAudio);
-        } catch (e) {
-          // Silent catch if already removed
-        }
-      }
-    };
-  }, [isFirestick]);
-  
   // Only render elements on TV displays
   if (!isTV) return null;
   
@@ -355,7 +347,7 @@ const KeepAwake = () => {
             zIndex: 9999
           }}
         >
-          Keep Awake: {keepAwakeActive ? 'Active' : 'Inactive'} {isFirestick ? '(Firestick Mode)' : ''}
+          Keep Awake: {keepAwakeActive ? 'Active' : 'Inactive'}
         </div>
       )}
     </>

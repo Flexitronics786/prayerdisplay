@@ -13,11 +13,10 @@ import { Toaster } from "sonner";
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(formatDate());
-  const { isTV } = useTVDisplay();
+  const isTV = useTVDisplay();
   const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
   
-  // Initialize prayer time alerts only once in the main component
-  // This ensures we don't have multiple instances trying to play sounds
+  // Initialize prayer time alerts (without directly using the returned value)
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
   useEffect(() => {
