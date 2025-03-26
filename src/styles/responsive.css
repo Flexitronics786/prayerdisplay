@@ -1,3 +1,4 @@
+
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .gold-border {
@@ -26,27 +27,6 @@
   .text-2xs {
     font-size: 0.625rem;
     line-height: 0.75rem;
-  }
-}
-
-/* For laptop/desktop screens (non-TV) */
-@media (min-width: 641px) and (max-width: 1279px) {
-  #root {
-    padding: 1rem;
-  }
-  
-  /* Improve prayer card layout for laptop screens */
-  .prayer-card {
-    @apply rounded-xl shadow-md;
-  }
-  
-  .prayer-tile-header {
-    @apply py-3;
-  }
-  
-  /* Ensure text in prayer cards is legible on laptops */
-  .prayer-card span.clock-text {
-    @apply text-xl;
   }
 }
 
