@@ -3,6 +3,7 @@ import { useTVDisplay } from "@/hooks/useTVDisplay";
 
 const KeepAwake = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isTV = useTVDisplay();
   const [keepAwakeActive, setKeepAwakeActive] = useState(false);
   
@@ -21,8 +22,8 @@ const KeepAwake = () => {
     }
     
     // Set small canvas size (2x2 pixels)
-    canvas.width = 2;
-    canvas.height = 2;
+    canvas.width = 4; // Slightly larger
+    canvas.height = 4;
     
     // Animation function that draws a tiny changing pattern
     // This forces screen refresh without visible changes
@@ -31,9 +32,17 @@ const KeepAwake = () => {
       frameCount++;
       
       // More aggressive pixel color changes (still visually subtle)
-      const color = frameCount % 2 === 0 ? 'rgba(0,0,0,0.003)' : 'rgba(0,0,0,0.004)';
-      ctx.fillStyle = color;
+      const color1 = frameCount % 2 === 0 ? 'rgba(0,0,0,0.005)' : 'rgba(0,0,0,0.006)';
+      const color2 = frameCount % 2 === 0 ? 'rgba(0,0,0,0.006)' : 'rgba(0,0,0,0.007)';
+      
+      // Create a pattern with alternating pixels for more reliable screen refresh
+      ctx.fillStyle = color1;
       ctx.fillRect(0, 0, 2, 2);
+      ctx.fillRect(2, 2, 2, 2);
+      
+      ctx.fillStyle = color2;
+      ctx.fillRect(2, 0, 2, 2);
+      ctx.fillRect(0, 2, 2, 2);
       
       // Request next frame to keep animation loop going
       requestAnimationFrame(animate);
@@ -61,10 +70,11 @@ const KeepAwake = () => {
     const styleElement = document.createElement('style');
     styleElement.textContent = `
       @keyframes keepAwakeAnimation {
-        0% { opacity: 0.999; }
-        25% { opacity: 0.9995; }
-        50% { opacity: 0.999; }
-        75% { opacity: 0.9995; }
+        0% { opacity: 0.998; }
+        20% { opacity: 0.9985; }
+        40% { opacity: 0.999; }
+        60% { opacity: 0.9995; }
+        80% { opacity: 0.998; }
         100% { opacity: 1; }
       }
       
@@ -74,9 +84,9 @@ const KeepAwake = () => {
         height: 2px;
         bottom: 0;
         right: 0;
-        opacity: 0.002;
+        opacity: 0.003; /* Slightly more visible but still practically invisible */
         z-index: -1;
-        animation: keepAwakeAnimation 5s infinite; /* Faster animation */
+        animation: keepAwakeAnimation 3s infinite; /* Faster animation */
         pointer-events: none;
       }
     `;
@@ -85,7 +95,7 @@ const KeepAwake = () => {
     
     // Create multiple elements that use this animation
     const elements = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) { // More elements
       const animatedElement = document.createElement('div');
       animatedElement.className = 'keep-awake-element';
       animatedElement.style.right = `${i * 2}px`;
@@ -128,7 +138,7 @@ const KeepAwake = () => {
       // Force a layout recalculation
       document.body.getBoundingClientRect();
       
-    }, 20000); // Every 20 seconds (more frequent)
+    }, 10000); // Every 10 seconds (more frequent)
     
     console.log("Visibility/focus-based keep-awake method initialized (aggressive mode)");
     
@@ -145,7 +155,7 @@ const KeepAwake = () => {
     
     const activityInterval = setInterval(() => {
       // Create multiple temporary elements to force more layout calculations
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) { // More elements
         const tempElement = document.createElement('div');
         tempElement.style.position = 'fixed';
         tempElement.style.left = `-${9999 + i}px`;
@@ -177,7 +187,7 @@ const KeepAwake = () => {
       if (Math.random() < 0.1) { // Only log approximately 10% of the time
         console.log("Keep awake: Aggressive DOM activity simulated at", new Date().toISOString());
       }
-    }, 10000); // Every 10 seconds (more frequent)
+    }, 5000); // Every 5 seconds (more frequent)
     
     return () => {
       clearInterval(activityInterval);
@@ -192,7 +202,7 @@ const KeepAwake = () => {
     
     // Create multiple hidden iframes that we can manipulate
     const iframes = [];
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 3; i++) { // More iframes
       const iframe = document.createElement('iframe');
       iframe.style.position = 'fixed';
       iframe.style.left = `-${9999 + i}px`;
@@ -228,7 +238,7 @@ const KeepAwake = () => {
           // Silent catch to avoid console spam
         }
       });
-    }, 15000); // Every 15 seconds (more frequent)
+    }, 8000); // Every 8 seconds (more frequent)
     
     console.log("Page Visibility API keep-awake method initialized (aggressive mode)");
     
@@ -291,7 +301,7 @@ const KeepAwake = () => {
       if (wakeLock === null) {
         requestWakeLock();
       }
-    }, 30000); // Try to reacquire every 30 seconds if needed
+    }, 15000); // Try to reacquire every 15 seconds if needed
     
     // Cleanup function
     return () => {
@@ -310,6 +320,110 @@ const KeepAwake = () => {
             console.error(`Failed to release Wake Lock: ${err}`);
           });
       }
+    };
+  }, [isTV]);
+  
+  // Method 7: Silent audio pings (ultra low volume, won't interfere with alerts)
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing silent audio pings keep-awake system");
+    
+    // Create an audio element for ultra-quiet pings
+    const audio = new Audio();
+    audioRef.current = audio;
+    
+    // Set up audio with extremely low volume
+    audio.volume = 0.001; // Ultra low volume, practically silent
+    
+    // Create an oscillator to generate a super quiet tone
+    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(1, audioCtx.currentTime); // Very low frequency
+    gainNode.gain.setValueAtTime(0.001, audioCtx.currentTime); // Ultra low gain
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    // Schedule periodic silent audio pings
+    const playTone = () => {
+      // Don't interfere with alert beeps by checking if they're playing
+      const alertAudio = document.querySelector('audio[src*="alert-beep.mp3"]') as HTMLAudioElement;
+      
+      if (alertAudio && !alertAudio.paused) {
+        console.log("Alert sound playing, skipping silent audio ping");
+        return;
+      }
+      
+      // Create a very short and quiet sound to keep the device awake
+      try {
+        // Start oscillator for very brief period
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + 0.01); // Stop after 10ms
+        
+        // Create a new oscillator for next time
+        const newOscillator = audioCtx.createOscillator();
+        newOscillator.type = 'sine';
+        newOscillator.frequency.setValueAtTime(1, audioCtx.currentTime);
+        newOscillator.connect(gainNode);
+        oscillator.disconnect();
+        
+        if (Math.random() < 0.05) { // Log only occasionally
+          console.log("Silent audio ping played to prevent sleep");
+        }
+      } catch (e) {
+        // Silent error handling
+      }
+    };
+    
+    const audioInterval = setInterval(playTone, 300000); // Every 5 minutes
+    
+    return () => {
+      clearInterval(audioInterval);
+      if (audioCtx.state !== 'closed') {
+        try {
+          oscillator.disconnect();
+          gainNode.disconnect();
+          audioCtx.close();
+        } catch (e) {
+          // Silent catch
+        }
+      }
+      if (audioRef.current) {
+        audioRef.current = null;
+      }
+    };
+  }, [isTV]);
+  
+  // Method 8: Periodic fetch requests to prevent network timeout
+  useEffect(() => {
+    if (!isTV) return;
+    
+    console.log("Initializing network activity keep-awake system");
+    
+    const fetchInterval = setInterval(() => {
+      // Make a tiny HEAD request to a stable endpoint
+      fetch(window.location.href, { 
+        method: 'HEAD',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      })
+      .then(() => {
+        if (Math.random() < 0.1) { // Log only occasionally
+          console.log("Network activity performed to prevent sleep");
+        }
+      })
+      .catch(() => {}); // Silent catch
+    }, 120000); // Every 2 minutes
+    
+    return () => {
+      clearInterval(fetchInterval);
     };
   }, [isTV]);
   
