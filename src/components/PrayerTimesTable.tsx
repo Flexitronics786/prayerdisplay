@@ -53,7 +53,7 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
 
       <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3 tv-prayer-grid' : 'mobile-prayer-grid'}`}>
         <FajrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
-        {!isFriday && <ZuhrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />}
+        <ZuhrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <AsrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <MaghribTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <IshaTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />

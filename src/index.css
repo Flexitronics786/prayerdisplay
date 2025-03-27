@@ -17,3 +17,15 @@
 h1, h2, h3, h4, h5, h6 {
   color: #000000;
 }
+
+/* Jummah specific styling for Fridays */
+.jummah-header.friday {
+  background-color: #8B5CF6 !important; /* Vivid Purple */
+  border-color: #7E69AB !important;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3), 0 2px 4px -1px rgba(139, 92, 246, 0.2) !important;
+}
+
+.jummah-header.friday h3,
+.jummah-header.friday div {
+  color: #ffffff !important;
+}
