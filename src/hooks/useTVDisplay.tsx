@@ -8,11 +8,14 @@ export const useTVDisplay = () => {
     const checkIfTV = () => {
       const userAgent = navigator.userAgent.toLowerCase();
       
-      // Check for Firestick/Fire TV
+      // Enhanced Firestick/Fire TV detection
       const isFireTV = userAgent.includes('firetv') || 
                        userAgent.includes('fire tv') || 
                        userAgent.includes('kindle') ||
-                       userAgent.includes('silk');
+                       userAgent.includes('silk') ||
+                       userAgent.includes('aftb') ||    // Added Amazon Fire TV Stick code
+                       userAgent.includes('aftt') ||    // Added Amazon Fire TV code
+                       userAgent.includes('afts');      // Added older Fire TV Stick code
       
       // Check for common TV platforms
       const isLGTV = userAgent.includes('webos') || 

@@ -8,6 +8,8 @@ import { AsrTile } from "./prayer-times/AsrTile";
 import { MaghribTile } from "./prayer-times/MaghribTile";
 import { IshaTile } from "./prayer-times/IshaTile";
 import { JummahTile } from "./prayer-times/JummahTile";
+import { useEffect } from "react";
+import { getCurrentTime24h } from "@/utils/dateUtils";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
@@ -21,6 +23,27 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
 
   // Use our updated hook for prayer time alerts - this will play sounds at jamat times
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
+  
+  // Add periodic logging of prayer times and current time for debugging
+  useEffect(() => {
+    const logInterval = setInterval(() => {
+      if (isTV) {
+        const currentTime = getCurrentTime24h();
+        console.log(`[${currentTime}] Prayer times check (Firestick):`, {
+          detailedTimesLoaded: !!detailedTimes,
+          jamatTimes: detailedTimes ? {
+            fajr: detailedTimes.fajr_jamat,
+            zuhr: detailedTimes.zuhr_jamat,
+            asr: detailedTimes.asr_jamat,
+            maghrib: detailedTimes.maghrib_iftar,
+            isha: detailedTimes.isha_first_jamat
+          } : 'No detailed times'
+        });
+      }
+    }, 60000); // Log every minute on TV devices
+    
+    return () => clearInterval(logInterval);
+  }, [isTV, detailedTimes]);
 
   return (
     <div className="animate-scale-in">

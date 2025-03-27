@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { PrayerTile } from "./PrayerTile";
 import { getPrayerDetails, getMaghribTime } from "./PrayerTimeUtils";
@@ -11,6 +11,13 @@ interface MaghribTileProps {
 
 export const MaghribTile: React.FC<MaghribTileProps> = ({ prayerTimes, detailedTimes }) => {
   const maghribDetails = getPrayerDetails(prayerTimes, "Maghrib");
+  
+  // Add debugging for Maghrib time
+  useEffect(() => {
+    if (detailedTimes?.maghrib_iftar) {
+      console.log("Maghrib time loaded:", detailedTimes.maghrib_iftar);
+    }
+  }, [detailedTimes]);
   
   return (
     <PrayerTile
