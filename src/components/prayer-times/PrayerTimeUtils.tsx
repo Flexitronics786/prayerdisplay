@@ -1,6 +1,7 @@
 
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { convertTo12Hour } from "@/utils/dateUtils";
+import { JummahSettings } from "@/services/settingsService";
 
 export const getPrayerDetails = (prayerTimes: PrayerTime[], name: string) => {
   const prayers = prayerTimes.filter(
@@ -112,32 +113,20 @@ export const getSunriseFromDetailedTimes = (detailedTimes: DetailedPrayerTime | 
   return getSunriseTime(prayerTimes);
 };
 
-export const getJummahKhutbahTime = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[]) => {
-  const jamatTime = getZuhrJamat(detailedTimes, prayerTimes);
-  if (!jamatTime) return "";
-  
-  const [time, period] = jamatTime.split(' ');
-  const [hours, minutes] = time.split(':').map(part => parseInt(part, 10));
-  
-  const date = new Date();
-  let hour = hours;
-  
-  if (period === 'PM' && hour < 12) hour += 12;
-  if (period === 'AM' && hour === 12) hour = 0;
-  
-  date.setHours(hour, minutes);
-  
-  date.setMinutes(date.getMinutes() - 10);
-  
-  let khutbahHour = date.getHours();
-  const khutbahMinutes = date.getMinutes();
-  let ampm = 'AM';
-  
-  if (khutbahHour >= 12) {
-    ampm = 'PM';
-    if (khutbahHour > 12) khutbahHour -= 12;
+export const getJummahStart = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[], jummahSettings?: JummahSettings | null) => {
+  return getZuhrStart(detailedTimes, prayerTimes);
+};
+
+export const getJummahJamat1 = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[], jummahSettings?: JummahSettings | null) => {
+  if (jummahSettings && jummahSettings.jamat1) {
+    return convertTo12Hour(jummahSettings.jamat1);
   }
-  if (khutbahHour === 0) khutbahHour = 12;
-  
-  return `${khutbahHour}:${khutbahMinutes.toString().padStart(2, '0')} ${ampm}`;
+  return getZuhrJamat(detailedTimes, prayerTimes);
+};
+
+export const getJummahJamat2 = (detailedTimes: DetailedPrayerTime | null, prayerTimes: PrayerTime[], jummahSettings?: JummahSettings | null) => {
+  if (jummahSettings && jummahSettings.jamat2) {
+    return convertTo12Hour(jummahSettings.jamat2);
+  }
+  return "";
 };

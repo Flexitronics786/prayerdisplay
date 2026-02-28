@@ -4,25 +4,25 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
-import { Loader2, Upload, AlertCircle, FileDown } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, FileDown, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GoogleSheetsImporterProps {
@@ -30,7 +30,7 @@ interface GoogleSheetsImporterProps {
 }
 
 const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) => {
-  const [sheetId, setSheetId] = useState('');
+  const [sheetId, setSheetId] = useState('10LPLiUzagD0HGc1fDSiMYDGUbevG8T6OUNXoANP1GJ8');
   const [tabName, setTabName] = useState('Sheet1');
   const [hasHeaderRow, setHasHeaderRow] = useState(true);
   const [isPublic, setIsPublic] = useState(true);
@@ -75,7 +75,7 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
     const headers = "date,day,fajr_start,fajr_jamat,sunrise,zuhr_start,zuhr_jamat,asr_start,asr_jamat,maghrib_iftar,isha_start,isha_first_jamat";
     const sampleRow1 = "2024-06-15,Saturday,03:45,04:15,05:38,12:45,13:15,17:30,17:45,21:20,22:45,23:00";
     const sampleRow2 = "2024-06-16,Sunday,03:46,04:15,05:38,12:45,13:15,17:30,17:45,21:21,22:45,23:00";
-    
+
     const csvContent = `${headers}\n${sampleRow1}\n${sampleRow2}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -113,9 +113,9 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
               </ul>
             </AlertDescription>
             <div className="mt-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="text-amber-800 border-amber-300 hover:bg-amber-100"
                 onClick={downloadTemplateCSV}
               >
@@ -127,12 +127,30 @@ const GoogleSheetsImporter = ({ onImportComplete }: GoogleSheetsImporterProps) =
 
           <div className="space-y-2">
             <Label htmlFor="sheetId">Google Sheet ID</Label>
-            <Input
-              id="sheetId"
-              value={sheetId}
-              onChange={(e) => setSheetId(e.target.value)}
-              placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-            />
+            <div className="flex gap-2">
+              <Input
+                id="sheetId"
+                value={sheetId}
+                onChange={(e) => setSheetId(e.target.value)}
+                placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (sheetId) {
+                    window.open(`https://docs.google.com/spreadsheets/d/${sheetId}/edit`, '_blank');
+                  }
+                }}
+                disabled={!sheetId}
+                title="Open this Google Sheet in a new tab"
+                className="shrink-0"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Sheet
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
               The ID is the part of the URL between /d/ and /edit
             </p>

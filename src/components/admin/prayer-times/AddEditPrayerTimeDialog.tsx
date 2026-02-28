@@ -36,26 +36,26 @@ export const AddEditPrayerTimeDialog = ({
 }: AddEditPrayerTimeDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       const requiredFields = ['date', 'day', 'fajr_jamat', 'sunrise', 'zuhr_jamat', 'asr_jamat', 'maghrib_iftar', 'isha_first_jamat'];
       const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-      
+
       if (missingFields.length > 0) {
         toast.error(`Please fill in the required fields: ${missingFields.join(', ')}`);
         setIsSubmitting(false);
         return;
       }
-      
+
       if (editingId) {
         console.log("Updating prayer time entry:", editingId, formData);
         const result = await updatePrayerTimeEntry(editingId, formData);
@@ -92,8 +92,8 @@ export const AddEditPrayerTimeDialog = ({
         <DialogHeader>
           <DialogTitle>{editingId ? "Edit Prayer Time" : "Add New Prayer Time"}</DialogTitle>
           <DialogDescription>
-            {editingId 
-              ? "Update the prayer time details below." 
+            {editingId
+              ? "Update the prayer time details below."
               : "Enter the prayer time details for a specific date."}
           </DialogDescription>
         </DialogHeader>
@@ -115,7 +115,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="day">Day*</Label>
                 <Input
@@ -128,7 +128,7 @@ export const AddEditPrayerTimeDialog = ({
                 />
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sehri_end">Fajr Start</Label>
@@ -144,7 +144,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="fajr_jamat">Fajr Jamat*</Label>
                 <div className="relative">
@@ -161,7 +161,7 @@ export const AddEditPrayerTimeDialog = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sunrise">Sunrise*</Label>
@@ -178,7 +178,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="zuhr_start">Zuhr Start</Label>
                 <div className="relative">
@@ -194,7 +194,7 @@ export const AddEditPrayerTimeDialog = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="zuhr_jamat">Zuhr Jamat*</Label>
@@ -211,7 +211,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="asr_start">Asr Start</Label>
                 <div className="relative">
@@ -227,7 +227,9 @@ export const AddEditPrayerTimeDialog = ({
                 </div>
               </div>
             </div>
-            
+
+
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="asr_jamat">Asr Jamat*</Label>
@@ -244,7 +246,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="maghrib_iftar">Maghrib/Iftar*</Label>
                 <div className="relative">
@@ -261,7 +263,7 @@ export const AddEditPrayerTimeDialog = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 pb-4">
               <div className="space-y-2">
                 <Label htmlFor="isha_start">Isha Start</Label>
@@ -277,7 +279,7 @@ export const AddEditPrayerTimeDialog = ({
                   <Clock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="isha_first_jamat">Isha Jamat*</Label>
                 <div className="relative">
@@ -294,9 +296,11 @@ export const AddEditPrayerTimeDialog = ({
                 </div>
               </div>
             </div>
+
+
           </form>
         </ScrollArea>
-        
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => {
             onOpenChange(false);

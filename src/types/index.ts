@@ -22,6 +22,9 @@ export interface DetailedPrayerTime {
   isha_start: string;
   isha_first_jamat: string;
   isha_second_jamat: string;
+  jummah_start?: string;
+  jummah_jamat_1?: string;
+  jummah_jamat_2?: string;
   created_at?: string | null;
 }
 

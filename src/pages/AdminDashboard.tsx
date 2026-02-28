@@ -10,6 +10,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { RefreshCw, Settings } from "lucide-react";
+import { JummahSettingsDialog } from "@/components/admin/prayer-times/JummahSettingsDialog";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +21,7 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isJummahSettingsOpen, setIsJummahSettingsOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,7 +30,7 @@ const AdminDashboard = () => {
         // Check if user is authenticated
         const user = await getCurrentUser();
         console.log("Current user:", user);
-        
+
         if (!user || !user.isAdmin) {
           setAuthError("You must be logged in as an admin to access this page");
           toast.error("You must be logged in as an admin to access this page");
@@ -35,9 +39,9 @@ const AdminDashboard = () => {
           }, 2000);
           return;
         }
-        
+
         setCurrentUser(user);
-        
+
         // Load data
         try {
           const currentPrayerTimes = await fetchPrayerTimes();
@@ -77,6 +81,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleForceRefresh = async () => {
+    try {
+      toast.info("Sending refresh command to all screens...");
+      await supabase.channel('app_commands').send({
+        type: 'broadcast',
+        event: 'force_reload',
+        payload: { time: new Date().toISOString() }
+      });
+      toast.success("Command sent successfully! Screens should refresh shortly.");
+    } catch (error) {
+      console.error("Error sending refresh broadcast:", error);
+      toast.error("Failed to send refresh command");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-amber-50">
@@ -98,15 +117,43 @@ const AdminDashboard = () => {
     <div className="h-screen flex flex-col overflow-hidden bg-amber-50">
       <div className="pattern-overlay"></div>
       <AdminNavbar onLogout={handleLogout} />
-      
+
       <ScrollArea className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
-          {currentUser && (
-            <div className="mb-4 text-sm text-amber-700">
-              Logged in as: {currentUser.email}
+          <div className="flex justify-between items-center mb-6">
+            {currentUser && (
+              <div className="text-sm text-amber-700">
+                Logged in as: {currentUser.email}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsJummahSettingsOpen(true)}
+                variant="outline"
+                className="border-amber-300 text-amber-800 hover:bg-amber-100 flex items-center gap-2"
+                title="Configure Global Jummah Times"
+              >
+                <Settings className="h-4 w-4" />
+                Jummah Settings
+              </Button>
+              <Button
+                onClick={handleForceRefresh}
+                variant="outline"
+                className="border-amber-300 text-amber-800 hover:bg-amber-100 flex items-center gap-2"
+                title="Force all physical TV displays to instantly reload and fetch latest updates"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Force Refresh All Screens
+              </Button>
             </div>
-          )}
-          
+          </div>
+
+          <JummahSettingsDialog
+            isOpen={isJummahSettingsOpen}
+            onOpenChange={setIsJummahSettingsOpen}
+          />
+
           {/* Prayer Times Table */}
           <div className="w-full mb-6">
             <h2 className="text-2xl font-bold text-amber-800 mb-4">Prayer Times Management</h2>

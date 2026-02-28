@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAllPrayerTimes } from "@/services/dataService";
-import { Loader2, Plus, Trash } from "lucide-react";
+import { fetchAllPrayerTimes, cleanupPrayerTimes } from "@/services/dataService";
+import { Loader2, Plus, Trash, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ImportPrayerTimesDialog } from "./ImportPrayerTimesDialog";
@@ -16,6 +16,7 @@ const PrayerTimesTableEditor = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Omit<DetailedPrayerTime, 'id' | 'created_at'>>({
     date: new Date().toISOString().split('T')[0],
@@ -32,31 +33,31 @@ const PrayerTimesTableEditor = () => {
     isha_first_jamat: '',
     isha_second_jamat: ''
   });
-  
-  const { 
-    data: prayerTimes = [], 
-    isLoading, 
-    isError, 
-    error 
+
+  const {
+    data: prayerTimes = [],
+    isLoading,
+    isError,
+    error
   } = useQuery({
     queryKey: ['prayerTimes'],
     queryFn: fetchAllPrayerTimes,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
-  
+
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'local-prayer-times') {
         queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [queryClient]);
-  
+
   useEffect(() => {
     if (!isAddDialogOpen) {
       setFormData({
@@ -76,7 +77,7 @@ const PrayerTimesTableEditor = () => {
       });
     }
   }, [isAddDialogOpen]);
-  
+
   const handleEdit = (entry: DetailedPrayerTime) => {
     setEditingId(entry.id);
     setFormData({
@@ -96,7 +97,25 @@ const PrayerTimesTableEditor = () => {
     });
     setIsAddDialogOpen(true);
   };
-  
+
+  const handleCleanup = async () => {
+    setIsCleaning(true);
+    try {
+      const result = await cleanupPrayerTimes();
+      if (result.success) {
+        toast.success(`Cleanup complete. Removed ${result.deletedCount} past/duplicate entries.`);
+        queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
+      } else {
+        toast.error(result.error || "Failed to clean up database");
+      }
+    } catch (error) {
+      console.error("Error running cleanup:", error);
+      toast.error("An error occurred during cleanup");
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -104,13 +123,13 @@ const PrayerTimesTableEditor = () => {
       </div>
     );
   }
-  
+
   if (isError) {
     return (
       <div className="p-4 bg-red-50 text-red-800 rounded-md">
         <p>Error loading prayer times: {error instanceof Error ? error.message : 'Unknown error'}</p>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="mt-2"
           onClick={() => queryClient.invalidateQueries({ queryKey: ['prayerTimes'] })}
         >
@@ -119,40 +138,50 @@ const PrayerTimesTableEditor = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
         <h2 className="text-xl font-semibold text-amber-800">Prayer Times Table</h2>
         <div className="flex flex-wrap gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 border-amber-200 hover:bg-amber-50 text-amber-700 hover:text-amber-800"
+            onClick={handleCleanup}
+            disabled={isCleaning}
+          >
+            {isCleaning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+            Clean Up Data
+          </Button>
+
+          <Button
+            variant="outline"
             className="flex items-center gap-2 border-red-200 hover:bg-red-50 text-red-600 hover:text-red-700"
             onClick={() => setIsDeleteAllDialogOpen(true)}
           >
             <Trash className="h-4 w-4" />
             Delete All Data
           </Button>
-          
+
           <DeleteAllPrayerTimesDialog
             isOpen={isDeleteAllDialogOpen}
             onOpenChange={setIsDeleteAllDialogOpen}
           />
 
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             className="flex items-center gap-2"
             onClick={() => setIsAddDialogOpen(true)}
           >
             <Plus className="h-4 w-4" />
             Add Prayer Time
           </Button>
-          
+
           <ImportPrayerTimesDialog
             isOpen={isImportDialogOpen}
             onOpenChange={setIsImportDialogOpen}
           />
-          
+
           <AddEditPrayerTimeDialog
             isOpen={isAddDialogOpen}
             onOpenChange={setIsAddDialogOpen}
@@ -163,12 +192,12 @@ const PrayerTimesTableEditor = () => {
           />
         </div>
       </div>
-      
-      <PrayerTimesTable 
-        prayerTimes={prayerTimes} 
-        onEdit={handleEdit} 
+
+      <PrayerTimesTable
+        prayerTimes={prayerTimes}
+        onEdit={handleEdit}
       />
-      
+
       <div className="text-xs text-muted-foreground mt-2">
         {prayerTimes.length > 0 && `Showing ${prayerTimes.length} prayer time entries`}
       </div>

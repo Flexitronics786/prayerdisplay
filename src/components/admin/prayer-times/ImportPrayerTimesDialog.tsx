@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Upload, AlertCircle, FileDown } from "lucide-react";
+import { Loader2, Upload, AlertCircle, FileDown, ExternalLink } from "lucide-react";
 import { importPrayerTimesFromSheet } from "@/services/dataService";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,52 +34,52 @@ interface ImportPrayerTimesDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const ImportPrayerTimesDialog = ({ 
-  isOpen, 
-  onOpenChange 
+export const ImportPrayerTimesDialog = ({
+  isOpen,
+  onOpenChange
 }: ImportPrayerTimesDialogProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
-  
+
   const [importData, setImportData] = useState({
-    sheetUrl: '',
+    sheetUrl: 'https://docs.google.com/spreadsheets/d/10LPLiUzagD0HGc1fDSiMYDGUbevG8T6OUNXoANP1GJ8/edit?usp=sharing',
     tabName: 'Sheet1',
     hasHeaderRow: true,
     isPublic: true
   });
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setImportData(prev => ({ ...prev, [name]: value }));
   };
-  
+
   const handleImportSelectChange = (name: string, value: string) => {
     setImportData(prev => ({ ...prev, [name]: value === 'true' }));
   };
-  
+
   const extractSheetId = (url: string): string => {
     // Extract Sheet ID from various Google Sheets URL formats
     if (!url) return '';
-    
+
     // Handles URLs like: https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (match && match[1]) {
       return match[1];
     }
-    
+
     // If not a URL, treat as direct ID
     if (!url.includes('/') && !url.includes('\\')) {
       return url.trim();
     }
-    
+
     return '';
   };
-  
+
   const downloadTemplateCSV = () => {
     const headers = "date,day,fajr_start,fajr_jamat,sunrise,zuhr_start,zuhr_jamat,asr_start,asr_jamat,maghrib_iftar,isha_start,isha_first_jamat,isha_second_jamat";
     const sampleRow1 = "2024-06-15,Saturday,03:45,04:15,05:38,12:45,13:15,17:30,17:45,21:20,22:45,23:00,23:30";
     const sampleRow2 = "2024-06-16,Sunday,03:46,04:15,05:38,12:45,13:15,17:30,17:45,21:21,22:45,23:00,23:30";
-    
+
     const csvContent = `${headers}\n${sampleRow1}\n${sampleRow2}`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -90,33 +90,33 @@ export const ImportPrayerTimesDialog = ({
     link.click();
     document.body.removeChild(link);
   };
-  
+
   const handleImport = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
       if (!importData.sheetUrl) {
         toast.error("Please enter a Google Sheet URL or ID");
         setIsSubmitting(false);
         return;
       }
-      
+
       const sheetId = extractSheetId(importData.sheetUrl);
-      
+
       if (!sheetId) {
         toast.error("Could not extract a valid Sheet ID from the provided URL");
         setIsSubmitting(false);
         return;
       }
-      
+
       const result = await importPrayerTimesFromSheet(
         sheetId,
         importData.tabName,
         importData.hasHeaderRow,
         importData.isPublic
       );
-      
+
       if (result.success) {
         toast.success(`Successfully imported ${result.count} prayer times`);
         if (result.error) {
@@ -151,7 +151,7 @@ export const ImportPrayerTimesDialog = ({
             The sheet must be publicly accessible and have the correct column format.
           </DialogDescription>
         </DialogHeader>
-        
+
         <ScrollArea className="h-[60vh] pr-4">
           <Alert className="mb-4 bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-800" />
@@ -168,9 +168,9 @@ export const ImportPrayerTimesDialog = ({
               </ul>
             </AlertDescription>
             <div className="mt-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="text-amber-800 border-amber-300 hover:bg-amber-100"
                 onClick={downloadTemplateCSV}
               >
@@ -179,23 +179,42 @@ export const ImportPrayerTimesDialog = ({
               </Button>
             </div>
           </Alert>
-          
+
           <form onSubmit={handleImport} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="sheetUrl">Google Sheet URL</Label>
-              <Input
-                id="sheetUrl"
-                name="sheetUrl"
-                value={importData.sheetUrl}
-                onChange={handleInputChange}
-                placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit"
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="sheetUrl"
+                  name="sheetUrl"
+                  value={importData.sheetUrl}
+                  onChange={handleInputChange}
+                  placeholder="https://docs.google.com/spreadsheets/d/your-sheet-id/edit"
+                  required
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const id = extractSheetId(importData.sheetUrl);
+                    if (id) {
+                      window.open(`https://docs.google.com/spreadsheets/d/${id}/edit`, '_blank');
+                    }
+                  }}
+                  disabled={!importData.sheetUrl}
+                  title="Open this Google Sheet in a new tab"
+                  className="shrink-0"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Sheet
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Paste the full URL or just the Sheet ID from the address bar
               </p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="tabName">Sheet/Tab Name</Label>
               <Input
@@ -206,7 +225,7 @@ export const ImportPrayerTimesDialog = ({
                 placeholder="Sheet1"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="hasHeaderRow">First Row is Header</Label>
               <Select
@@ -222,7 +241,7 @@ export const ImportPrayerTimesDialog = ({
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2 pb-4">
               <Label htmlFor="isPublic">Sheet is Public</Label>
               <Select
@@ -240,7 +259,7 @@ export const ImportPrayerTimesDialog = ({
             </div>
           </form>
         </ScrollArea>
-        
+
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel

@@ -6,13 +6,13 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { DetailedPrayerTime } from "@/types";
 import { Button } from "@/components/ui/button";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 
 interface PrayerTimesTableProps {
@@ -20,12 +20,12 @@ interface PrayerTimesTableProps {
   onEdit: (entry: DetailedPrayerTime) => void;
 }
 
-export const PrayerTimesTable = ({ 
+export const PrayerTimesTable = ({
   prayerTimes,
-  onEdit 
+  onEdit
 }: PrayerTimesTableProps) => {
   const queryClient = useQueryClient();
-  
+
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this prayer time?")) {
       try {
@@ -42,21 +42,21 @@ export const PrayerTimesTable = ({
       }
     }
   };
-  
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-GB', { 
-        weekday: 'short', 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
+      return date.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
       });
     } catch (e) {
       return dateString;
     }
   };
-  
+
   return (
     <div className="rounded-md border bg-white max-h-[600px] overflow-auto">
       <div className="relative">

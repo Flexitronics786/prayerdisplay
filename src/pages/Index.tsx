@@ -9,13 +9,15 @@ import KeepAwake from "@/components/KeepAwake";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { usePrayerTimesData } from "@/hooks/usePrayerTimesData";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
+import { useAutoReload } from "@/hooks/useAutoReload";
 import { Toaster } from "sonner";
 
 const Index = () => {
+  useAutoReload();
   const [currentDate, setCurrentDate] = useState(formatDate());
   const isTV = useTVDisplay();
-  const { prayerTimes, isLoading, detailedTimes } = usePrayerTimesData();
-  
+  const { prayerTimes, isLoading, detailedTimes, jummahSettings } = usePrayerTimesData();
+
   // Initialize prayer time alerts (without directly using the returned value)
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
 
@@ -23,7 +25,7 @@ const Index = () => {
     const dateInterval = setInterval(() => {
       setCurrentDate(formatDate());
     }, 60000);
-    
+
     return () => clearInterval(dateInterval);
   }, []);
 
@@ -37,20 +39,21 @@ const Index = () => {
       <KeepAwake />
       {/* Add Toaster for other notifications (not prayer alerts) */}
       <Toaster position={isTV ? "top-center" : "bottom-right"} toastOptions={{ className: isTV ? 'tv-toast' : '' }} />
-      
+
       <div className="max-w-7xl mx-auto h-full flex flex-col">
         <div className="grid grid-cols-1 gap-4 flex-grow">
           <div className="w-full flex flex-col">
             <PageHeader currentDate={currentDate} isTV={isTV} />
-            
+
             <div className="flex-grow">
-              <PrayerTimesTable 
-                prayerTimes={prayerTimes} 
-                detailedTimes={detailedTimes} 
-                compactView={isTV} 
+              <PrayerTimesTable
+                prayerTimes={prayerTimes}
+                detailedTimes={detailedTimes}
+                jummahSettings={jummahSettings}
+                compactView={isTV}
               />
             </div>
-            
+
             <PhoneReminder isTVMode={isTV} />
           </div>
         </div>

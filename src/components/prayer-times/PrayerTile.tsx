@@ -43,15 +43,15 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
           <div
             key={index}
             className={`flex justify-between items-center 
-              ${index < items.length - 1 ? "mb-1 sm:mb-2 pb-1 border-b border-amber-100" : ""} 
-              ${index === 1 && title === "Fajr" ? "pt-1" : ""}
-            `}
+                ${index < items.length - 1 ? "mb-1 pb-1 border-b border-amber-100" : ""} 
+                ${index === 1 && title === "Fajr" ? "pt-1" : ""}
+                ${items.length > 2 ? "text-sm sm:text-base" : ""}
+              `}
           >
             <span className="text-black text-base sm:text-lg font-bold">{item.label}:</span>
             <span
-              className={`font-bold text-black text-xl sm:text-2xl clock-text ${
-                isTV ? "tv-time-text" : ""
-              }`}
+              className={`font-bold text-black text-xl sm:text-2xl clock-text ${isTV ? "tv-time-text" : ""
+                }`}
             >
               {item.time}
             </span>

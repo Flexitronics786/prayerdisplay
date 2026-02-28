@@ -1,4 +1,3 @@
-
 import { PrayerTime } from "@/types";
 import { useTVDisplay } from "@/hooks/useTVDisplay";
 import { usePrayerTimeAlerts } from "@/hooks/usePrayerTimeAlerts";
@@ -10,20 +9,22 @@ import { IshaTile } from "./prayer-times/IshaTile";
 import { JummahTile } from "./prayer-times/JummahTile";
 import { useEffect } from "react";
 import { getCurrentTime24h } from "@/utils/dateUtils";
+import { JummahSettings } from "@/services/settingsService";
 
 interface PrayerTimesTableProps {
   prayerTimes: PrayerTime[];
   detailedTimes: any;
+  jummahSettings?: JummahSettings | null;
   compactView?: boolean;
 }
 
-const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: PrayerTimesTableProps) => {
+const PrayerTimesTable = ({ prayerTimes, detailedTimes, jummahSettings, compactView = false }: PrayerTimesTableProps) => {
   const isTV = useTVDisplay();
   const isFriday = new Date().getDay() === 5; // 5 is Friday in JavaScript's getDay()
 
   // Use our updated hook for prayer time alerts - this will play sounds at jamat times
   usePrayerTimeAlerts(prayerTimes, detailedTimes);
-  
+
   // Add periodic logging of prayer times and current time for debugging
   useEffect(() => {
     const logInterval = setInterval(() => {
@@ -41,7 +42,7 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
         });
       }
     }, 60000); // Log every minute on TV devices
-    
+
     return () => clearInterval(logInterval);
   }, [isTV, detailedTimes]);
 
@@ -57,7 +58,7 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, compactView = false }: P
         <AsrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <MaghribTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <IshaTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
-        <JummahTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
+        <JummahTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} jummahSettings={jummahSettings} />
       </div>
     </div>
   );
