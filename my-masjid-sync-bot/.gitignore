@@ -1,0 +1,11 @@
+node_modules/
+.env
+debug_upload_1.png
+debug_upload_2.png
+debug_error.png
+my_masjid_settings.png
+my_masjid_settings.html
+get_settings.cjs
+download_template.cjs
+downloaded_template.csv
+prayers_export.csv
