@@ -81,31 +81,25 @@
 }
 
 .fajr-header {
-  background: linear-gradient(135deg, #065f46, #047857);
-  @apply text-white;
+  @apply bg-gradient-to-br from-emerald-200 to-emerald-300;
 }
 
 .zuhr-header {
-  background: linear-gradient(135deg, #b45309, #d97706);
-  @apply text-white;
+  @apply bg-gradient-to-br from-amber-200 to-amber-300;
 }
 
 .asr-header {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  @apply text-white;
+  @apply bg-gradient-to-br from-blue-200 to-blue-300;
 }
 
 .maghrib-header {
-  background: linear-gradient(135deg, #0d9488, #14b8a6);
-  @apply text-white;
+  @apply bg-gradient-to-br from-teal-200 to-teal-300;
 }
 
 .isha-header {
-  background: linear-gradient(135deg, #e07a5f, #f4a261);
-  @apply text-white;
+  @apply bg-gradient-to-br from-orange-200 to-orange-300;
 }
 
 .jummah-header {
-  background: linear-gradient(135deg, #475569, #64748b);
-  @apply text-white;
+  @apply bg-gradient-to-br from-slate-200 to-slate-300;
 }
