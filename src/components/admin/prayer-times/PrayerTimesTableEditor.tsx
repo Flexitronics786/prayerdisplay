@@ -17,7 +17,7 @@ const PrayerTimesTableEditor = () => {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [isCleaning, setIsCleaning] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // formData is only used for adding new rows now (editing is inline)
   const [formData, setFormData] = useState<Omit<DetailedPrayerTime, 'id' | 'created_at'>>({
     date: new Date().toISOString().split('T')[0],
     day: '',
@@ -42,7 +42,7 @@ const PrayerTimesTableEditor = () => {
   } = useQuery({
     queryKey: ['prayerTimes'],
     queryFn: fetchAllPrayerTimes,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
@@ -51,11 +51,8 @@ const PrayerTimesTableEditor = () => {
         queryClient.invalidateQueries({ queryKey: ['prayerTimes'] });
       }
     };
-
     window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [queryClient]);
 
   useEffect(() => {
@@ -78,26 +75,6 @@ const PrayerTimesTableEditor = () => {
     }
   }, [isAddDialogOpen]);
 
-  const handleEdit = (entry: DetailedPrayerTime) => {
-    setEditingId(entry.id);
-    setFormData({
-      date: entry.date,
-      day: entry.day,
-      sehri_end: entry.sehri_end || '',
-      fajr_jamat: entry.fajr_jamat || '',
-      sunrise: entry.sunrise || '',
-      zuhr_start: entry.zuhr_start || '',
-      zuhr_jamat: entry.zuhr_jamat || '',
-      asr_start: entry.asr_start || '',
-      asr_jamat: entry.asr_jamat || '',
-      maghrib_iftar: entry.maghrib_iftar || '',
-      isha_start: entry.isha_start || '',
-      isha_first_jamat: entry.isha_first_jamat || '',
-      isha_second_jamat: ''
-    });
-    setIsAddDialogOpen(true);
-  };
-
   const handleCleanup = async () => {
     setIsCleaning(true);
     try {
@@ -109,7 +86,6 @@ const PrayerTimesTableEditor = () => {
         toast.error(result.error || "Failed to clean up database");
       }
     } catch (error) {
-      console.error("Error running cleanup:", error);
       toast.error("An error occurred during cleanup");
     } finally {
       setIsCleaning(false);
@@ -182,20 +158,22 @@ const PrayerTimesTableEditor = () => {
             onOpenChange={setIsImportDialogOpen}
           />
 
+          {/* Add-only dialog (editing is now done inline in the table) */}
           <AddEditPrayerTimeDialog
             isOpen={isAddDialogOpen}
             onOpenChange={setIsAddDialogOpen}
-            editingId={editingId}
+            editingId={null}
             formData={formData}
             setFormData={setFormData}
-            setEditingId={setEditingId}
+            setEditingId={() => { }}
           />
         </div>
       </div>
 
+      {/* Table supports inline editing — click ✏️ on any row */}
       <PrayerTimesTable
         prayerTimes={prayerTimes}
-        onEdit={handleEdit}
+        onEdit={() => { }} // no-op: editing is now inline
       />
 
       <div className="text-xs text-muted-foreground mt-2">

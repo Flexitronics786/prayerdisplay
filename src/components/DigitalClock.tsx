@@ -44,17 +44,26 @@ const DigitalClock = ({ showDate = true }: { showDate?: boolean }) => {
     const minutes = time.getMinutes();
     const seconds = time.getSeconds();
     const ampm = hours >= 12 ? 'PM' : 'AM';
-    
+
     const formattedHours = hours % 12 || 12;
     const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
     const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-    
-    return `${formattedHours}:${formattedMinutes}:${formattedSeconds} ${ampm}`;
+
+    return { time: `${formattedHours}:${formattedMinutes}:${formattedSeconds}`, ampm };
   };
+
+  const { time: timeStr, ampm } = formatTime(time);
 
   return (
     <div className="text-center h-full flex flex-col justify-center">
-      <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-extrabold text-amber-800 clock-text">{formatTime(time)}</div>
+      <div className="flex items-baseline justify-center gap-1.5">
+        <span className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-slate-800 clock-text">
+          {timeStr}
+        </span>
+        <span className="text-lg sm:text-xl md:text-2xl font-bold text-slate-500">
+          {ampm}
+        </span>
+      </div>
       {showDate && <div className="text-2xl md:text-3xl text-amber-700">{date}</div>}
     </div>
   );

@@ -5,6 +5,7 @@ export interface PrayerTime {
   time: string;
   isActive?: boolean;
   isNext?: boolean;
+  isTomorrow?: boolean;
 }
 
 export interface DetailedPrayerTime {

@@ -1,10 +1,15 @@
-
 .gold-card {
   @apply bg-gradient-to-b from-amber-200/90 to-amber-100/90 backdrop-blur-sm border border-amber-300/50 shadow-md;
 }
 
 .prayer-card {
-  @apply bg-gradient-to-b from-amber-50/90 to-white/90 backdrop-blur-sm border border-amber-200/50 shadow-md;
+  @apply bg-gradient-to-b from-white to-amber-50/60 backdrop-blur-sm border border-amber-200/40 shadow-lg;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.prayer-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .blue-card {
@@ -28,11 +33,14 @@
 }
 
 .active-prayer {
-  @apply relative bg-amber-200 text-amber-900 shadow-lg border-8 border-red-500;
+  @apply relative shadow-xl;
+  background: #ffffff;
+  border: 4px solid #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2), 0 8px 32px rgba(220, 38, 38, 0.15);
 }
 
 .next-prayer {
-  @apply relative bg-amber-100/80 text-amber-800;
+  /* no special styling — blends with other tiles */
 }
 
 .active-prayer::before {
@@ -49,7 +57,7 @@
 
 .gold-border {
   position: relative;
-  border-radius: 24px;
+  border-radius: 20px;
   overflow: hidden;
 }
 
@@ -57,40 +65,47 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(45deg, #e6b422, #ffd700, #e6b422, #ffd700);
-  padding: 4px;
-  -webkit-mask: 
-     linear-gradient(#fff 0 0) content-box, 
-     linear-gradient(#fff 0 0);
+  background: linear-gradient(135deg, #d4a843, #f0d060, #d4a843, #f0d060);
+  padding: 3px;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
 }
 
 .prayer-tile-header {
-  @apply py-3 text-center border-b;
+  @apply py-2.5 text-center;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.08);
 }
 
 .fajr-header {
-  @apply bg-emerald-700 text-white border-emerald-500;
+  background: linear-gradient(135deg, #065f46, #047857);
+  @apply text-white;
 }
 
 .zuhr-header {
-  @apply bg-amber-600 text-white border-amber-500;
+  background: linear-gradient(135deg, #b45309, #d97706);
+  @apply text-white;
 }
 
 .asr-header {
-  @apply bg-blue-700 text-white border-blue-600;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  @apply text-white;
 }
 
 .maghrib-header {
-  @apply bg-[#4bc2ce] text-white border-[#4bc2ce]/80;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  @apply text-white;
 }
 
 .isha-header {
-  @apply bg-[#ffbb99] text-white border-[#ffbb99]/80;
+  background: linear-gradient(135deg, #e07a5f, #f4a261);
+  @apply text-white;
 }
 
 .jummah-header {
-  @apply bg-[#617792] text-white border-[#617792]/80;
+  background: linear-gradient(135deg, #475569, #64748b);
+  @apply text-white;
 }

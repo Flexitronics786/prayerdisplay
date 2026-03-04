@@ -34,7 +34,7 @@ const Index = () => {
   }
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'} bg-gradient-to-b from-amber-100 to-amber-50`}>
+    <div className={`min-h-screen relative overflow-hidden ${isTV ? 'tv-display' : 'py-2 px-3'}`}>
       <div className="pattern-overlay"></div>
       <KeepAwake />
       {/* Add Toaster for other notifications (not prayer alerts) */}

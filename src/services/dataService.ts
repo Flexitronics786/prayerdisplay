@@ -55,6 +55,14 @@ const markActivePrayer = (
   const maghribStartTime = detailedTimes?.maghrib_iftar || (maghribIndex !== -1 ? updatedTimes[maghribIndex].time : '');
   const ishaStartTime = detailedTimes?.isha_start || (ishaIndex !== -1 ? updatedTimes[ishaIndex].time : '');
 
+  // Rule 1: Fajr is active from its start until Sunrise
+  if (fajrIndex !== -1 &&
+    !isTimeBefore(currentTime, fajrStartTime) &&
+    isTimeBefore(currentTime, sunriseTime)) {
+    updatedTimes[fajrIndex].isActive = true;
+    console.log("Fajr is active");
+  }
+
   // Rule 2: Dhuhr is active from its start until Asr starts
   if (dhuhrIndex !== -1 &&
     !isTimeBefore(currentTime, dhuhrStartTime) &&
@@ -120,13 +128,13 @@ const markActivePrayer = (
   // If we have tomorrow's data, check which prayers are already completely in the past today,
   // and overwrite their display times with exactly what is coming tomorrow.
 
-  // Guard clause for Midnight-to-Fajr window:
-  // When the clock hits 00:00, the system instantly loads "today's" row instead of "yesterday's" row.
-  // During this window (00:00 to Fajr Start), no prayers have officially "passed" yet for this new day,
-  // so we must NOT overwrite anything with tomorrow's data. Everything should remain exactly as loaded.
-  const isPostMidnightPreFajrWindow = fajrStartTime && isTimeBefore(currentTime, fajrStartTime);
+  // Guard clause for Midnight-to-Sunrise window:
+  // Between midnight and sunrise, we're still in the Fajr period.
+  // Nothing has "fully passed" yet for this new calendar day,
+  // so we must NOT overwrite anything with tomorrow's data.
+  const isPreSunriseWindow = sunriseTime && isTimeBefore(currentTime, sunriseTime);
 
-  if (tomorrowTimes && !isPostMidnightPreFajrWindow) {
+  if (tomorrowTimes && !isPreSunriseWindow) {
     let prayersToRollover: typeof orderedPrayers = [];
 
     if (isAfterIsha) {
@@ -166,6 +174,7 @@ const markActivePrayer = (
 
         if (tomorrowTimeStr) {
           updatedTimes[passedIndex].time = tomorrowTimeStr;
+          updatedTimes[passedIndex].isTomorrow = true;
           console.log(`Rolled over ${updatedTimes[passedIndex].name} to tomorrow's time: ${tomorrowTimeStr}`);
         }
       }

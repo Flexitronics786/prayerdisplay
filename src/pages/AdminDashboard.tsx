@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw, Settings, UploadCloud } from "lucide-react";
 import { JummahSettingsDialog } from "@/components/admin/prayer-times/JummahSettingsDialog";
 
 const AdminDashboard = () => {
@@ -84,16 +84,48 @@ const AdminDashboard = () => {
   const handleForceRefresh = async () => {
     try {
       toast.info("Sending refresh command to all screens...");
-      await supabase.channel('app_commands').send({
-        type: 'broadcast',
-        event: 'force_reload',
-        payload: { time: new Date().toISOString() }
+
+      const channel = supabase.channel('app_commands');
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.send({
+            type: 'broadcast',
+            event: 'force_reload',
+            payload: { time: new Date().toISOString() }
+          });
+          toast.success("Command sent successfully! Screens should refresh shortly.");
+
+          // Cleanup after sending
+          setTimeout(() => { supabase.removeChannel(channel); }, 1000);
+        }
       });
-      toast.success("Command sent successfully! Screens should refresh shortly.");
+
     } catch (error) {
       console.error("Error sending refresh broadcast:", error);
       toast.error("Failed to send refresh command");
     }
+  };
+
+  const handleSyncMyMasjid = async () => {
+    // In production, you would swap this localhost URL for your Render/Railway bot URL
+    const syncPromise = fetch("http://localhost:3001/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.message || data.error || 'Unknown error');
+        }
+        return data;
+      });
+
+    toast.promise(syncPromise, {
+      loading: 'Pushing to My-Masjid... Please do not close this page.',
+      success: 'Successfully pushed timetable to My-Masjid!',
+      error: (err) => `Sync failed. Is the bot server (npm start) running? Error: ${err.message}`
+    });
   };
 
   if (isLoading) {
@@ -120,14 +152,14 @@ const AdminDashboard = () => {
 
       <ScrollArea className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             {currentUser && (
               <div className="text-sm text-amber-700">
                 Logged in as: {currentUser.email}
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => setIsJummahSettingsOpen(true)}
                 variant="outline"
@@ -139,12 +171,19 @@ const AdminDashboard = () => {
               </Button>
               <Button
                 onClick={handleForceRefresh}
-                variant="outline"
-                className="border-amber-300 text-amber-800 hover:bg-amber-100 flex items-center gap-2"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 shadow-sm font-semibold"
                 title="Force all physical TV displays to instantly reload and fetch latest updates"
               >
                 <RefreshCw className="h-4 w-4" />
-                Force Refresh All Screens
+                Remote Refresh TVs
+              </Button>
+              <Button
+                onClick={handleSyncMyMasjid}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 shadow-sm font-semibold"
+                title="Scrape and push data to My-Masjid.com"
+              >
+                <UploadCloud className="h-4 w-4" />
+                Push to My-Masjid
               </Button>
             </div>
           </div>

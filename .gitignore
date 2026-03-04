@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# My-Masjid Sync Bot (Local Exclusion)
+/my-masjid-sync-bot
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

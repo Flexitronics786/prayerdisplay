@@ -7,6 +7,7 @@ interface PrayerTileProps {
   arabicTitle?: string;
   isActive: boolean;
   isNext: boolean;
+  isTomorrow?: boolean;
   items: { label: string; time: string }[];
   headerClass: string;
 }
@@ -16,10 +17,12 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
   arabicTitle,
   isActive,
   isNext,
+  isTomorrow,
   items,
   headerClass,
 }) => {
   const isTV = useTVDisplay();
+  const showTomorrow = isTomorrow && !isNext && !isActive;
 
   return (
     <div
@@ -28,11 +31,18 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
     >
       <div className={`prayer-tile-header ${headerClass}`}>
         <div className="flex justify-between items-center px-2">
-          <h3 className={`text-2xl sm:text-3xl font-extrabold text-black ${isTV ? "text-3xl" : ""}`}>
-            {title}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className={`text-2xl sm:text-3xl font-extrabold text-black ${isTV ? "text-3xl" : ""}`}>
+              {title}
+            </h3>
+            {showTomorrow && (
+              <span className="text-[10px] sm:text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm">
+                📅 Tomorrow
+              </span>
+            )}
+          </div>
           {arabicTitle && (
-            <div className={`text-2xl sm:text-4xl mt-0.5 font-bold text-black ${isTV ? "text-4xl" : ""}`}>
+            <div className={`text-2xl sm:text-4xl mt-0.5 font-bold text-black ${isTV ? "text-4xl" : ""}`} style={{ fontFamily: "'Amiri', serif" }}>
               {arabicTitle}
             </div>
           )}

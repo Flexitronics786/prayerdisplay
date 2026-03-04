@@ -2,7 +2,7 @@
 import React from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { PrayerTile } from "./PrayerTile";
-import { getPrayerDetails, getAsrStart, getAsrJamat } from "./PrayerTimeUtils";
+import { getPrayerDetails, getPrayerTime, getAsrStart, getAsrJamat } from "./PrayerTimeUtils";
 
 interface AsrTileProps {
   prayerTimes: PrayerTime[];
@@ -11,13 +11,16 @@ interface AsrTileProps {
 
 export const AsrTile: React.FC<AsrTileProps> = ({ prayerTimes, detailedTimes }) => {
   const asrDetails = getPrayerDetails(prayerTimes, "Asr");
-  
+  const asrEntry = getPrayerTime(prayerTimes, "Asr");
+
   return (
     <PrayerTile
       title="Asr"
       arabicTitle="عصر"
       isActive={asrDetails.isActive}
       isNext={asrDetails.isNext}
+      isTomorrow={asrEntry?.isTomorrow}
+      countdownTime={asrDetails.isNext ? asrEntry?.time : undefined}
       items={[
         {
           label: "Start",

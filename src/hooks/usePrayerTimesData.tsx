@@ -5,6 +5,75 @@ import { fetchJummahSettings, JummahSettings } from "@/services/settingsService"
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Builds a merged DetailedPrayerTime object.
+ *
+ * For any prayer whose "start" time has been rolled over to tomorrow by
+ * markActivePrayer() (detectable because prayerTimes[x].time no longer matches
+ * today's source value), we replace today's corresponding fields with
+ * tomorrow's fields.  This ensures tile components always display the correct
+ * next-day times even though they prefer reading from detailedTimes directly.
+ */
+function buildMergedDetailedTimes(
+  prayerTimes: PrayerTime[],
+  today: DetailedPrayerTime,
+  tomorrow: DetailedPrayerTime | null
+): DetailedPrayerTime {
+  if (!tomorrow) return today;
+
+  // Start with a shallow copy of today's record
+  const merged: DetailedPrayerTime = { ...today };
+
+  const fajrEntry = prayerTimes.find(p => p.name === 'Fajr');
+  const zuhrEntry = prayerTimes.find(p => p.name === 'Zuhr' || p.name === 'Dhuhr');
+  const asrEntry = prayerTimes.find(p => p.name === 'Asr');
+  const maghribEntry = prayerTimes.find(p => p.name === 'Maghrib');
+  const ishaEntry = prayerTimes.find(p => p.name === 'Isha');
+
+  // --- Fajr rollover ---
+  const todayFajrStart = today.sehri_end?.slice(0, 5) || today.fajr_jamat?.slice(0, 5) || '';
+  if (fajrEntry && fajrEntry.time !== todayFajrStart) {
+    console.log('[merge] Fajr rolled over → using tomorrow\'s times');
+    merged.sehri_end = tomorrow.sehri_end;
+    merged.fajr_jamat = tomorrow.fajr_jamat;
+    merged.sunrise = tomorrow.sunrise; // sunrise always follows fajr
+  }
+
+  // --- Zuhr / Dhuhr rollover ---
+  const todayZuhrStart = today.zuhr_start?.slice(0, 5) || today.zuhr_jamat?.slice(0, 5) || '';
+  if (zuhrEntry && zuhrEntry.time !== todayZuhrStart) {
+    console.log('[merge] Zuhr rolled over → using tomorrow\'s times');
+    merged.zuhr_start = tomorrow.zuhr_start;
+    merged.zuhr_jamat = tomorrow.zuhr_jamat;
+  }
+
+  // --- Asr rollover ---
+  const todayAsrStart = today.asr_start?.slice(0, 5) || today.asr_jamat?.slice(0, 5) || '';
+  if (asrEntry && asrEntry.time !== todayAsrStart) {
+    console.log('[merge] Asr rolled over → using tomorrow\'s times');
+    merged.asr_start = tomorrow.asr_start;
+    merged.asr_jamat = tomorrow.asr_jamat;
+  }
+
+  // --- Maghrib rollover ---
+  const todayMaghribStart = today.maghrib_iftar?.slice(0, 5) || '';
+  if (maghribEntry && maghribEntry.time !== todayMaghribStart) {
+    console.log('[merge] Maghrib rolled over → using tomorrow\'s times');
+    merged.maghrib_iftar = tomorrow.maghrib_iftar;
+  }
+
+  // --- Isha rollover ---
+  const todayIshaStart = today.isha_start?.slice(0, 5) || today.isha_first_jamat?.slice(0, 5) || '';
+  if (ishaEntry && ishaEntry.time !== todayIshaStart) {
+    console.log('[merge] Isha rolled over → using tomorrow\'s times');
+    merged.isha_start = tomorrow.isha_start;
+    merged.isha_first_jamat = tomorrow.isha_first_jamat;
+    merged.isha_second_jamat = tomorrow.isha_second_jamat;
+  }
+
+  return merged;
+}
+
 export const usePrayerTimesData = () => {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
   const [detailedTimes, setDetailedTimes] = useState<DetailedPrayerTime | null>(null);
@@ -37,16 +106,20 @@ export const usePrayerTimesData = () => {
       const todayTimes = allTimes.find(t => t.date === today);
       const tomorrowTimes = allTimes.find(t => t.date === tomorrow);
 
-      if (todayTimes) {
-        setDetailedTimes(todayTimes);
-      }
-
       const settings = await fetchJummahSettings();
       setJummahSettings(settings);
 
       // Load standard prayer times (passing tomorrow's data to handle the rollover)
       const times = await fetchPrayerTimes(tomorrowTimes, settings);
       setPrayerTimes(times);
+
+      // Build a merged detailedTimes that swaps in tomorrow's values for prayers
+      // that have already passed today. This ensures tile components always
+      // display the correct times via their detailedTimes reads.
+      if (todayTimes) {
+        const merged = buildMergedDetailedTimes(times, todayTimes, tomorrowTimes || null);
+        setDetailedTimes(merged);
+      }
 
       scheduleNextCheck(times);
     } catch (error) {
@@ -154,6 +227,24 @@ export const usePrayerTimesData = () => {
     // Initial cleanup when component mounts
     cleanupOldPrayerTimes();
 
+    // Schedule a reload at midnight so that when the date changes the app
+    // immediately fetches the new day's row. This ensures Isha (and all prayers)
+    // show the correct next-day times as soon as 00:00 hits, without waiting
+    // until the near-Fajr scheduled check.
+    const scheduleMidnightReload = () => {
+      const now = new Date();
+      const msUntilMidnight =
+        new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 10).getTime() -
+        now.getTime(); // +10 seconds past midnight to be safe
+      console.log(`Midnight reload scheduled in ${Math.round(msUntilMidnight / 60000)} minutes`);
+      return setTimeout(() => {
+        console.log('Midnight reached – reloading prayer data for new day');
+        loadData();
+        cleanupOldPrayerTimes();
+      }, msUntilMidnight);
+    };
+    const midnightTimer = scheduleMidnightReload();
+
     const prayerTimesSubscription = supabase
       .channel('prayer_times_changes')
       .on('postgres_changes', {
@@ -179,6 +270,7 @@ export const usePrayerTimesData = () => {
       if (nextCheckTimer) {
         clearTimeout(nextCheckTimer);
       }
+      clearTimeout(midnightTimer);
       supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };

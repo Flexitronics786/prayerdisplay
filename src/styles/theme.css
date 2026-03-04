@@ -1,5 +1,4 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Amiri:wght@400;700&family=Playfair+Display:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -32,9 +31,11 @@
   * {
     @apply border-border selection:bg-primary/20 selection:text-secondary;
   }
-  
+
   body {
-    @apply bg-gradient-to-b from-amber-100 to-amber-50 text-foreground antialiased min-h-screen;
+    @apply text-foreground antialiased min-h-screen;
+    background: linear-gradient(160deg, #fef9ef 0%, #fdf6e3 40%, #faf0d7 100%);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
   }
 
@@ -54,7 +55,7 @@
   background-image: url('/pattern.svg');
   background-repeat: repeat;
   background-size: 200px;
-  opacity: 0.1;
+  opacity: 0.06;
   position: absolute;
   top: 0;
   left: 0;
@@ -82,16 +83,37 @@
 
 .clock-text {
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Animation for scale in */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
 }
 
 /* Animation for phone reminder */
 @keyframes pulse-soft {
-  0%, 100% { 
-    opacity: 1; 
+
+  0%,
+  100% {
+    opacity: 1;
     transform: scale(1);
   }
-  50% { 
-    opacity: 0.9; 
+
+  50% {
+    opacity: 0.9;
     transform: scale(1.02);
   }
 }
@@ -102,8 +124,13 @@
 
 /* Animation for fade in */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {

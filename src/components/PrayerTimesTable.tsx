@@ -7,6 +7,7 @@ import { AsrTile } from "./prayer-times/AsrTile";
 import { MaghribTile } from "./prayer-times/MaghribTile";
 import { IshaTile } from "./prayer-times/IshaTile";
 import { JummahTile } from "./prayer-times/JummahTile";
+import { NextPrayerBanner } from "./prayer-times/NextPrayerBanner";
 import { useEffect } from "react";
 import { getCurrentTime24h } from "@/utils/dateUtils";
 import { JummahSettings } from "@/services/settingsService";
@@ -48,11 +49,12 @@ const PrayerTimesTable = ({ prayerTimes, detailedTimes, jummahSettings, compactV
 
   return (
     <div className="animate-scale-in">
-      <div className="mb-2 sm:mb-3">
-        <h3 className="text-2xl sm:text-3xl font-bold text-black font-serif">Prayer Times</h3>
+      {/* Next prayer countdown replaces the "Prayer Times" heading */}
+      <div className="mb-1 flex justify-center">
+        <NextPrayerBanner prayerTimes={prayerTimes} detailedTimes={detailedTimes} jummahSettings={jummahSettings} />
       </div>
 
-      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3 tv-prayer-grid' : 'mobile-prayer-grid'}`}>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 ${isTV ? 'grid-cols-3 gap-3 tv-prayer-grid' : 'mobile-prayer-grid'}`}>
         <FajrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <ZuhrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />
         <AsrTile prayerTimes={prayerTimes} detailedTimes={detailedTimes} />

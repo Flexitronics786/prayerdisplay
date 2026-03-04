@@ -2,7 +2,7 @@
 import React from "react";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { PrayerTile } from "./PrayerTile";
-import { getPrayerDetails, getIshaStart, getIshaJamat } from "./PrayerTimeUtils";
+import { getPrayerDetails, getPrayerTime, getIshaStart, getIshaJamat } from "./PrayerTimeUtils";
 
 interface IshaTileProps {
   prayerTimes: PrayerTime[];
@@ -11,7 +11,8 @@ interface IshaTileProps {
 
 export const IshaTile: React.FC<IshaTileProps> = ({ prayerTimes, detailedTimes }) => {
   const ishaDetails = getPrayerDetails(prayerTimes, "Isha");
-  
+  const ishaEntry = getPrayerTime(prayerTimes, "Isha");
+
   const timeItems = [
     {
       label: "Start",
@@ -22,13 +23,15 @@ export const IshaTile: React.FC<IshaTileProps> = ({ prayerTimes, detailedTimes }
       time: getIshaJamat(detailedTimes, prayerTimes)
     }
   ];
-  
+
   return (
     <PrayerTile
       title="Isha"
       arabicTitle="عشاء"
       isActive={ishaDetails.isActive}
       isNext={ishaDetails.isNext}
+      isTomorrow={ishaEntry?.isTomorrow}
+      countdownTime={ishaDetails.isNext ? ishaEntry?.time : undefined}
       items={timeItems}
       headerClass="isha-header"
     />
