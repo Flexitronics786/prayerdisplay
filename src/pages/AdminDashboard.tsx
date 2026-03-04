@@ -109,7 +109,7 @@ const AdminDashboard = () => {
 
   const handleSyncMyMasjid = async () => {
     // In production, you would swap this localhost URL for your Render/Railway bot URL
-    const syncPromise = fetch("http://localhost:3001/sync", {
+    const syncPromise = fetch("https://my-masjid-sync-bot.onrender.com/sync", {
       method: "POST",
       headers: { "Content-Type": "application/json" }
     })
