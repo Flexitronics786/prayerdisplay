@@ -22,7 +22,7 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
   headerClass,
 }) => {
   const isTV = useTVDisplay();
-  const showTomorrow = isTomorrow && !isNext && !isActive;
+  const showTomorrow = isTomorrow && !isActive;
 
   return (
     <div
@@ -36,7 +36,7 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
               {title}
             </h3>
             {showTomorrow && (
-              <span className="text-[10px] sm:text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm">
+              <span className="text-[10px] sm:text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm flex-shrink-0">
                 📅 Tomorrow
               </span>
             )}
@@ -58,9 +58,9 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
                 ${items.length > 2 ? "text-sm sm:text-base" : ""}
               `}
           >
-            <span className="text-black text-base sm:text-lg font-bold">{item.label}:</span>
+            <span className="text-black text-lg sm:text-xl font-extrabold">{item.label}:</span>
             <span
-              className={`font-bold text-black text-xl sm:text-2xl clock-text ${isTV ? "tv-time-text" : ""
+              className={`font-black text-black text-2xl sm:text-3xl clock-text ${isTV ? "tv-time-text" : ""
                 }`}
             >
               {item.time}

@@ -120,8 +120,14 @@ const markActivePrayer = (
   // If no next prayer found and it's after Isha, next prayer is Fajr tomorrow
   if (!nextPrayerFound && fajrIndex !== -1) {
     updatedTimes[fajrIndex].isNext = true;
-    isAfterIsha = true;
-    console.log(`Next prayer will be Fajr tomorrow at ${fajrStartTime} (current time: ${currentTime})`);
+    // Only mark isAfterIsha if Isha is NOT currently active.
+    // Isha being active means we're still in the Isha prayer window (evening),
+    // NOT that the entire day is over. Full rollover should only happen after midnight.
+    const ishaIsActive = ishaIndex !== -1 && updatedTimes[ishaIndex].isActive;
+    if (!ishaIsActive) {
+      isAfterIsha = true;
+    }
+    console.log(`Next prayer will be Fajr tomorrow at ${fajrStartTime} (current time: ${currentTime}, isAfterIsha: ${isAfterIsha})`);
   }
 
   // --- NEW LOGIC: ROLLOVER PAST PRAYERS TO TOMORROW ---
@@ -138,16 +144,20 @@ const markActivePrayer = (
     let prayersToRollover: typeof orderedPrayers = [];
 
     if (isAfterIsha) {
-      // ALL prayers have passed for today. We roll over all of them.
+      // ALL prayers have passed for today (it's after midnight). Roll over all of them.
       prayersToRollover = orderedPrayers;
     } else {
-      const activeOrNextPrayer = updatedTimes.find(p => p.isActive || p.isNext);
-      if (activeOrNextPrayer) {
-        // Find where we are in the chronological order. 
-        // Use the index directly from the matching object, since .name check might fail due to "Dhuhr/Zuhr" vs "Zuhr" differences.
-        const currentIndexInOrder = orderedPrayers.findIndex(p => p.index === updatedTimes.indexOf(activeOrNextPrayer));
+      // Find the currently ACTIVE prayer first (prioritize over isNext).
+      // This is critical because Fajr can be isNext while Isha is isActive,
+      // and Fajr appears first in the array — so find(isActive || isNext) would
+      // return Fajr, giving rollover index 0, which means no rollovers happen.
+      const activePrayer = updatedTimes.find(p => p.isActive);
+      const anchorPrayer = activePrayer || updatedTimes.find(p => p.isNext);
+      if (anchorPrayer) {
+        const currentIndexInOrder = orderedPrayers.findIndex(p => p.index === updatedTimes.indexOf(anchorPrayer));
         if (currentIndexInOrder > 0) {
-          // All prayers before the currentIndexInOrder have passed for today.
+          // Only roll over prayers that come BEFORE the currently active/next prayer.
+          // Do NOT roll over the active prayer itself or anything after it.
           prayersToRollover = orderedPrayers.slice(0, currentIndexInOrder);
         }
       }
