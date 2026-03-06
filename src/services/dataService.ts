@@ -287,7 +287,49 @@ const getDefaultHadith = (): Hadith => {
   };
 };
 
-// Functions for the detailed prayer times table
+// Optimized function for display use: fetch ONLY today + tomorrow (2 rows max)
+// instead of the entire prayer_times table. This dramatically reduces egress.
+export const fetchTodayTomorrowTimes = async (): Promise<{ today: DetailedPrayerTime | null; tomorrow: DetailedPrayerTime | null }> => {
+  try {
+    const todayDate = new Date();
+    const today = todayDate.toISOString().split('T')[0];
+
+    const tomorrowDate = new Date(todayDate);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrow = tomorrowDate.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('prayer_times')
+      .select('*')
+      .in('date', [today, tomorrow])
+      .order('date', { ascending: true });
+
+    if (error || !data || data.length === 0) {
+      console.log('No prayer times found for today/tomorrow in DB, checking local storage');
+
+      // Fallback to local storage
+      const localTimes = localStorage.getItem('local-prayer-times');
+      if (localTimes) {
+        const parsed = JSON.parse(localTimes) as DetailedPrayerTime[];
+        const todayEntry = parsed.find(t => t.date === today) || null;
+        const tomorrowEntry = parsed.find(t => t.date === tomorrow) || null;
+        return { today: todayEntry, tomorrow: tomorrowEntry };
+      }
+
+      return { today: null, tomorrow: null };
+    }
+
+    const todayEntry = data.find((t: any) => t.date === today) as DetailedPrayerTime | undefined;
+    const tomorrowEntry = data.find((t: any) => t.date === tomorrow) as DetailedPrayerTime | undefined;
+
+    return { today: todayEntry || null, tomorrow: tomorrowEntry || null };
+  } catch (error) {
+    console.error('Error fetching today/tomorrow prayer times:', error);
+    return { today: null, tomorrow: null };
+  }
+};
+
+// Functions for the detailed prayer times table (admin dashboard - needs ALL rows)
 export const fetchAllPrayerTimes = async (): Promise<DetailedPrayerTime[]> => {
   try {
     // First try to fetch from Supabase

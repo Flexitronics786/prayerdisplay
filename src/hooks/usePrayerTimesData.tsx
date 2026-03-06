@@ -1,6 +1,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { fetchPrayerTimes, fetchAllPrayerTimes } from "@/services/dataService";
+import { fetchPrayerTimes, fetchTodayTomorrowTimes } from "@/services/dataService";
 import { fetchJummahSettings, JummahSettings } from "@/services/settingsService";
 import { PrayerTime, DetailedPrayerTime } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,6 +82,7 @@ export const usePrayerTimesData = () => {
   const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
   const dataLoadingRef = useRef(false);
   const lastCleanupDateRef = useRef<string | null>(null);
+  const jummahSettingsCachedRef = useRef<JummahSettings | null>(null);
 
   const loadData = useCallback(async () => {
     if (dataLoadingRef.current) {
@@ -94,28 +95,25 @@ export const usePrayerTimesData = () => {
       setIsLoading(true);
       console.log("Loading prayer times...");
 
-      // Load detailed prayer times for the current day and tomorrow
-      const allTimes = await fetchAllPrayerTimes();
-      const todayDate = new Date();
-      const today = todayDate.toISOString().split('T')[0];
+      // OPTIMIZED: Single query fetches only today + tomorrow (2 rows max)
+      // Previously this called fetchAllPrayerTimes() which fetched the ENTIRE table
+      const { today: todayTimes, tomorrow: tomorrowTimes } = await fetchTodayTomorrowTimes();
 
-      const tomorrowDate = new Date(todayDate);
-      tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-      const tomorrow = tomorrowDate.toISOString().split('T')[0];
-
-      const todayTimes = allTimes.find(t => t.date === today);
-      const tomorrowTimes = allTimes.find(t => t.date === tomorrow);
-
-      const settings = await fetchJummahSettings();
+      // Cache Jummah settings — only fetch from DB if not cached yet
+      let settings = jummahSettingsCachedRef.current;
+      if (!settings) {
+        settings = await fetchJummahSettings();
+        jummahSettingsCachedRef.current = settings;
+      }
       setJummahSettings(settings);
 
-      // Load standard prayer times (passing tomorrow's data to handle the rollover)
-      const times = await fetchPrayerTimes(tomorrowTimes, settings);
+      // fetchPrayerTimes handles mapToDisplayFormat + markActivePrayer logic.
+      // It still makes its own DB call for today, but the tomorrow data is passed in.
+      const times = await fetchPrayerTimes(tomorrowTimes || undefined, settings);
       setPrayerTimes(times);
 
       // Build a merged detailedTimes that swaps in tomorrow's values for prayers
-      // that have already passed today. This ensures tile components always
-      // display the correct times via their detailedTimes reads.
+      // that have already passed today.
       if (todayTimes) {
         const merged = buildMergedDetailedTimes(times, todayTimes, tomorrowTimes || null);
         setDetailedTimes(merged);
@@ -239,23 +237,17 @@ export const usePrayerTimesData = () => {
       console.log(`Midnight reload scheduled in ${Math.round(msUntilMidnight / 60000)} minutes`);
       return setTimeout(() => {
         console.log('Midnight reached – reloading prayer data for new day');
+        // Clear jummah settings cache at midnight so it refreshes for the new day
+        jummahSettingsCachedRef.current = null;
         loadData();
         cleanupOldPrayerTimes();
       }, msUntilMidnight);
     };
     const midnightTimer = scheduleMidnightReload();
 
-    const prayerTimesSubscription = supabase
-      .channel('prayer_times_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'prayer_times'
-      }, () => {
-        console.log("Prayer times changed in database, reloading...");
-        loadData();
-      })
-      .subscribe();
+    // NOTE: postgres_changes subscription removed to reduce Realtime egress.
+    // Displays still update via: scheduled timer checks, midnight reload,
+    // 3AM page reload, and the "Remote Refresh TVs" broadcast button.
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'local-prayer-times') {
@@ -271,7 +263,6 @@ export const usePrayerTimesData = () => {
         clearTimeout(nextCheckTimer);
       }
       clearTimeout(midnightTimer);
-      supabase.removeChannel(prayerTimesSubscription);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [loadData, nextCheckTimer, cleanupOldPrayerTimes]);
