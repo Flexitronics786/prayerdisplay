@@ -415,6 +415,13 @@ export const addPrayerTimeEntry = async (entry: Omit<DetailedPrayerTime, 'id' | 
       key: 'local-prayer-times'
     }));
 
+    // Broadcast refresh to all connected displays
+    await supabase.channel('app_commands').send({
+      type: 'broadcast',
+      event: 'force_reload',
+      payload: { time: new Date().toISOString(), source: 'addPrayerTime' }
+    });
+
     return data as DetailedPrayerTime;
   } catch (error) {
     console.error('Error in addPrayerTimeEntry:', error);
@@ -564,6 +571,13 @@ export const updatePrayerTimeEntry = async (id: string, entry: Partial<DetailedP
     window.dispatchEvent(new StorageEvent('storage', {
       key: 'local-prayer-times'
     }));
+
+    // Broadcast refresh to all connected displays
+    await supabase.channel('app_commands').send({
+      type: 'broadcast',
+      event: 'force_reload',
+      payload: { time: new Date().toISOString(), source: 'updatePrayerTime' }
+    });
 
     return updatedEntry;
   } catch (error) {
