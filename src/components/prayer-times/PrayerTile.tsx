@@ -29,14 +29,14 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
       className={`prayer-card rounded-xl overflow-hidden prayer-transition 
         ${isActive ? "active-prayer" : isNext ? "next-prayer" : ""}`}
     >
-      <div className={`prayer-tile-header ${headerClass}`}>
+      <div className={`prayer-tile-header ${headerClass} relative`}>
         <div className="flex justify-between items-center px-2">
           <div className="flex items-center gap-2">
             <h3 className={`text-2xl sm:text-3xl font-extrabold text-black ${isTV ? "text-3xl" : ""}`}>
               {title}
             </h3>
-            {showTomorrow && (
-              <span className="text-[10px] sm:text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm flex-shrink-0">
+            {showTomorrow && isTV && (
+              <span className="text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm flex-shrink-0">
                 📅 Tomorrow
               </span>
             )}
@@ -47,6 +47,13 @@ export const PrayerTile: React.FC<PrayerTileProps> = ({
             </div>
           )}
         </div>
+        {showTomorrow && !isTV && (
+          <div className="flex justify-center -mb-2 mt-0.5">
+            <span className="text-[9px] sm:text-xs font-bold text-slate-700 bg-white/90 border border-slate-300 rounded-full px-2 py-0.5 uppercase tracking-wider shadow-sm">
+              📅 Tomorrow
+            </span>
+          </div>
+        )}
       </div>
       <div className="px-2 sm:px-4 py-2">
         {items.map((item, index) => (

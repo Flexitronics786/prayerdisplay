@@ -19,15 +19,12 @@ export const useTVDisplay = () => {
 
       // Check for common TV platforms
       const isLGTV = userAgent.includes('webos') ||
-        userAgent.includes('netcast') ||
-        userAgent.includes('lg');
+        userAgent.includes('netcast');
 
-      const isSamsungTV = userAgent.includes('tizen') ||
-        userAgent.includes('samsung');
+      const isSamsungTV = userAgent.includes('tizen');
 
-      const isSonyTV = userAgent.includes('sony') ||
-        userAgent.includes('playstation') ||
-        userAgent.includes('bravia');
+      const isSonyTV = userAgent.includes('bravia') ||
+        userAgent.includes('playstation');
 
       // Check for any TV or TV-like platform
       const isTVPlatform = isFireTV || isLGTV || isSamsungTV || isSonyTV ||
