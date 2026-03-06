@@ -79,7 +79,8 @@ export const usePrayerTimesData = () => {
   const [detailedTimes, setDetailedTimes] = useState<DetailedPrayerTime | null>(null);
   const [jummahSettings, setJummahSettings] = useState<JummahSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [nextCheckTimer, setNextCheckTimer] = useState<NodeJS.Timeout | null>(null);
+  const nextCheckTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const nextPrayerTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dataLoadingRef = useRef(false);
   const lastCleanupDateRef = useRef<string | null>(null);
   const jummahSettingsCachedRef = useRef<JummahSettings | null>(null);
@@ -179,16 +180,19 @@ export const usePrayerTimesData = () => {
   }, []);
 
   const scheduleNextCheck = useCallback((prayers: PrayerTime[]) => {
-    if (nextCheckTimer) {
-      clearTimeout(nextCheckTimer);
+    // Clear any existing timers
+    if (nextCheckTimerRef.current) {
+      clearTimeout(nextCheckTimerRef.current);
+    }
+    if (nextPrayerTimerRef.current) {
+      clearTimeout(nextPrayerTimerRef.current);
     }
 
     const nextPrayer = prayers.find(prayer => prayer.isNext);
 
     if (!nextPrayer) {
       console.log("No next prayer found, scheduling check in 30 minutes");
-      const timer = setTimeout(() => loadData(), 30 * 60 * 1000);
-      setNextCheckTimer(timer);
+      nextCheckTimerRef.current = setTimeout(() => loadData(), 30 * 60 * 1000);
       return;
     }
 
@@ -211,13 +215,14 @@ export const usePrayerTimesData = () => {
 
     console.log(`Next prayer (${nextPrayer.name}) at ${nextPrayer.time}, checking in ${checkInMinutes} minutes`);
 
-    const timer = setTimeout(() => loadData(), checkInMinutes * 60 * 1000);
-    setNextCheckTimer(timer);
+    // Schedule check 5 minutes before next prayer
+    nextCheckTimerRef.current = setTimeout(() => loadData(), checkInMinutes * 60 * 1000);
 
+    // Also schedule at the exact prayer time
     if (minutesUntilPrayer > 0) {
-      setTimeout(() => loadData(), minutesUntilPrayer * 60 * 1000);
+      nextPrayerTimerRef.current = setTimeout(() => loadData(), minutesUntilPrayer * 60 * 1000);
     }
-  }, [loadData, nextCheckTimer]);
+  }, [loadData]);
 
   useEffect(() => {
     loadData();
@@ -259,13 +264,16 @@ export const usePrayerTimesData = () => {
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      if (nextCheckTimer) {
-        clearTimeout(nextCheckTimer);
+      if (nextCheckTimerRef.current) {
+        clearTimeout(nextCheckTimerRef.current);
+      }
+      if (nextPrayerTimerRef.current) {
+        clearTimeout(nextPrayerTimerRef.current);
       }
       clearTimeout(midnightTimer);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [loadData, nextCheckTimer, cleanupOldPrayerTimes]);
+  }, [loadData, cleanupOldPrayerTimes]);
 
   return { prayerTimes, detailedTimes, jummahSettings, isLoading, loadData };
 };
